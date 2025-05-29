@@ -1,0 +1,6 @@
+<h1>{{ category.name }} Calculators</h1>
+<ul>
+  {% for calculator in calculators %}
+    <li><a href="{% url 'calculator_detail' calculator.slug %}">{{ calculator.name }}</a></li>
+  {% endfor %}
+</ul>
