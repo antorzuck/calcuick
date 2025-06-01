@@ -1,0 +1,1536 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Math.js for calculations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+<!-- KaTeX for math rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+    .katex { font-size: 1.1em; }
+    #sse-canvas, #residual-canvas {
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f9fafb;
+    }
+    .dark #sse-canvas, .dark #residual-canvas {
+        border-color: #374151;
+        background: #1f2937;
+    }
+    .data-input-area {
+        min-height: 200px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+    }
+    .metric-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        text-align: center;
+    }
+    .dark .metric-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    .model-comparison {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    .dark .model-comparison {
+        background: #0c4a6e;
+        border-color: #0369a1;
+    }
+    .data-table {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .residual-positive {
+        color: #dc2626;
+    }
+    .residual-negative {
+        color: #059669;
+    }
+    .sample-data-btn {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        padding: 0.5rem 1rem;
+        margin: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .sample-data-btn:hover {
+        background: #e5e7eb;
+    }
+    .dark .sample-data-btn {
+        background: #374151;
+        border-color: #4b5563;
+        color: #e5e7eb;
+    }
+    .dark .sample-data-btn:hover {
+        background: #4b5563;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="bar-chart-3" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Sum of Squared Errors Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate SSE, analyze model fit, compare regression models, and visualize residuals for statistical analysis.
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div id="sse-formula" class="text-blue-800 dark:text-blue-300"></div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Data Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Data Input</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Data Entry -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Input Method:
+                        </label>
+                        <select id="input-method" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="manual">Manual Entry</option>
+                            <option value="csv">CSV Upload</option>
+                            <option value="sample">Sample Datasets</option>
+                        </select>
+                    </div>
+
+                    <!-- Manual Entry -->
+                    <div id="manual-input" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Data Format:
+                            </label>
+                            <select id="data-format" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="observed-predicted">Observed vs Predicted Values</option>
+                                <option value="xy-data">X-Y Data with Model Fitting</option>
+                                <option value="residuals">Direct Residuals</option>
+                            </select>
+                        </div>
+
+                        <div id="observed-predicted-input">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Observed Values (one per line):
+                                    </label>
+                                    <textarea id="observed-values" rows="8" placeholder="10.5&#10;12.3&#10;15.7&#10;18.2&#10;22.1" class="data-input-area w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Predicted Values (one per line):
+                                    </label>
+                                    <textarea id="predicted-values" rows="8" placeholder="10.2&#10;12.8&#10;15.1&#10;18.9&#10;21.7" class="data-input-area w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="xy-data-input" class="hidden">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        X Values (independent variable):
+                                    </label>
+                                    <textarea id="x-values" rows="8" placeholder="1&#10;2&#10;3&#10;4&#10;5" class="data-input-area w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Y Values (dependent variable):
+                                    </label>
+                                    <textarea id="y-values" rows="8" placeholder="2.1&#10;3.9&#10;6.2&#10;7.8&#10;10.1" class="data-input-area w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Model Type:
+                                </label>
+                                <select id="model-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="linear">Linear Regression (y = ax + b)</option>
+                                    <option value="polynomial2">Polynomial (degree 2)</option>
+                                    <option value="polynomial3">Polynomial (degree 3)</option>
+                                    <option value="exponential">Exponential (y = ae^(bx))</option>
+                                    <option value="logarithmic">Logarithmic (y = a*ln(x) + b)</option>
+                                    <option value="power">Power (y = ax^b)</option>
+                                    <option value="custom">Custom Function</option>
+                                </select>
+                            </div>
+
+                            <div id="custom-model-input" class="mt-4 hidden">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Custom Model Function (use 'x' as variable):
+                                </label>
+                                <input type="text" id="custom-model" placeholder="e.g., 2*x + 1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <div id="residuals-input" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Residuals (observed - predicted):
+                            </label>
+                            <textarea id="residual-values" rows="8" placeholder="0.3&#10;-0.5&#10;0.6&#10;-0.7&#10;0.4" class="data-input-area w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- CSV Upload -->
+                    <div id="csv-input" class="hidden space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Upload CSV File:
+                            </label>
+                            <input type="file" id="csv-file" accept=".csv" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                CSV should have columns: observed, predicted (or x, y for model fitting)
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Sample Datasets -->
+                    <div id="sample-input" class="hidden space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Choose Sample Dataset:
+                            </label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button class="sample-data-btn" onclick="loadSampleData('linear')">Linear Relationship</button>
+                                <button class="sample-data-btn" onclick="loadSampleData('quadratic')">Quadratic Curve</button>
+                                <button class="sample-data-btn" onclick="loadSampleData('exponential')">Exponential Growth</button>
+                                <button class="sample-data-btn" onclick="loadSampleData('noisy')">Noisy Data</button>
+                                <button class="sample-data-btn" onclick="loadSampleData('outliers')">Data with Outliers</button>
+                                <button class="sample-data-btn" onclick="loadSampleData('perfect')">Perfect Fit</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Data Preview -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Data Preview</h3>
+                        <div class="data-table border border-gray-200 dark:border-gray-600 rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">#</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Observed</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Predicted</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Residual</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Squared Error</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="data-preview-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                                            Enter data to see preview
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Quick Statistics</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="metric-card">
+                                <div class="text-sm text-gray-600 dark:text-gray-400">Data Points</div>
+                                <div id="data-count" class="text-xl font-bold text-blue-600 dark:text-blue-400">0</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="text-sm text-gray-600 dark:text-gray-400">Mean Residual</div>
+                                <div id="mean-residual" class="text-xl font-bold text-blue-600 dark:text-blue-400">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button onclick="calculateSSE()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Calculate SSE Analysis
+            </button>
+            <button onclick="compareModels()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Compare Models
+            </button>
+            <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- SSE Metrics -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Error Analysis Results</h3>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">SSE</h4>
+                        <div id="sse-value" class="text-2xl font-bold text-green-600 dark:text-green-400"></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Sum of Squared Errors</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">MSE</h4>
+                        <div id="mse-value" class="text-2xl font-bold text-green-600 dark:text-green-400"></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Mean Squared Error</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">RMSE</h4>
+                        <div id="rmse-value" class="text-2xl font-bold text-green-600 dark:text-green-400"></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Root Mean Squared Error</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">R²</h4>
+                        <div id="r-squared" class="text-2xl font-bold text-green-600 dark:text-green-400"></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Coefficient of Determination</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualizations -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Visualizations</h3>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Observed vs Predicted</h4>
+                        <canvas id="sse-canvas" width="400" height="300"></canvas>
+                        <div class="mt-2 text-center">
+                            <button onclick="exportChart('sse')" class="bg-blue-100 dark:bg-blue-800 hover:bg-blue-200 dark:hover:bg-blue-700 text-blue-700 dark:text-blue-300 py-1 px-3 rounded text-sm">
+                                Export Chart
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Residual Plot</h4>
+                        <canvas id="residual-canvas" width="400" height="300"></canvas>
+                        <div class="mt-2 text-center">
+                            <button onclick="exportChart('residual')" class="bg-blue-100 dark:bg-blue-800 hover:bg-blue-200 dark:hover:bg-blue-700 text-blue-700 dark:text-blue-300 py-1 px-3 rounded text-sm">
+                                Export Chart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistical Analysis -->
+            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Statistical Analysis</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Residual Statistics:</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">Mean:</span>
+                                <span id="residual-mean" class="font-mono"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">Standard Deviation:</span>
+                                <span id="residual-std" class="font-mono"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">Min Residual:</span>
+                                <span id="residual-min" class="font-mono"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">Max Residual:</span>
+                                <span id="residual-max" class="font-mono"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Model Quality:</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">MAE:</span>
+                                <span id="mae-value" class="font-mono"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">MAPE:</span>
+                                <span id="mape-value" class="font-mono"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">Adjusted R²:</span>
+                                <span id="adj-r-squared" class="font-mono"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">Model Fit:</span>
+                                <span id="model-fit-quality" class="font-mono"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Comparison -->
+            <div id="model-comparison-section" class="hidden bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4">Model Comparison</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Model</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">SSE</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">MSE</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">RMSE</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">R²</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Rank</th>
+                            </tr>
+                        </thead>
+                        <tbody id="model-comparison-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Interpretation -->
+            <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Interpretation & Recommendations</h3>
+                
+                <div id="interpretation-content" class="space-y-4">
+                    <!-- Content will be generated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Sum of Squared Errors (SSE)</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Sum of Squared Errors?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Sum of Squared Errors (SSE) is a statistical measure that quantifies the total deviation between 
+                    observed values and predicted values from a model. It's calculated by summing the squares of all 
+                    residuals (differences between observed and predicted values). SSE is fundamental in regression 
+                    analysis, model evaluation, and determining the goodness of fit.
+                </p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key Error Metrics</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">SSE</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">SSE = Σ(yᵢ - ŷᵢ)²</p>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Sum of squared differences between observed and predicted values.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">MSE</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">MSE = SSE / n</p>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Mean Squared Error - average of squared errors.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">RMSE</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">RMSE = √MSE</p>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Root Mean Squared Error - in same units as original data.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Model Evaluation Metrics</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <ul class="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                        <li><strong>R² (R-squared):</strong> Proportion of variance explained by the model (0-1, higher is better)</li>
+                        <li><strong>MAE (Mean Absolute Error):</strong> Average of absolute differences</li>
+                        <li><strong>MAPE (Mean Absolute Percentage Error):</strong> Average percentage error</li>
+                        <li><strong>Adjusted R²:</strong> R² adjusted for number of predictors</li>
+                        <li><strong>Residual Analysis:</strong> Pattern analysis in prediction errors</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li>Choose your input method: manual entry, CSV upload, or sample datasets</li>
+                    <li>Select data format: observed vs predicted, X-Y data with model fitting, or direct residuals</li>
+                    <li>Enter your data or upload a CSV file</li>
+                    <li>For X-Y data, choose the appropriate model type for fitting</li>
+                    <li>Click "Calculate SSE Analysis" to generate comprehensive results</li>
+                    <li>Review error metrics, visualizations, and statistical analysis</li>
+                    <li>Use "Compare Models" to evaluate multiple model types</li>
+                    <li>Export charts and results for reports or presentations</li>
+                </ol>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Regression Analysis:</strong> Evaluate linear and nonlinear model performance</li>
+                    <li><strong>Machine Learning:</strong> Compare different algorithms and hyperparameters</li>
+                    <li><strong>Quality Control:</strong> Assess measurement accuracy and process control</li>
+                    <li><strong>Forecasting:</strong> Evaluate prediction model accuracy</li>
+                    <li><strong>Research:</strong> Statistical analysis and hypothesis testing</li>
+                    <li><strong>Engineering:</strong> Model validation and system optimization</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Interpretation Guidelines</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                        <li><strong>Lower SSE/MSE/RMSE:</strong> Better model fit</li>
+                        <li><strong>R² close to 1:</strong> Model explains most variance</li>
+                        <li><strong>Random residual patterns:</strong> Good model assumptions</li>
+                        <li><strong>Systematic residual patterns:</strong> Model may be inadequate</li>
+                        <li><strong>Outliers:</strong> May indicate data quality issues or model limitations</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Sample Data Examples</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Try These Examples:</h4>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                        <li><strong>Linear Relationship:</strong> Perfect linear correlation with minimal error</li>
+                        <li><strong>Quadratic Curve:</strong> Nonlinear relationship requiring polynomial fitting</li>
+                        <li><strong>Exponential Growth:</strong> Exponential model comparison</li>
+                        <li><strong>Noisy Data:</strong> Real-world data with measurement errors</li>
+                        <li><strong>Data with Outliers:</strong> Impact of outliers on model performance</li>
+                        <li><strong>Perfect Fit:</strong> Zero error baseline for comparison</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+    let currentData = [];
+    let sseCanvas, residualCanvas;
+    let sseCtx, residualCtx;
+
+    // Initialize canvases
+    function initCanvases() {
+        sseCanvas = document.getElementById('sse-canvas');
+        residualCanvas = document.getElementById('residual-canvas');
+        sseCtx = sseCanvas.getContext('2d');
+        residualCtx = residualCanvas.getContext('2d');
+    }
+
+    // Clear canvas
+    function clearCanvas(ctx, canvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const isDark = document.documentElement.classList.contains('dark');
+        ctx.fillStyle = isDark ? '#1f2937' : '#f9fafb';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Update input method
+    document.getElementById('input-method').addEventListener('change', function() {
+        const method = this.value;
+        
+        // Hide all input sections
+        document.getElementById('manual-input').classList.add('hidden');
+        document.getElementById('csv-input').classList.add('hidden');
+        document.getElementById('sample-input').classList.add('hidden');
+        
+        // Show selected input section
+        document.getElementById(method + '-input').classList.remove('hidden');
+    });
+
+    // Update data format
+    document.getElementById('data-format').addEventListener('change', function() {
+        const format = this.value;
+        
+        // Hide all format sections
+        document.getElementById('observed-predicted-input').classList.add('hidden');
+        document.getElementById('xy-data-input').classList.add('hidden');
+        document.getElementById('residuals-input').classList.add('hidden');
+        
+        // Show selected format section
+        document.getElementById(format + '-input').classList.remove('hidden');
+    });
+
+    // Update model type
+    document.getElementById('model-type').addEventListener('change', function() {
+        const modelType = this.value;
+        
+        if (modelType === 'custom') {
+            document.getElementById('custom-model-input').classList.remove('hidden');
+        } else {
+            document.getElementById('custom-model-input').classList.add('hidden');
+        }
+    });
+
+    // Parse input data
+    function parseInputData() {
+        const inputMethod = document.getElementById('input-method').value;
+        const dataFormat = document.getElementById('data-format').value;
+        
+        let data = [];
+        
+        try {
+            if (inputMethod === 'manual') {
+                if (dataFormat === 'observed-predicted') {
+                    const observed = document.getElementById('observed-values').value.split('\n').filter(v => v.trim()).map(v => parseFloat(v.trim()));
+                    const predicted = document.getElementById('predicted-values').value.split('\n').filter(v => v.trim()).map(v => parseFloat(v.trim()));
+                    
+                    if (observed.length !== predicted.length) {
+                        throw new Error('Observed and predicted arrays must have the same length');
+                    }
+                    
+                    for (let i = 0; i < observed.length; i++) {
+                        data.push({
+                            observed: observed[i],
+                            predicted: predicted[i],
+                            residual: observed[i] - predicted[i],
+                            squaredError: Math.pow(observed[i] - predicted[i], 2)
+                        });
+                    }
+                } else if (dataFormat === 'xy-data') {
+                    const xValues = document.getElementById('x-values').value.split('\n').filter(v => v.trim()).map(v => parseFloat(v.trim()));
+                    const yValues = document.getElementById('y-values').value.split('\n').filter(v => v.trim()).map(v => parseFloat(v.trim()));
+                    
+                    if (xValues.length !== yValues.length) {
+                        throw new Error('X and Y arrays must have the same length');
+                    }
+                    
+                    const modelType = document.getElementById('model-type').value;
+                    const model = fitModel(xValues, yValues, modelType);
+                    
+                    for (let i = 0; i < xValues.length; i++) {
+                        const predicted = evaluateModel(model, xValues[i], modelType);
+                        data.push({
+                            x: xValues[i],
+                            observed: yValues[i],
+                            predicted: predicted,
+                            residual: yValues[i] - predicted,
+                            squaredError: Math.pow(yValues[i] - predicted, 2)
+                        });
+                    }
+                } else if (dataFormat === 'residuals') {
+                    const residuals = document.getElementById('residual-values').value.split('\n').filter(v => v.trim()).map(v => parseFloat(v.trim()));
+                    
+                    for (let i = 0; i < residuals.length; i++) {
+                        data.push({
+                            index: i + 1,
+                            residual: residuals[i],
+                            squaredError: Math.pow(residuals[i], 2),
+                            observed: null,
+                            predicted: null
+                        });
+                    }
+                }
+            }
+            
+            return data;
+        } catch (error) {
+            throw new Error('Error parsing data: ' + error.message);
+        }
+    }
+
+    // Fit model to data
+    function fitModel(xValues, yValues, modelType) {
+        try {
+            switch (modelType) {
+                case 'linear':
+                    return fitLinearModel(xValues, yValues);
+                case 'polynomial2':
+                    return fitPolynomialModel(xValues, yValues, 2);
+                case 'polynomial3':
+                    return fitPolynomialModel(xValues, yValues, 3);
+                case 'exponential':
+                    return fitExponentialModel(xValues, yValues);
+                case 'logarithmic':
+                    return fitLogarithmicModel(xValues, yValues);
+                case 'power':
+                    return fitPowerModel(xValues, yValues);
+                case 'custom':
+                    const customFunc = document.getElementById('custom-model').value;
+                    return { type: 'custom', function: customFunc };
+                default:
+                    throw new Error('Unknown model type');
+            }
+        } catch (error) {
+            throw new Error('Model fitting failed: ' + error.message);
+        }
+    }
+
+    // Fit linear model using least squares
+    function fitLinearModel(x, y) {
+        const n = x.length;
+        const sumX = x.reduce((a, b) => a + b, 0);
+        const sumY = y.reduce((a, b) => a + b, 0);
+        const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+        const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0);
+        
+        const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+        
+        return { type: 'linear', slope: slope, intercept: intercept };
+    }
+
+    // Fit polynomial model
+    function fitPolynomialModel(x, y, degree) {
+        // Simple polynomial fitting using normal equations
+        // For demonstration - in practice, would use more robust methods
+        const n = x.length;
+        const matrix = [];
+        const vector = [];
+        
+        // Build normal equations matrix
+        for (let i = 0; i <= degree; i++) {
+            const row = [];
+            for (let j = 0; j <= degree; j++) {
+                let sum = 0;
+                for (let k = 0; k < n; k++) {
+                    sum += Math.pow(x[k], i + j);
+                }
+                row.push(sum);
+            }
+            matrix.push(row);
+            
+            let sum = 0;
+            for (let k = 0; k < n; k++) {
+                sum += y[k] * Math.pow(x[k], i);
+            }
+            vector.push(sum);
+        }
+        
+        // Solve using Gaussian elimination (simplified)
+        const coefficients = solveLinearSystem(matrix, vector);
+        
+        return { type: 'polynomial', degree: degree, coefficients: coefficients };
+    }
+
+    // Simplified linear system solver
+    function solveLinearSystem(matrix, vector) {
+        const n = matrix.length;
+        const augmented = matrix.map((row, i) => [...row, vector[i]]);
+        
+        // Forward elimination
+        for (let i = 0; i < n; i++) {
+            // Find pivot
+            let maxRow = i;
+            for (let k = i + 1; k < n; k++) {
+                if (Math.abs(augmented[k][i]) > Math.abs(augmented[maxRow][i])) {
+                    maxRow = k;
+                }
+            }
+            
+            // Swap rows
+            [augmented[i], augmented[maxRow]] = [augmented[maxRow], augmented[i]];
+            
+            // Make all rows below this one 0 in current column
+            for (let k = i + 1; k < n; k++) {
+                const factor = augmented[k][i] / augmented[i][i];
+                for (let j = i; j <= n; j++) {
+                    augmented[k][j] -= factor * augmented[i][j];
+                }
+            }
+        }
+        
+        // Back substitution
+        const solution = new Array(n);
+        for (let i = n - 1; i >= 0; i--) {
+            solution[i] = augmented[i][n];
+            for (let j = i + 1; j < n; j++) {
+                solution[i] -= augmented[i][j] * solution[j];
+            }
+            solution[i] /= augmented[i][i];
+        }
+        
+        return solution;
+    }
+
+    // Fit exponential model (simplified)
+    function fitExponentialModel(x, y) {
+        // Transform to linear: ln(y) = ln(a) + b*x
+        const lnY = y.map(yi => Math.log(Math.max(yi, 0.001))); // Avoid log(0)
+        const linear = fitLinearModel(x, lnY);
+        
+        return {
+            type: 'exponential',
+            a: Math.exp(linear.intercept),
+            b: linear.slope
+        };
+    }
+
+    // Fit logarithmic model
+    function fitLogarithmicModel(x, y) {
+        // y = a*ln(x) + b
+        const lnX = x.map(xi => Math.log(Math.max(xi, 0.001))); // Avoid log(0)
+        const linear = fitLinearModel(lnX, y);
+        
+        return {
+            type: 'logarithmic',
+            a: linear.slope,
+            b: linear.intercept
+        };
+    }
+
+    // Fit power model
+    function fitPowerModel(x, y) {
+        // Transform to linear: ln(y) = ln(a) + b*ln(x)
+        const lnX = x.map(xi => Math.log(Math.max(xi, 0.001)));
+        const lnY = y.map(yi => Math.log(Math.max(yi, 0.001)));
+        const linear = fitLinearModel(lnX, lnY);
+        
+        return {
+            type: 'power',
+            a: Math.exp(linear.intercept),
+            b: linear.slope
+        };
+    }
+
+    // Evaluate model at given x
+    function evaluateModel(model, x, modelType) {
+        try {
+            switch (model.type || modelType) {
+                case 'linear':
+                    return model.slope * x + model.intercept;
+                case 'polynomial':
+                    let result = 0;
+                    for (let i = 0; i < model.coefficients.length; i++) {
+                        result += model.coefficients[i] * Math.pow(x, i);
+                    }
+                    return result;
+                case 'exponential':
+                    return model.a * Math.exp(model.b * x);
+                case 'logarithmic':
+                    return model.a * Math.log(x) + model.b;
+                case 'power':
+                    return model.a * Math.pow(x, model.b);
+                case 'custom':
+                    const compiled = math.compile(model.function);
+                    return compiled.evaluate({ x: x });
+                default:
+                    return 0;
+            }
+        } catch (error) {
+            return NaN;
+        }
+    }
+
+    // Update data preview
+    function updateDataPreview() {
+        try {
+            currentData = parseInputData();
+            
+            const tableBody = document.getElementById('data-preview-body');
+            tableBody.innerHTML = '';
+            
+            if (currentData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">Enter data to see preview</td></tr>';
+                return;
+            }
+            
+            // Show first 10 rows
+            const displayData = currentData.slice(0, 10);
+            
+            displayData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">${index + 1}</td>
+                    <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">${row.observed !== null ? row.observed.toFixed(3) : 'N/A'}</td>
+                    <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">${row.predicted !== null ? row.predicted.toFixed(3) : 'N/A'}</td>
+                    <td class="px-4 py-2 text-sm ${row.residual >= 0 ? 'residual-positive' : 'residual-negative'}">${row.residual.toFixed(3)}</td>
+                    <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">${row.squaredError.toFixed(3)}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+            
+            if (currentData.length > 10) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="5" class="px-4 py-2 text-center text-gray-500 dark:text-gray-400 text-sm">... and ${currentData.length - 10} more rows</td>`;
+                tableBody.appendChild(tr);
+            }
+            
+            // Update quick stats
+            document.getElementById('data-count').textContent = currentData.length;
+            const meanResidual = currentData.reduce((sum, row) => sum + row.residual, 0) / currentData.length;
+            document.getElementById('mean-residual').textContent = meanResidual.toFixed(3);
+            
+        } catch (error) {
+            console.error('Error updating preview:', error);
+            const tableBody = document.getElementById('data-preview-body');
+            tableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-red-500">Error: ${error.message}</td></tr>`;
+        }
+    }
+
+    // Add event listeners for data input
+    ['observed-values', 'predicted-values', 'x-values', 'y-values', 'residual-values'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', updateDataPreview);
+        }
+    });
+
+    document.getElementById('model-type').addEventListener('change', updateDataPreview);
+    document.getElementById('custom-model').addEventListener('input', updateDataPreview);
+
+    // Load sample data
+    function loadSampleData(type) {
+        document.getElementById('input-method').value = 'manual';
+        document.getElementById('data-format').value = 'xy-data';
+        
+        // Show appropriate input sections
+        document.getElementById('manual-input').classList.remove('hidden');
+        document.getElementById('sample-input').classList.add('hidden');
+        document.getElementById('xy-data-input').classList.remove('hidden');
+        document.getElementById('observed-predicted-input').classList.add('hidden');
+        document.getElementById('residuals-input').classList.add('hidden');
+        
+        let xData, yData, modelType;
+        
+        switch (type) {
+            case 'linear':
+                xData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                yData = [2.1, 4.0, 5.9, 8.1, 9.9, 12.0, 14.1, 15.9, 18.0, 20.1];
+                modelType = 'linear';
+                break;
+            case 'quadratic':
+                xData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                yData = [1.2, 4.1, 8.9, 16.2, 24.8, 36.1, 49.0, 63.9, 81.2, 100.1];
+                modelType = 'polynomial2';
+                break;
+            case 'exponential':
+                xData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                yData = [2.7, 7.4, 20.1, 54.6, 148.4, 403.4, 1096.6, 2980.9, 8103.1, 22026.5];
+                modelType = 'exponential';
+                break;
+            case 'noisy':
+                xData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                yData = [2.3, 3.7, 6.2, 7.8, 10.4, 11.7, 14.2, 15.6, 18.3, 19.8];
+                modelType = 'linear';
+                break;
+            case 'outliers':
+                xData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                yData = [2.1, 4.0, 5.9, 15.0, 9.9, 12.0, 14.1, 15.9, 25.0, 20.1];
+                modelType = 'linear';
+                break;
+            case 'perfect':
+                xData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                yData = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
+                modelType = 'linear';
+                break;
+        }
+        
+        document.getElementById('x-values').value = xData.join('\n');
+        document.getElementById('y-values').value = yData.join('\n');
+        document.getElementById('model-type').value = modelType;
+        
+        updateDataPreview();
+    }
+
+    // Calculate SSE and related metrics
+    function calculateSSE() {
+        try {
+            if (currentData.length === 0) {
+                currentData = parseInputData();
+            }
+            
+            if (currentData.length === 0) {
+                throw new Error('No data available for calculation');
+            }
+            
+            // Calculate error metrics
+            const sse = currentData.reduce((sum, row) => sum + row.squaredError, 0);
+            const mse = sse / currentData.length;
+            const rmse = Math.sqrt(mse);
+            
+            // Calculate R-squared (if we have observed values)
+            let rSquared = null;
+            if (currentData[0].observed !== null) {
+                const observedValues = currentData.map(row => row.observed);
+                const meanObserved = observedValues.reduce((sum, val) => sum + val, 0) / observedValues.length;
+                const tss = observedValues.reduce((sum, val) => sum + Math.pow(val - meanObserved, 2), 0);
+                rSquared = 1 - (sse / tss);
+            }
+            
+            // Calculate additional metrics
+            const residuals = currentData.map(row => row.residual);
+            const mae = residuals.reduce((sum, res) => sum + Math.abs(res), 0) / residuals.length;
+            
+            let mape = null;
+            if (currentData[0].observed !== null) {
+                const observedValues = currentData.map(row => row.observed);
+                mape = residuals.reduce((sum, res, i) => {
+                    if (observedValues[i] !== 0) {
+                        return sum + Math.abs(res / observedValues[i]);
+                    }
+                    return sum;
+                }, 0) / residuals.length * 100;
+            }
+            
+            // Residual statistics
+            const meanResidual = residuals.reduce((sum, res) => sum + res, 0) / residuals.length;
+            const residualVariance = residuals.reduce((sum, res) => sum + Math.pow(res - meanResidual, 2), 0) / (residuals.length - 1);
+            const residualStd = Math.sqrt(residualVariance);
+            const minResidual = Math.min(...residuals);
+            const maxResidual = Math.max(...residuals);
+            
+            // Adjusted R-squared (assuming 1 predictor for simplicity)
+            let adjRSquared = null;
+            if (rSquared !== null) {
+                const n = currentData.length;
+                const p = 1; // number of predictors
+                adjRSquared = 1 - ((1 - rSquared) * (n - 1)) / (n - p - 1);
+            }
+            
+            // Display results
+            document.getElementById('sse-value').textContent = sse.toFixed(4);
+            document.getElementById('mse-value').textContent = mse.toFixed(4);
+            document.getElementById('rmse-value').textContent = rmse.toFixed(4);
+            document.getElementById('r-squared').textContent = rSquared !== null ? rSquared.toFixed(4) : 'N/A';
+            
+            document.getElementById('residual-mean').textContent = meanResidual.toFixed(4);
+            document.getElementById('residual-std').textContent = residualStd.toFixed(4);
+            document.getElementById('residual-min').textContent = minResidual.toFixed(4);
+            document.getElementById('residual-max').textContent = maxResidual.toFixed(4);
+            
+            document.getElementById('mae-value').textContent = mae.toFixed(4);
+            document.getElementById('mape-value').textContent = mape !== null ? mape.toFixed(2) + '%' : 'N/A';
+            document.getElementById('adj-r-squared').textContent = adjRSquared !== null ? adjRSquared.toFixed(4) : 'N/A';
+            
+            // Model fit quality assessment
+            let fitQuality = 'Poor';
+            if (rSquared !== null) {
+                if (rSquared > 0.9) fitQuality = 'Excellent';
+                else if (rSquared > 0.7) fitQuality = 'Good';
+                else if (rSquared > 0.5) fitQuality = 'Fair';
+            }
+            document.getElementById('model-fit-quality').textContent = fitQuality;
+            
+            // Draw visualizations
+            drawSSEVisualization();
+            drawResidualPlot();
+            
+            // Generate interpretation
+            generateInterpretation(sse, mse, rmse, rSquared, meanResidual, residualStd);
+            
+            document.getElementById('result-container').classList.remove('hidden');
+            
+            // Scroll to results
+            setTimeout(() => {
+                document.getElementById('result-container').scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 100);
+            
+        } catch (error) {
+            alert('Calculation error: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    // Draw SSE visualization
+    function drawSSEVisualization() {
+        clearCanvas(sseCtx, sseCanvas);
+        
+        if (currentData.length === 0) return;
+        
+        const isDark = document.documentElement.classList.contains('dark');
+        const margin = 50;
+        const width = sseCanvas.width - 2 * margin;
+        const height = sseCanvas.height - 2 * margin;
+        
+        // Get data ranges
+        const observedValues = currentData.map(row => row.observed).filter(v => v !== null);
+        const predictedValues = currentData.map(row => row.predicted).filter(v => v !== null);
+        
+        if (observedValues.length === 0 || predictedValues.length === 0) return;
+        
+        const minValue = Math.min(...observedValues, ...predictedValues);
+        const maxValue = Math.max(...observedValues, ...predictedValues);
+        const range = maxValue - minValue;
+        const padding = range * 0.1;
+        
+        // Draw axes
+        sseCtx.strokeStyle = isDark ? '#6b7280' : '#9ca3af';
+        sseCtx.lineWidth = 2;
+        
+        // X-axis
+        sseCtx.beginPath();
+        sseCtx.moveTo(margin, sseCanvas.height - margin);
+        sseCtx.lineTo(sseCanvas.width - margin, sseCanvas.height - margin);
+        sseCtx.stroke();
+        
+        // Y-axis
+        sseCtx.beginPath();
+        sseCtx.moveTo(margin, margin);
+        sseCtx.lineTo(margin, sseCanvas.height - margin);
+        sseCtx.stroke();
+        
+        // Perfect fit line (y = x)
+        sseCtx.strokeStyle = isDark ? '#ef4444' : '#dc2626';
+        sseCtx.lineWidth = 2;
+        sseCtx.setLineDash([5, 5]);
+        
+        const startX = margin + ((minValue - padding - minValue + padding) / (range + 2 * padding)) * width;
+        const startY = sseCanvas.height - margin - ((minValue - padding - minValue + padding) / (range + 2 * padding)) * height;
+        const endX = margin + ((maxValue + padding - minValue + padding) / (range + 2 * padding)) * width;
+        const endY = sseCanvas.height - margin - ((maxValue + padding - minValue + padding) / (range + 2 * padding)) * height;
+        
+        sseCtx.beginPath();
+        sseCtx.moveTo(startX, startY);
+        sseCtx.lineTo(endX, endY);
+        sseCtx.stroke();
+        sseCtx.setLineDash([]);
+        
+        // Plot data points
+        sseCtx.fillStyle = isDark ? '#3b82f6' : '#2563eb';
+        
+        for (let i = 0; i < currentData.length; i++) {
+            const row = currentData[i];
+            if (row.observed === null || row.predicted === null) continue;
+            
+            const x = margin + ((row.predicted - minValue + padding) / (range + 2 * padding)) * width;
+            const y = sseCanvas.height - margin - ((row.observed - minValue + padding) / (range + 2 * padding)) * height;
+            
+            sseCtx.beginPath();
+            sseCtx.arc(x, y, 4, 0, 2 * Math.PI);
+            sseCtx.fill();
+            
+            // Draw error lines
+            const perfectY = sseCanvas.height - margin - ((row.predicted - minValue + padding) / (range + 2 * padding)) * height;
+            sseCtx.strokeStyle = isDark ? '#f59e0b' : '#d97706';
+            sseCtx.lineWidth = 1;
+            sseCtx.beginPath();
+            sseCtx.moveTo(x, y);
+            sseCtx.lineTo(x, perfectY);
+            sseCtx.stroke();
+        }
+        
+        // Labels
+        sseCtx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+        sseCtx.font = '12px sans-serif';
+        sseCtx.textAlign = 'center';
+        sseCtx.fillText('Predicted Values', sseCanvas.width / 2, sseCanvas.height - 10);
+        
+        sseCtx.save();
+        sseCtx.translate(15, sseCanvas.height / 2);
+        sseCtx.rotate(-Math.PI / 2);
+        sseCtx.fillText('Observed Values', 0, 0);
+        sseCtx.restore();
+        
+        // Legend
+        sseCtx.fillStyle = isDark ? '#3b82f6' : '#2563eb';
+        sseCtx.fillRect(sseCanvas.width - 150, 20, 10, 10);
+        sseCtx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+        sseCtx.textAlign = 'left';
+        sseCtx.fillText('Data Points', sseCanvas.width - 135, 30);
+        
+        sseCtx.strokeStyle = isDark ? '#ef4444' : '#dc2626';
+        sseCtx.lineWidth = 2;
+        sseCtx.setLineDash([5, 5]);
+        sseCtx.beginPath();
+        sseCtx.moveTo(sseCanvas.width - 150, 45);
+        sseCtx.lineTo(sseCanvas.width - 140, 45);
+        sseCtx.stroke();
+        sseCtx.setLineDash([]);
+        sseCtx.fillText('Perfect Fit', sseCanvas.width - 135, 50);
+        
+        sseCtx.strokeStyle = isDark ? '#f59e0b' : '#d97706';
+        sseCtx.lineWidth = 1;
+        sseCtx.beginPath();
+        sseCtx.moveTo(sseCanvas.width - 150, 65);
+        sseCtx.lineTo(sseCanvas.width - 140, 65);
+        sseCtx.stroke();
+        sseCtx.fillText('Errors', sseCanvas.width - 135, 70);
+    }
+
+    // Draw residual plot
+    function drawResidualPlot() {
+        clearCanvas(residualCtx, residualCanvas);
+        
+        if (currentData.length === 0) return;
+        
+        const isDark = document.documentElement.classList.contains('dark');
+        const margin = 50;
+        const width = residualCanvas.width - 2 * margin;
+        const height = residualCanvas.height - 2 * margin;
+        
+        // Get residual range
+        const residuals = currentData.map(row => row.residual);
+        const minResidual = Math.min(...residuals);
+        const maxResidual = Math.max(...residuals);
+        const residualRange = Math.max(Math.abs(minResidual), Math.abs(maxResidual));
+        const padding = residualRange * 0.1;
+        
+        // Get x-axis data (use index if no x values)
+        let xValues;
+        if (currentData[0].x !== undefined) {
+            xValues = currentData.map(row => row.x);
+        } else {
+            xValues = currentData.map((_, i) => i + 1);
+        }
+        
+        const minX = Math.min(...xValues);
+        const maxX = Math.max(...xValues);
+        const xRange = maxX - minX;
+        const xPadding = xRange * 0.1;
+        
+        // Draw axes
+        residualCtx.strokeStyle = isDark ? '#6b7280' : '#9ca3af';
+        residualCtx.lineWidth = 2;
+        
+        // X-axis
+        residualCtx.beginPath();
+        residualCtx.moveTo(margin, residualCanvas.height / 2);
+        residualCtx.lineTo(residualCanvas.width - margin, residualCanvas.height / 2);
+        residualCtx.stroke();
+        
+        // Y-axis
+        residualCtx.beginPath();
+        residualCtx.moveTo(margin, margin);
+        residualCtx.lineTo(margin, residualCanvas.height - margin);
+        residualCtx.stroke();
+        
+        // Zero line
+        residualCtx.strokeStyle = isDark ? '#ef4444' : '#dc2626';
+        residualCtx.lineWidth = 1;
+        residualCtx.setLineDash([3, 3]);
+        residualCtx.beginPath();
+        residualCtx.moveTo(margin, residualCanvas.height / 2);
+        residualCtx.lineTo(residualCanvas.width - margin, residualCanvas.height / 2);
+        residualCtx.stroke();
+        residualCtx.setLineDash([]);
+        
+        // Plot residuals
+        for (let i = 0; i < currentData.length; i++) {
+            const row = currentData[i];
+            const xVal = xValues[i];
+            
+            const x = margin + ((xVal - minX + xPadding) / (xRange + 2 * xPadding)) * width;
+            const y = residualCanvas.height / 2 - (row.residual / (residualRange + padding)) * (height / 2);
+            
+            // Color based on residual sign
+            residualCtx.fillStyle = row.residual >= 0 ? 
+                (isDark ? '#ef4444' : '#dc2626') : 
+                (isDark ? '#10b981' : '#059669');
+            
+            residualCtx.beginPath();
+            residualCtx.arc(x, y, 3, 0, 2 * Math.PI);
+            residualCtx.fill();
+        }
+        
+        // Labels
+        residualCtx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+        residualCtx.font = '12px sans-serif';
+        residualCtx.textAlign = 'center';
+        residualCtx.fillText(currentData[0].x !== undefined ? 'X Values' : 'Data Point Index', residualCanvas.width / 2, residualCanvas.height - 10);
+        
+        residualCtx.save();
+        residualCtx.translate(15, residualCanvas.height / 2);
+        residualCtx.rotate(-Math.PI / 2);
+        residualCtx.fillText('Residuals', 0, 0);
+        residualCtx.restore();
+        
+        // Legend
+        residualCtx.fillStyle = isDark ? '#ef4444' : '#dc2626';
+        residualCtx.fillRect(residualCanvas.width - 150, 20, 10, 10);
+        residualCtx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+        residualCtx.textAlign = 'left';
+        residualCtx.fillText('Positive Residuals', residualCanvas.width - 135, 30);
+        
+        residualCtx.fillStyle = isDark ? '#10b981' : '#059669';
+        residualCtx.fillRect(residualCanvas.width - 150, 40, 10, 10);
+        residualCtx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+        residualCtx.fillText('Negative Residuals', residualCanvas.width - 135, 50);
+    }
+
+    // Compare multiple models
+    function compareModels() {
+        try {
+            const dataFormat = document.getElementById('data-format').value;
+            
+            if (dataFormat !== 'xy-data') {
+                alert('Model comparison is only available for X-Y data with model fitting.');
+                return;
+            }
+            
+            const xValues = document.getElementById('x-values').value.split('\n').filter(v => v.trim()).map(v => parseFloat(v.trim()));
+            const yValues = document.getElementById('y-values').value.split('\n').filter(v => v.trim()).map(v => parseFloat(v.trim()));
+            
+            if (xValues.length === 0 || yValues.length === 0) {
+                throw new Error('No X-Y data available for model comparison');
+            }
+            
+            const modelTypes = ['linear', 'polynomial2', 'polynomial3', 'exponential', 'logarithmic', 'power'];
+            const results = [];
+            
+            for (const modelType of modelTypes) {
+                try {
+                    const model = fitModel(xValues, yValues, modelType);
+                    let sse = 0;
+                    let tss = 0;
+                    const meanY = yValues.reduce((sum, y) => sum + y, 0) / yValues.length;
+                    
+                    for (let i = 0; i < xValues.length; i++) {
+                        const predicted = evaluateModel(model, xValues[i], modelType);
+                        if (!isNaN(predicted) && isFinite(predicted)) {
+                            const residual = yValues[i] - predicted;
+                            sse += residual * residual;
+                            tss += (yValues[i] - meanY) * (yValues[i] - meanY);
+                        }
+                    }
+                    
+                    const mse = sse / xValues.length;
+                    const rmse = Math.sqrt(mse);
+                    const rSquared = 1 - (sse / tss);
+                    
+                    results.push({
+                        model: getModelName(modelType),
+                        sse: sse,
+                        mse: mse,
+                        rmse: rmse,
+                        rSquared: rSquared
+                    });
+                } catch (e) {
+                    console.warn(`Failed to fit ${modelType} model:`, e);
+                }
+            }
+            
+            // Sort by R-squared (descending)
+            results.sort((a, b) => b.rSquared - a.rSquared);
+            
+            // Display comparison table
+            const tableBody = document.getElementById('model-comparison-body');
+            tableBody.innerHTML = '';
+            
+            results.forEach((result, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">${result.model}</td>
+                    <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">${result.sse.toFixed(4)}</td>
+                    <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">${result.mse.toFixed(4)}</td>
+                    <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">${result.rmse.toFixed(4)}</td>
+                    <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">${result.rSquared.toFixed(4)}</td>
+                    <td class="px-4 py-2 text-sm font-bold ${index === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'}">${index + 1}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            document.getElementById('model-comparison-section').classList.remove('hidden');
+            
+        } catch (error) {
+            alert('Model comparison error: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    // Get model display name
+    function getModelName(modelType) {
+        const names = {
+            'linear': 'Linear',
+            'polynomial2': 'Polynomial (degree 2)',
+            'polynomial3': 'Polynomial (degree 3)',
+            'exponential': 'Exponential',
+            'logarithmic': 'Logarithmic',
+            'power': 'Power'
+        };
+        return names[modelType] || modelType;
+    }
+
+    // Generate interpretation
+    function generateInterpretation(sse, mse, rmse, rSquared, meanResidual, residualStd) {
+        const interpretationContent = document.getElementById('interpretation-content');
+        interpretationContent.innerHTML = '';
+        
+        // SSE interpretation
+        const sseDiv = document.createElement('div');
+        sseDiv.innerHTML = `
+            <h4 class="font-medium text-gray-900 dark:text-white mb-2">Sum of Squared Errors (SSE): ${sse.toFixed(4)}</h4>
+            <p class="text-gray-600 dark:text-gray-300 text-sm">
+                ${sse < 1 ? 'Very low SSE indicates excellent model fit with minimal prediction errors.' :
+                  sse < 10 ? 'Low SSE suggests good model fit with small prediction errors.' :
+                  sse < 100 ? 'Moderate SSE indicates reasonable model fit but room for improvement.' :
+                  'High SSE suggests poor model fit with significant prediction errors.'}
+            </p>
+        `;
+        interpretationContent.appendChild(sseDiv);
+        
+        // R-squared interpretation
+        if (rSquared !== null) {
+            const rSquaredDiv = document.createElement('div');
+            rSquaredDiv.innerHTML = `
+                <h4 class="font-medium text-gray-900 dark:text-white mb-2">R-squared: ${rSquared.toFixed(4)}</h4>
+                <p class="text-gray-600 dark:text-gray-300 text-sm">
+                    ${rSquared > 0.9 ? 'Excellent fit - the model explains over 90% of the variance in the data.' :
+                      rSquared > 0.7 ? 'Good fit - the model explains a substantial portion of the variance.' :
+                      rSquared > 0.5 ? 'Moderate fit - the model has some predictive power but could be improved.' :
+                      rSquared > 0 ? 'Poor fit - the model explains little of the variance in the data.' :
+                      'Very poor fit - the model performs worse than simply using the mean.'}
+                </p>
+            `;
+            interpretationContent.appendChild(rSquaredDiv);
+        }
+        
+        // Residual analysis
+        const residualDiv = document.createElement('div');
+        residualDiv.innerHTML = `
+            <h4 class="font-medium text-gray-900 dark:text-white mb-2">Residual Analysis</h4>
+            <p class="text-gray-600 dark:text-gray-300 text-sm">
+                Mean residual: ${meanResidual.toFixed(4)} 
+                ${Math.abs(meanResidual) < 0.01 ? '(excellent - close to zero indicates unbiased predictions)' :
+                  Math.abs(meanResidual) < 0.1 ? '(good - small bias in predictions)' :
+                  '(concerning - systematic bias detected in predictions)'}
+                <br>
+                Residual standard deviation: ${residualStd.toFixed(4)} 
+                ${residualStd < rmse * 0.5 ? '(low variability in errors)' :
+                  residualStd < rmse ? '(moderate variability in errors)' :
+                  '(high variability in errors)'}
+            </p>
+        `;
+        interpretationContent.appendChild(residualDiv);
+        
+        // Recommendations
+        const recommendationsDiv = document.createElement('div');
+        let recommendations = '<h4 class="font-medium text-gray-900 dark:text-white mb-2">Recommendations</h4><ul class="list-disc list-inside text-gray-600 dark:text-gray-300 text-sm space-y-1">';
+        
+        if (rSquared !== null && rSquared < 0.7) {
+            recommendations += '<li>Consider trying different model types or adding more features</li>';
+        }
+        
+        if (Math.abs(meanResidual) > 0.1) {
+            recommendations += '<li>Investigate systematic bias - model may be consistently over or under-predicting</li>';
+        }
+        
+        if (residualStd > rmse) {
+            recommendations += '<li>High residual variability suggests potential outliers or model inadequacy</li>';
+        }
+        
+        recommendations += '<li>Examine residual plots for patterns that might indicate model violations</li>';
+        recommendations += '<li>Consider data transformation if residuals show non-random patterns</li>';
+        recommendations += '</ul>';
+        
+        recommendationsDiv.innerHTML = recommendations;
+        interpretationContent.appendChild(recommendationsDiv);
+    }
+
+    // Export chart
+    function exportChart(type) {
+        const canvas = type === 'sse' ? sseCanvas : residualCanvas;
+        const link = document.createElement('a');
+        link.download = `${type}-analysis.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+
+    // Clear calculator
+    function clearCalculator() {
+        // Reset all inputs
+        document.getElementById('input-method').value = 'manual';
+        document.getElementById('data-format').value = 'observed-predicted';
+        document.getElementById('model-type').value = 'linear';
+        
+        document.getElementById('observed-values').value = '';
+        document.getElementById('predicted-values').value = '';
+        document.getElementById('x-values').value = '';
+        document.getElementById('y-values').value = '';
+        document.getElementById('residual-values').value = '';
+        document.getElementById('custom-model').value = '';
+        
+        // Reset display
+        document.getElementById('manual-input').classList.remove('hidden');
+        document.getElementById('csv-input').classList.add('hidden');
+        document.getElementById('sample-input').classList.add('hidden');
+        
+        document.getElementById('observed-predicted-input').classList.remove('hidden');
+        document.getElementById('xy-data-input').classList.add('hidden');
+        document.getElementById('residuals-input').classList.add('hidden');
+        document.getElementById('custom-model-input').classList.add('hidden');
+        
+        // Clear data and results
+        currentData = [];
+        document.getElementById('result-container').classList.add('hidden');
+        document.getElementById('model-comparison-section').classList.add('hidden');
+        
+        // Reset preview
+        const tableBody = document.getElementById('data-preview-body');
+        tableBody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">Enter data to see preview</td></tr>';
+        
+        document.getElementById('data-count').textContent = '0';
+        document.getElementById('mean-residual').textContent = '-';
+        
+        // Clear canvases
+        if (sseCtx && residualCtx) {
+            clearCanvas(sseCtx, sseCanvas);
+            clearCanvas(residualCtx, residualCanvas);
+        }
+    }
+
+    // Render math formulas
+    function renderMathFormulas() {
+        // Render main SSE formula
+        katex.render('SSE = \\sum_{i=1}^{n} (y_i - \\hat{y}_i)^2', 
+            document.getElementById('sse-formula'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        // Render all other math elements
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initCanvases();
+        renderMathFormulas();
+        lucide.createIcons();
+        
+        // Load default sample data
+        loadSampleData('linear');
+    });
+</script>
+{% endblock %}
+

@@ -1,0 +1,911 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Math.js for calculations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+<!-- KaTeX for math rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+    .katex { font-size: 1.1em; }
+    #surface-canvas {
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f9fafb;
+    }
+    .dark #surface-canvas {
+        border-color: #374151;
+        background: #1f2937;
+    }
+    .equation-display {
+        font-family: 'Courier New', monospace;
+        background: #f3f4f6;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid #d1d5db;
+        font-size: 0.95rem;
+    }
+    .dark .equation-display {
+        background: #374151;
+        border-color: #4b5563;
+        color: #e5e7eb;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-teal-50 dark:bg-teal-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="plane" class="w-8 h-8 text-teal-600 dark:text-teal-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Tangent Plane Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Find the equation of the tangent plane to a surface at a given point, calculate normal vectors, and visualize the geometry.
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div id="tangent-formula" class="text-blue-800 dark:text-blue-300"></div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Surface and Point Configuration</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Inputs -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Surface Type:
+                        </label>
+                        <select id="surface-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                            <option value="explicit">Explicit: z = f(x,y)</option>
+                            <option value="implicit">Implicit: F(x,y,z) = 0</option>
+                            <option value="parametric">Parametric: r(u,v)</option>
+                        </select>
+                    </div>
+
+                    <div id="explicit-inputs">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Explicit Surface z = f(x,y)</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Function f(x,y):
+                                </label>
+                                <input type="text" id="explicit-function" placeholder="e.g., x^2 + y^2" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Use * for multiplication, ^ for exponents</p>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Point x₀:</label>
+                                    <input type="number" id="explicit-x0" value="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Point y₀:</label>
+                                    <input type="number" id="explicit-y0" value="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="implicit-inputs" class="hidden">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Implicit Surface F(x,y,z) = 0</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Function F(x,y,z):
+                                </label>
+                                <input type="text" id="implicit-function" placeholder="e.g., x^2 + y^2 + z^2 - 4" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter the left side of F(x,y,z) = 0</p>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Point x₀:</label>
+                                    <input type="number" id="implicit-x0" value="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Point y₀:</label>
+                                    <input type="number" id="implicit-y0" value="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Point z₀:</label>
+                                    <input type="number" id="implicit-z0" value="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="parametric-inputs" class="hidden">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Parametric Surface r(u,v)</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">x(u,v):</label>
+                                    <input type="text" id="parametric-x" placeholder="e.g., u*cos(v)" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">y(u,v):</label>
+                                    <input type="text" id="parametric-y" placeholder="e.g., u*sin(v)" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">z(u,v):</label>
+                                    <input type="text" id="parametric-z" placeholder="e.g., u" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Parameter u₀:</label>
+                                    <input type="number" id="parametric-u0" value="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Parameter v₀:</label>
+                                    <input type="number" id="parametric-v0" value="0" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Surface Display -->
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-2">Current Surface:</h3>
+                        <div id="current-surface" class="text-gray-600 dark:text-gray-300 font-mono text-sm">
+                            Enter surface equation to see it displayed here
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Visualization -->
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">3D Visualization</h3>
+                    <div class="flex justify-center">
+                        <canvas id="surface-canvas" width="400" height="400"></canvas>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="visualizeSurface()" class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200 mr-2">
+                            Visualize Surface
+                        </button>
+                        <button onclick="exportVisualization()" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Export Image
+                        </button>
+                    </div>
+                    
+                    <!-- Visualization Controls -->
+                    <div class="mt-4 space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Rotation X:</label>
+                                <input type="range" id="rotation-x" min="0" max="360" value="30" class="w-full">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Rotation Y:</label>
+                                <input type="range" id="rotation-y" min="0" max="360" value="45" class="w-full">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Zoom:</label>
+                            <input type="range" id="zoom" min="50" max="200" value="100" class="w-full">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button onclick="calculateTangentPlane()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Calculate Tangent Plane
+            </button>
+            <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+
+        <!-- Result -->
+        <div id="result-container" class="hidden">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Tangent Plane Results</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Point on Surface:</h4>
+                        <div id="surface-point" class="equation-display"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Tangent Plane Equation:</h4>
+                        <div id="tangent-equation" class="equation-display"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Normal Vector:</h4>
+                        <div id="normal-vector" class="equation-display"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Partial Derivatives</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">First Partial Derivatives:</h4>
+                        <div id="first-derivatives" class="space-y-2"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Evaluated at Point:</h4>
+                        <div id="derivative-values" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Geometric Properties</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Normal Vector Properties:</h4>
+                        <div id="normal-properties" class="space-y-2"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Plane Properties:</h4>
+                        <div id="plane-properties" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4">Alternative Forms</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-orange-700 dark:text-orange-400 mb-2">Vector Form:</h4>
+                        <div id="vector-form" class="equation-display"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-orange-700 dark:text-orange-400 mb-2">Parametric Form:</h4>
+                        <div id="parametric-form" class="equation-display"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-orange-700 dark:text-orange-400 mb-2">Distance from Origin:</h4>
+                        <div id="distance-origin" class="equation-display"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Tangent Planes</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is a Tangent Plane?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    A tangent plane to a surface at a given point is the plane that best approximates the surface near that point. 
+                    It contains all tangent lines to curves on the surface passing through the point. The tangent plane is fundamental 
+                    in multivariable calculus, differential geometry, and optimization.
+                </p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Surface Types</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Explicit Surface</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">z = f(x,y)</p>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Surface defined as a function of two variables. 
+                            Examples: z = x² + y², z = sin(x)cos(y)
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Implicit Surface</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">F(x,y,z) = 0</p>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Surface defined by a level set. 
+                            Examples: x² + y² + z² = 4, x² + y² - z² = 1
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Parametric Surface</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">r(u,v) = (x(u,v), y(u,v), z(u,v))</p>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Surface defined parametrically. 
+                            Examples: spheres, tori, complex surfaces
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li>Choose the surface type (explicit, implicit, or parametric)</li>
+                    <li>Enter the surface equation or parametric functions</li>
+                    <li>Specify the point where you want the tangent plane</li>
+                    <li>Click "Visualize Surface" to see the 3D representation</li>
+                    <li>Click "Calculate Tangent Plane" to get the complete analysis</li>
+                    <li>View the tangent plane equation, normal vector, and geometric properties</li>
+                </ol>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Mathematical Formulas</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div class="space-y-3">
+                        <div>
+                            <strong class="text-gray-900 dark:text-white">Explicit Surface (z = f(x,y)):</strong>
+                            <div id="formula-explicit" class="mt-1"></div>
+                        </div>
+                        <div>
+                            <strong class="text-gray-900 dark:text-white">Implicit Surface (F(x,y,z) = 0):</strong>
+                            <div id="formula-implicit" class="mt-1"></div>
+                        </div>
+                        <div>
+                            <strong class="text-gray-900 dark:text-white">Parametric Surface:</strong>
+                            <div id="formula-parametric" class="mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Input Examples</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Explicit Examples</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                            <li>x^2 + y^2 (paraboloid)</li>
+                            <li>sin(x)*cos(y) (wave surface)</li>
+                            <li>sqrt(x^2 + y^2) (cone)</li>
+                            <li>exp(-(x^2 + y^2)) (Gaussian)</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Implicit Examples</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                            <li>x^2 + y^2 + z^2 - 4 (sphere)</li>
+                            <li>x^2 + y^2 - z^2 (hyperboloid)</li>
+                            <li>x^2/4 + y^2/9 + z^2/16 - 1 (ellipsoid)</li>
+                            <li>x^2 + y^2 - z (paraboloid)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Optimization:</strong> Finding critical points and analyzing local behavior</li>
+                    <li><strong>Physics:</strong> Analyzing force fields and potential surfaces</li>
+                    <li><strong>Engineering:</strong> Surface analysis in CAD and manufacturing</li>
+                    <li><strong>Computer Graphics:</strong> Surface rendering and lighting calculations</li>
+                    <li><strong>Differential Geometry:</strong> Studying surface curvature and properties</li>
+                    <li><strong>Machine Learning:</strong> Understanding loss function landscapes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+    let canvas, ctx;
+
+    // Initialize canvas
+    function initCanvas() {
+        canvas = document.getElementById('surface-canvas');
+        ctx = canvas.getContext('2d');
+        clearCanvas();
+    }
+
+    // Clear canvas
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Set background
+        const isDark = document.documentElement.classList.contains('dark');
+        ctx.fillStyle = isDark ? '#1f2937' : '#f9fafb';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Update surface type
+    document.getElementById('surface-type').addEventListener('change', function() {
+        const type = this.value;
+        
+        document.getElementById('explicit-inputs').classList.toggle('hidden', type !== 'explicit');
+        document.getElementById('implicit-inputs').classList.toggle('hidden', type !== 'implicit');
+        document.getElementById('parametric-inputs').classList.toggle('hidden', type !== 'parametric');
+        
+        updateSurfaceDisplay();
+    });
+
+    // Update surface display
+    function updateSurfaceDisplay() {
+        const type = document.getElementById('surface-type').value;
+        let surfaceText = 'Enter surface equation to see it displayed here';
+        
+        if (type === 'explicit') {
+            const func = document.getElementById('explicit-function').value;
+            if (func) {
+                surfaceText = `z = ${func}`;
+            }
+        } else if (type === 'implicit') {
+            const func = document.getElementById('implicit-function').value;
+            if (func) {
+                surfaceText = `${func} = 0`;
+            }
+        } else if (type === 'parametric') {
+            const x = document.getElementById('parametric-x').value;
+            const y = document.getElementById('parametric-y').value;
+            const z = document.getElementById('parametric-z').value;
+            if (x && y && z) {
+                surfaceText = `r(u,v) = (${x}, ${y}, ${z})`;
+            }
+        }
+        
+        document.getElementById('current-surface').textContent = surfaceText;
+    }
+
+    // Add event listeners for surface display updates
+    ['explicit-function', 'implicit-function', 'parametric-x', 'parametric-y', 'parametric-z'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', updateSurfaceDisplay);
+        }
+    });
+
+    // Numerical partial derivative
+    function numericalPartialDerivative(func, variable, point, h = 1e-6) {
+        const point1 = { ...point };
+        const point2 = { ...point };
+        
+        point1[variable] += h;
+        point2[variable] -= h;
+        
+        try {
+            const f1 = math.evaluate(func, point1);
+            const f2 = math.evaluate(func, point2);
+            return (f1 - f2) / (2 * h);
+        } catch (e) {
+            return NaN;
+        }
+    }
+
+    // Calculate tangent plane for explicit surface
+    function calculateExplicitTangentPlane() {
+        const func = document.getElementById('explicit-function').value;
+        const x0 = parseFloat(document.getElementById('explicit-x0').value);
+        const y0 = parseFloat(document.getElementById('explicit-y0').value);
+        
+        if (!func || isNaN(x0) || isNaN(y0)) {
+            throw new Error('Please enter valid function and point coordinates.');
+        }
+        
+        // Calculate z0
+        const z0 = math.evaluate(func, { x: x0, y: y0 });
+        
+        // Calculate partial derivatives
+        const fx = numericalPartialDerivative(func, 'x', { x: x0, y: y0 });
+        const fy = numericalPartialDerivative(func, 'y', { x: x0, y: y0 });
+        
+        if (isNaN(fx) || isNaN(fy)) {
+            throw new Error('Unable to calculate partial derivatives. Check your function.');
+        }
+        
+        // Normal vector is (-fx, -fy, 1)
+        const normal = { x: -fx, y: -fy, z: 1 };
+        
+        // Tangent plane equation: -fx(x-x0) - fy(y-y0) + (z-z0) = 0
+        // Rearranged: z = fx(x-x0) + fy(y-y0) + z0
+        
+        return {
+            point: { x: x0, y: y0, z: z0 },
+            normal: normal,
+            fx: fx,
+            fy: fy,
+            equation: `z = ${fx.toFixed(6)}(x - ${x0}) + ${fy.toFixed(6)}(y - ${y0}) + ${z0.toFixed(6)}`,
+            standardForm: `${(-fx).toFixed(6)}x + ${(-fy).toFixed(6)}y + z = ${(-fx * x0 - fy * y0 + z0).toFixed(6)}`,
+            type: 'explicit'
+        };
+    }
+
+    // Calculate tangent plane for implicit surface
+    function calculateImplicitTangentPlane() {
+        const func = document.getElementById('implicit-function').value;
+        const x0 = parseFloat(document.getElementById('implicit-x0').value);
+        const y0 = parseFloat(document.getElementById('implicit-y0').value);
+        const z0 = parseFloat(document.getElementById('implicit-z0').value);
+        
+        if (!func || isNaN(x0) || isNaN(y0) || isNaN(z0)) {
+            throw new Error('Please enter valid function and point coordinates.');
+        }
+        
+        // Check if point is on surface
+        const pointValue = math.evaluate(func, { x: x0, y: y0, z: z0 });
+        if (Math.abs(pointValue) > 1e-6) {
+            console.warn(`Point may not be on surface. F(${x0}, ${y0}, ${z0}) = ${pointValue}`);
+        }
+        
+        // Calculate gradient (normal vector)
+        const fx = numericalPartialDerivative(func, 'x', { x: x0, y: y0, z: z0 });
+        const fy = numericalPartialDerivative(func, 'y', { x: x0, y: y0, z: z0 });
+        const fz = numericalPartialDerivative(func, 'z', { x: x0, y: y0, z: z0 });
+        
+        if (isNaN(fx) || isNaN(fy) || isNaN(fz)) {
+            throw new Error('Unable to calculate partial derivatives. Check your function.');
+        }
+        
+        const normal = { x: fx, y: fy, z: fz };
+        
+        // Tangent plane equation: fx(x-x0) + fy(y-y0) + fz(z-z0) = 0
+        const d = fx * x0 + fy * y0 + fz * z0;
+        
+        return {
+            point: { x: x0, y: y0, z: z0 },
+            normal: normal,
+            fx: fx,
+            fy: fy,
+            fz: fz,
+            equation: `${fx.toFixed(6)}(x - ${x0}) + ${fy.toFixed(6)}(y - ${y0}) + ${fz.toFixed(6)}(z - ${z0}) = 0`,
+            standardForm: `${fx.toFixed(6)}x + ${fy.toFixed(6)}y + ${fz.toFixed(6)}z = ${d.toFixed(6)}`,
+            type: 'implicit'
+        };
+    }
+
+    // Calculate tangent plane for parametric surface
+    function calculateParametricTangentPlane() {
+        const xFunc = document.getElementById('parametric-x').value;
+        const yFunc = document.getElementById('parametric-y').value;
+        const zFunc = document.getElementById('parametric-z').value;
+        const u0 = parseFloat(document.getElementById('parametric-u0').value);
+        const v0 = parseFloat(document.getElementById('parametric-v0').value);
+        
+        if (!xFunc || !yFunc || !zFunc || isNaN(u0) || isNaN(v0)) {
+            throw new Error('Please enter valid parametric functions and parameter values.');
+        }
+        
+        // Calculate point on surface
+        const x0 = math.evaluate(xFunc, { u: u0, v: v0 });
+        const y0 = math.evaluate(yFunc, { u: u0, v: v0 });
+        const z0 = math.evaluate(zFunc, { u: u0, v: v0 });
+        
+        // Calculate partial derivatives with respect to u and v
+        const xu = numericalPartialDerivative(xFunc, 'u', { u: u0, v: v0 });
+        const yu = numericalPartialDerivative(yFunc, 'u', { u: u0, v: v0 });
+        const zu = numericalPartialDerivative(zFunc, 'u', { u: u0, v: v0 });
+        
+        const xv = numericalPartialDerivative(xFunc, 'v', { u: u0, v: v0 });
+        const yv = numericalPartialDerivative(yFunc, 'v', { u: u0, v: v0 });
+        const zv = numericalPartialDerivative(zFunc, 'v', { u: u0, v: v0 });
+        
+        // Normal vector is ru × rv
+        const normal = {
+            x: yu * zv - zu * yv,
+            y: zu * xv - xu * zv,
+            z: xu * yv - yu * xv
+        };
+        
+        // Tangent plane equation: normal · (r - r0) = 0
+        const d = normal.x * x0 + normal.y * y0 + normal.z * z0;
+        
+        return {
+            point: { x: x0, y: y0, z: z0 },
+            normal: normal,
+            ru: { x: xu, y: yu, z: zu },
+            rv: { x: xv, y: yv, z: zv },
+            equation: `${normal.x.toFixed(6)}(x - ${x0.toFixed(6)}) + ${normal.y.toFixed(6)}(y - ${y0.toFixed(6)}) + ${normal.z.toFixed(6)}(z - ${z0.toFixed(6)}) = 0`,
+            standardForm: `${normal.x.toFixed(6)}x + ${normal.y.toFixed(6)}y + ${normal.z.toFixed(6)}z = ${d.toFixed(6)}`,
+            type: 'parametric'
+        };
+    }
+
+    // Calculate tangent plane
+    function calculateTangentPlane() {
+        try {
+            const surfaceType = document.getElementById('surface-type').value;
+            let result;
+            
+            switch (surfaceType) {
+                case 'explicit':
+                    result = calculateExplicitTangentPlane();
+                    break;
+                case 'implicit':
+                    result = calculateImplicitTangentPlane();
+                    break;
+                case 'parametric':
+                    result = calculateParametricTangentPlane();
+                    break;
+                default:
+                    throw new Error('Invalid surface type');
+            }
+            
+            displayResults(result);
+            
+            // Scroll to results
+            setTimeout(() => {
+                document.getElementById('result-container').scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 100);
+            
+        } catch (error) {
+            alert('Calculation error: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    // Display calculation results
+    function displayResults(result) {
+        // Surface point
+        document.getElementById('surface-point').textContent = 
+            `(${result.point.x.toFixed(6)}, ${result.point.y.toFixed(6)}, ${result.point.z.toFixed(6)})`;
+        
+        // Tangent plane equation
+        document.getElementById('tangent-equation').textContent = result.equation;
+        
+        // Normal vector
+        const normalMagnitude = Math.sqrt(result.normal.x**2 + result.normal.y**2 + result.normal.z**2);
+        document.getElementById('normal-vector').innerHTML = 
+            `n = (${result.normal.x.toFixed(6)}, ${result.normal.y.toFixed(6)}, ${result.normal.z.toFixed(6)})<br>` +
+            `|n| = ${normalMagnitude.toFixed(6)}`;
+        
+        // First partial derivatives
+        let derivativesHtml = '';
+        if (result.type === 'explicit') {
+            derivativesHtml = `
+                <div class="equation-display">∂f/∂x = ${result.fx.toFixed(6)}</div>
+                <div class="equation-display">∂f/∂y = ${result.fy.toFixed(6)}</div>
+            `;
+        } else if (result.type === 'implicit') {
+            derivativesHtml = `
+                <div class="equation-display">∂F/∂x = ${result.fx.toFixed(6)}</div>
+                <div class="equation-display">∂F/∂y = ${result.fy.toFixed(6)}</div>
+                <div class="equation-display">∂F/∂z = ${result.fz.toFixed(6)}</div>
+            `;
+        } else if (result.type === 'parametric') {
+            derivativesHtml = `
+                <div class="equation-display">r_u = (${result.ru.x.toFixed(6)}, ${result.ru.y.toFixed(6)}, ${result.ru.z.toFixed(6)})</div>
+                <div class="equation-display">r_v = (${result.rv.x.toFixed(6)}, ${result.rv.y.toFixed(6)}, ${result.rv.z.toFixed(6)})</div>
+            `;
+        }
+        document.getElementById('first-derivatives').innerHTML = derivativesHtml;
+        
+        // Derivative values at point
+        document.getElementById('derivative-values').innerHTML = 
+            `<div class="equation-display">Evaluated at (${result.point.x.toFixed(3)}, ${result.point.y.toFixed(3)}, ${result.point.z.toFixed(3)})</div>`;
+        
+        // Normal vector properties
+        const unitNormal = {
+            x: result.normal.x / normalMagnitude,
+            y: result.normal.y / normalMagnitude,
+            z: result.normal.z / normalMagnitude
+        };
+        
+        document.getElementById('normal-properties').innerHTML = `
+            <div class="equation-display">Magnitude: ${normalMagnitude.toFixed(6)}</div>
+            <div class="equation-display">Unit Normal: (${unitNormal.x.toFixed(6)}, ${unitNormal.y.toFixed(6)}, ${unitNormal.z.toFixed(6)})</div>
+            <div class="equation-display">Direction Angles: α=${Math.acos(unitNormal.x).toFixed(3)}, β=${Math.acos(unitNormal.y).toFixed(3)}, γ=${Math.acos(unitNormal.z).toFixed(3)}</div>
+        `;
+        
+        // Plane properties
+        const distanceFromOrigin = Math.abs(result.normal.x * result.point.x + result.normal.y * result.point.y + result.normal.z * result.point.z) / normalMagnitude;
+        
+        document.getElementById('plane-properties').innerHTML = `
+            <div class="equation-display">Standard Form: ${result.standardForm}</div>
+            <div class="equation-display">Distance from Origin: ${distanceFromOrigin.toFixed(6)}</div>
+        `;
+        
+        // Alternative forms
+        document.getElementById('vector-form').textContent = 
+            `n · (r - r₀) = 0, where n = (${result.normal.x.toFixed(3)}, ${result.normal.y.toFixed(3)}, ${result.normal.z.toFixed(3)})`;
+        
+        document.getElementById('parametric-form').textContent = 
+            `r(s,t) = r₀ + s·u + t·v, where u and v are tangent vectors`;
+        
+        document.getElementById('distance-origin').textContent = 
+            `d = ${distanceFromOrigin.toFixed(6)}`;
+        
+        document.getElementById('result-container').classList.remove('hidden');
+        
+        // Render math formulas
+        renderMathFormulas();
+    }
+
+    // Simple 3D visualization
+    function visualizeSurface() {
+        clearCanvas();
+        
+        const isDark = document.documentElement.classList.contains('dark');
+        const surfaceType = document.getElementById('surface-type').value;
+        
+        // Get rotation and zoom values
+        const rotX = parseFloat(document.getElementById('rotation-x').value) * Math.PI / 180;
+        const rotY = parseFloat(document.getElementById('rotation-y').value) * Math.PI / 180;
+        const zoom = parseFloat(document.getElementById('zoom').value) / 100;
+        
+        // Simple wireframe visualization
+        const centerX = 200;
+        const centerY = 200;
+        const scale = 50 * zoom;
+        
+        ctx.strokeStyle = isDark ? '#10b981' : '#059669';
+        ctx.lineWidth = 1;
+        
+        // Draw a simple grid representation
+        for (let i = -2; i <= 2; i += 0.5) {
+            for (let j = -2; j <= 2; j += 0.5) {
+                try {
+                    let x = i, y = j, z = 0;
+                    
+                    if (surfaceType === 'explicit') {
+                        const func = document.getElementById('explicit-function').value;
+                        if (func) {
+                            z = math.evaluate(func, { x: i, y: j });
+                        }
+                    } else if (surfaceType === 'implicit') {
+                        // For implicit surfaces, approximate z
+                        z = i * 0.5 + j * 0.5; // Simple approximation
+                    } else if (surfaceType === 'parametric') {
+                        const xFunc = document.getElementById('parametric-x').value;
+                        const yFunc = document.getElementById('parametric-y').value;
+                        const zFunc = document.getElementById('parametric-z').value;
+                        if (xFunc && yFunc && zFunc) {
+                            x = math.evaluate(xFunc, { u: i, v: j });
+                            y = math.evaluate(yFunc, { u: i, v: j });
+                            z = math.evaluate(zFunc, { u: i, v: j });
+                        }
+                    }
+                    
+                    // Simple 3D to 2D projection with rotation
+                    const x3d = x * Math.cos(rotY) - z * Math.sin(rotY);
+                    const y3d = y * Math.cos(rotX) - (x * Math.sin(rotY) + z * Math.cos(rotY)) * Math.sin(rotX);
+                    
+                    const screenX = centerX + x3d * scale;
+                    const screenY = centerY - y3d * scale;
+                    
+                    if (i === -2 && j === -2) {
+                        ctx.beginPath();
+                        ctx.moveTo(screenX, screenY);
+                    } else {
+                        ctx.lineTo(screenX, screenY);
+                    }
+                    
+                    // Draw point
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, 1, 0, 2 * Math.PI);
+                    ctx.fillStyle = isDark ? '#10b981' : '#059669';
+                    ctx.fill();
+                    
+                } catch (e) {
+                    // Skip invalid points
+                }
+            }
+        }
+        
+        ctx.stroke();
+        
+        // Draw axes
+        ctx.strokeStyle = isDark ? '#6b7280' : '#9ca3af';
+        ctx.lineWidth = 2;
+        
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(centerX - 100, centerY);
+        ctx.lineTo(centerX + 100, centerY);
+        ctx.stroke();
+        
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY - 100);
+        ctx.lineTo(centerX, centerY + 100);
+        ctx.stroke();
+        
+        // Labels
+        ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('X', centerX + 105, centerY + 5);
+        ctx.fillText('Y', centerX + 5, centerY - 105);
+    }
+
+    // Add event listeners for visualization controls
+    ['rotation-x', 'rotation-y', 'zoom'].forEach(id => {
+        document.getElementById(id).addEventListener('input', visualizeSurface);
+    });
+
+    // Export visualization
+    function exportVisualization() {
+        const link = document.createElement('a');
+        link.download = 'tangent-plane-surface.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+
+    // Clear calculator
+    function clearCalculator() {
+        document.getElementById('explicit-function').value = '';
+        document.getElementById('implicit-function').value = '';
+        document.getElementById('parametric-x').value = '';
+        document.getElementById('parametric-y').value = '';
+        document.getElementById('parametric-z').value = '';
+        document.getElementById('result-container').classList.add('hidden');
+        updateSurfaceDisplay();
+        clearCanvas();
+    }
+
+    // Render math formulas
+    function renderMathFormulas() {
+        // Render main tangent plane formula
+        katex.render('z - z_0 = f_x(x_0, y_0)(x - x_0) + f_y(x_0, y_0)(y - y_0)', 
+            document.getElementById('tangent-formula'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        // Render formula examples
+        katex.render('z - z_0 = f_x(x_0, y_0)(x - x_0) + f_y(x_0, y_0)(y - y_0)', 
+            document.getElementById('formula-explicit'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        katex.render('F_x(x_0, y_0, z_0)(x - x_0) + F_y(x_0, y_0, z_0)(y - y_0) + F_z(x_0, y_0, z_0)(z - z_0) = 0', 
+            document.getElementById('formula-implicit'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        katex.render('\\mathbf{n} = \\mathbf{r}_u \\times \\mathbf{r}_v', 
+            document.getElementById('formula-parametric'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        // Render all other math elements
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initCanvas();
+        updateSurfaceDisplay();
+        renderMathFormulas();
+        lucide.createIcons();
+        
+        // Draw initial visualization
+        visualizeSurface();
+    });
+</script>
+{% endblock %}

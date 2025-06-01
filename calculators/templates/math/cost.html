@@ -1,0 +1,1031 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Math.js for calculations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+<!-- KaTeX for math rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+    .katex { font-size: 1.1em; }
+    #cost-canvas {
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f9fafb;
+    }
+    .dark #cost-canvas {
+        border-color: #374151;
+        background: #1f2937;
+    }
+    .function-display {
+        font-family: 'Courier New', monospace;
+        background: #f3f4f6;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid #d1d5db;
+        font-size: 0.95rem;
+    }
+    .dark .function-display {
+        background: #374151;
+        border-color: #4b5563;
+        color: #e5e7eb;
+    }
+    .cost-metric {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    .dark .cost-metric {
+        background: #1e293b;
+        border-color: #334155;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="trending-up" class="w-8 h-8 text-emerald-600 dark:text-emerald-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Cost Function Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Analyze and visualize cost functions, calculate marginal and average costs, and optimize production decisions.
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div id="cost-formula" class="text-blue-800 dark:text-blue-300"></div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Cost Function Configuration</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Function Definition -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Function Type:
+                        </label>
+                        <select id="function-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            <option value="linear">Linear: C(q) = FC + VC × q</option>
+                            <option value="quadratic">Quadratic: C(q) = FC + b×q + c×q²</option>
+                            <option value="cubic">Cubic: C(q) = FC + b×q + c×q² + d×q³</option>
+                            <option value="power">Power: C(q) = FC + a × q^b</option>
+                            <option value="logarithmic">Logarithmic: C(q) = FC + a × ln(1 + b×q)</option>
+                            <option value="exponential">Exponential: C(q) = FC + a × (e^(b×q) - 1)</option>
+                            <option value="custom">Custom Function</option>
+                        </select>
+                    </div>
+
+                    <!-- Parameter Inputs -->
+                    <div id="parameter-inputs">
+                        <div id="linear-params" class="space-y-4">
+                            <h3 class="font-medium text-gray-900 dark:text-white">Linear Cost Parameters</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fixed Cost (FC):</label>
+                                    <input type="number" id="linear-fc" value="1000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Variable Cost (VC):</label>
+                                    <input type="number" id="linear-vc" value="50" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="quadratic-params" class="space-y-4 hidden">
+                            <h3 class="font-medium text-gray-900 dark:text-white">Quadratic Cost Parameters</h3>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fixed Cost (FC):</label>
+                                    <input type="number" id="quadratic-fc" value="1000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Linear Coefficient (b):</label>
+                                    <input type="number" id="quadratic-b" value="30" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quadratic Coefficient (c):</label>
+                                    <input type="number" id="quadratic-c" value="2" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="cubic-params" class="space-y-4 hidden">
+                            <h3 class="font-medium text-gray-900 dark:text-white">Cubic Cost Parameters</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fixed Cost (FC):</label>
+                                    <input type="number" id="cubic-fc" value="1000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Linear Coefficient (b):</label>
+                                    <input type="number" id="cubic-b" value="30" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quadratic Coefficient (c):</label>
+                                    <input type="number" id="cubic-c" value="2" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cubic Coefficient (d):</label>
+                                    <input type="number" id="cubic-d" value="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="power-params" class="space-y-4 hidden">
+                            <h3 class="font-medium text-gray-900 dark:text-white">Power Cost Parameters</h3>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fixed Cost (FC):</label>
+                                    <input type="number" id="power-fc" value="1000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Scale Factor (a):</label>
+                                    <input type="number" id="power-a" value="50" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Exponent (b):</label>
+                                    <input type="number" id="power-b" value="0.8" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="logarithmic-params" class="space-y-4 hidden">
+                            <h3 class="font-medium text-gray-900 dark:text-white">Logarithmic Cost Parameters</h3>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fixed Cost (FC):</label>
+                                    <input type="number" id="log-fc" value="1000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Scale Factor (a):</label>
+                                    <input type="number" id="log-a" value="500" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Growth Rate (b):</label>
+                                    <input type="number" id="log-b" value="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="exponential-params" class="space-y-4 hidden">
+                            <h3 class="font-medium text-gray-900 dark:text-white">Exponential Cost Parameters</h3>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fixed Cost (FC):</label>
+                                    <input type="number" id="exp-fc" value="1000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Scale Factor (a):</label>
+                                    <input type="number" id="exp-a" value="10" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Growth Rate (b):</label>
+                                    <input type="number" id="exp-b" value="0.1" step="0.01" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="custom-params" class="space-y-4 hidden">
+                            <h3 class="font-medium text-gray-900 dark:text-white">Custom Cost Function</h3>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Function (use 'q' as variable):
+                                </label>
+                                <input type="text" id="custom-function" placeholder="e.g., 100 + 50*q + 2*q^2" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Use * for multiplication, ^ for exponents, log() for natural log</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Function Display -->
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-2">Current Cost Function:</h3>
+                        <div id="function-display" class="function-display">
+                            C(q) = 1000 + 50 × q
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Analysis Settings -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Analysis Range</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Min Quantity:</label>
+                                <input type="number" id="min-quantity" value="0" min="0" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Max Quantity:</label>
+                                <input type="number" id="max-quantity" value="100" min="1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Visualization Options</h3>
+                        <div class="space-y-3">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="show-total-cost" checked class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Show Total Cost</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="show-marginal-cost" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Show Marginal Cost</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="show-average-cost" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Show Average Cost</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="show-fixed-cost" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Show Fixed Cost</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Visualization Canvas -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Cost Curves</h3>
+                        <div class="flex justify-center">
+                            <canvas id="cost-canvas" width="400" height="300"></canvas>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button onclick="exportVisualization()" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+                                Export Chart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button onclick="calculateCostFunction()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Calculate Cost Analysis
+            </button>
+            <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Cost Function Analysis</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="cost-metric">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Fixed Cost:</h4>
+                        <div id="fixed-cost-value" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400"></div>
+                    </div>
+                    
+                    <div class="cost-metric">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Min Average Cost:</h4>
+                        <div id="min-avg-cost" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400"></div>
+                    </div>
+                    
+                    <div class="cost-metric">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Optimal Quantity:</h4>
+                        <div id="optimal-quantity" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Economic Analysis</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Returns to Scale:</h4>
+                        <div id="returns-to-scale" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Economies of Scale:</h4>
+                        <div id="economies-of-scale" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Production Insights:</h4>
+                    <div id="production-insights" class="text-gray-800 dark:text-gray-200"></div>
+                </div>
+            </div>
+
+            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Cost Breakdown Table</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Quantity</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Cost</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Marginal Cost</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Average Cost</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Variable Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cost-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Table rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4">Mathematical Formulas</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-orange-700 dark:text-orange-400 mb-2">Cost Function:</h4>
+                        <div id="cost-function-formula" class="function-display"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-orange-700 dark:text-orange-400 mb-2">Marginal Cost:</h4>
+                        <div id="marginal-cost-formula" class="function-display"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-orange-700 dark:text-orange-400 mb-2">Average Cost:</h4>
+                        <div id="average-cost-formula" class="function-display"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Cost Functions</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What are Cost Functions?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Cost functions represent the relationship between production quantity and total cost. They are fundamental 
+                    in economics and business for understanding production efficiency, pricing strategies, and optimal output levels. 
+                    Cost functions help businesses make informed decisions about production scale and resource allocation.
+                </p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Types of Cost Functions</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Linear Cost</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">C(q) = FC + VC × q</p>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Constant marginal cost. Common in simple manufacturing with fixed per-unit costs.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Quadratic Cost</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">C(q) = FC + bq + cq²</p>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Increasing marginal cost. Reflects capacity constraints and diminishing returns.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Power Cost</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">C(q) = FC + aq^b</p>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Economies or diseconomies of scale depending on exponent value.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key Cost Concepts</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <ul class="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                        <li><strong>Fixed Cost (FC):</strong> Costs that don't vary with production quantity</li>
+                        <li><strong>Variable Cost (VC):</strong> Costs that change with production quantity</li>
+                        <li><strong>Marginal Cost (MC):</strong> Additional cost of producing one more unit</li>
+                        <li><strong>Average Cost (AC):</strong> Total cost divided by quantity produced</li>
+                        <li><strong>Economies of Scale:</strong> Decreasing average cost as production increases</li>
+                        <li><strong>Diseconomies of Scale:</strong> Increasing average cost as production increases</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li>Select a cost function type from the dropdown menu</li>
+                    <li>Enter the appropriate parameters for your chosen function</li>
+                    <li>Set the analysis range (minimum and maximum quantity)</li>
+                    <li>Choose which cost curves to display in the visualization</li>
+                    <li>Click "Calculate Cost Analysis" to generate results</li>
+                    <li>Review the economic analysis and cost breakdown table</li>
+                    <li>Export the visualization for reports or presentations</li>
+                </ol>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Business Planning:</strong> Determine optimal production levels and pricing strategies</li>
+                    <li><strong>Economics Research:</strong> Analyze market structures and firm behavior</li>
+                    <li><strong>Operations Management:</strong> Optimize resource allocation and capacity planning</li>
+                    <li><strong>Financial Analysis:</strong> Evaluate investment decisions and cost structures</li>
+                    <li><strong>Policy Making:</strong> Understand industry dynamics and regulatory impacts</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Example Scenarios</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Try These Examples:</h4>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                        <li>Linear: FC=1000, VC=50 (simple manufacturing)</li>
+                        <li>Quadratic: FC=1000, b=30, c=2 (capacity constraints)</li>
+                        <li>Power: FC=1000, a=50, b=0.8 (economies of scale)</li>
+                        <li>Custom: 500 + 25*q + 0.5*q^2 + 0.01*q^3 (complex production)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+    let canvas, ctx;
+    let currentCostFunction = null;
+
+    // Initialize canvas
+    function initCanvas() {
+        canvas = document.getElementById('cost-canvas');
+        ctx = canvas.getContext('2d');
+        clearCanvas();
+    }
+
+    // Clear canvas
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Set background
+        const isDark = document.documentElement.classList.contains('dark');
+        ctx.fillStyle = isDark ? '#1f2937' : '#f9fafb';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Update function type
+    document.getElementById('function-type').addEventListener('change', function() {
+        const type = this.value;
+        
+        // Hide all parameter inputs
+        document.querySelectorAll('#parameter-inputs > div').forEach(div => {
+            div.classList.add('hidden');
+        });
+        
+        // Show selected parameter input
+        document.getElementById(type + '-params').classList.remove('hidden');
+        
+        updateFunctionDisplay();
+    });
+
+    // Add event listeners for parameter changes
+    function addParameterListeners() {
+        const inputs = document.querySelectorAll('#parameter-inputs input');
+        inputs.forEach(input => {
+            input.addEventListener('input', updateFunctionDisplay);
+        });
+    }
+
+    // Update function display
+    function updateFunctionDisplay() {
+        const functionType = document.getElementById('function-type').value;
+        let displayText = '';
+        
+        try {
+            switch (functionType) {
+                case 'linear':
+                    const fcLinear = document.getElementById('linear-fc').value;
+                    const vcLinear = document.getElementById('linear-vc').value;
+                    displayText = `C(q) = ${fcLinear} + ${vcLinear} × q`;
+                    break;
+                case 'quadratic':
+                    const fcQuad = document.getElementById('quadratic-fc').value;
+                    const bQuad = document.getElementById('quadratic-b').value;
+                    const cQuad = document.getElementById('quadratic-c').value;
+                    displayText = `C(q) = ${fcQuad} + ${bQuad}q + ${cQuad}q²`;
+                    break;
+                case 'cubic':
+                    const fcCubic = document.getElementById('cubic-fc').value;
+                    const bCubic = document.getElementById('cubic-b').value;
+                    const cCubic = document.getElementById('cubic-c').value;
+                    const dCubic = document.getElementById('cubic-d').value;
+                    displayText = `C(q) = ${fcCubic} + ${bCubic}q + ${cCubic}q² + ${dCubic}q³`;
+                    break;
+                case 'power':
+                    const fcPower = document.getElementById('power-fc').value;
+                    const aPower = document.getElementById('power-a').value;
+                    const bPower = document.getElementById('power-b').value;
+                    displayText = `C(q) = ${fcPower} + ${aPower} × q^${bPower}`;
+                    break;
+                case 'logarithmic':
+                    const fcLog = document.getElementById('log-fc').value;
+                    const aLog = document.getElementById('log-a').value;
+                    const bLog = document.getElementById('log-b').value;
+                    displayText = `C(q) = ${fcLog} + ${aLog} × ln(1 + ${bLog}q)`;
+                    break;
+                case 'exponential':
+                    const fcExp = document.getElementById('exp-fc').value;
+                    const aExp = document.getElementById('exp-a').value;
+                    const bExp = document.getElementById('exp-b').value;
+                    displayText = `C(q) = ${fcExp} + ${aExp} × (e^(${bExp}q) - 1)`;
+                    break;
+                case 'custom':
+                    const customFunc = document.getElementById('custom-function').value;
+                    displayText = customFunc ? `C(q) = ${customFunc}` : 'C(q) = Enter custom function';
+                    break;
+            }
+        } catch (e) {
+            displayText = 'Invalid function parameters';
+        }
+        
+        document.getElementById('function-display').textContent = displayText;
+    }
+
+    // Get cost function
+    function getCostFunction() {
+        const functionType = document.getElementById('function-type').value;
+        
+        try {
+            switch (functionType) {
+                case 'linear':
+                    const fcLinear = parseFloat(document.getElementById('linear-fc').value);
+                    const vcLinear = parseFloat(document.getElementById('linear-vc').value);
+                    return (q) => fcLinear + vcLinear * q;
+                    
+                case 'quadratic':
+                    const fcQuad = parseFloat(document.getElementById('quadratic-fc').value);
+                    const bQuad = parseFloat(document.getElementById('quadratic-b').value);
+                    const cQuad = parseFloat(document.getElementById('quadratic-c').value);
+                    return (q) => fcQuad + bQuad * q + cQuad * q * q;
+                    
+                case 'cubic':
+                    const fcCubic = parseFloat(document.getElementById('cubic-fc').value);
+                    const bCubic = parseFloat(document.getElementById('cubic-b').value);
+                    const cCubic = parseFloat(document.getElementById('cubic-c').value);
+                    const dCubic = parseFloat(document.getElementById('cubic-d').value);
+                    return (q) => fcCubic + bCubic * q + cCubic * q * q + dCubic * q * q * q;
+                    
+                case 'power':
+                    const fcPower = parseFloat(document.getElementById('power-fc').value);
+                    const aPower = parseFloat(document.getElementById('power-a').value);
+                    const bPower = parseFloat(document.getElementById('power-b').value);
+                    return (q) => fcPower + aPower * Math.pow(q, bPower);
+                    
+                case 'logarithmic':
+                    const fcLog = parseFloat(document.getElementById('log-fc').value);
+                    const aLog = parseFloat(document.getElementById('log-a').value);
+                    const bLog = parseFloat(document.getElementById('log-b').value);
+                    return (q) => fcLog + aLog * Math.log(1 + bLog * q);
+                    
+                case 'exponential':
+                    const fcExp = parseFloat(document.getElementById('exp-fc').value);
+                    const aExp = parseFloat(document.getElementById('exp-a').value);
+                    const bExp = parseFloat(document.getElementById('exp-b').value);
+                    return (q) => fcExp + aExp * (Math.exp(bExp * q) - 1);
+                    
+                case 'custom':
+                    const customFunc = document.getElementById('custom-function').value;
+                    if (!customFunc) throw new Error('No custom function provided');
+                    const compiled = math.compile(customFunc);
+                    return (q) => compiled.evaluate({ q: q });
+                    
+                default:
+                    throw new Error('Unknown function type');
+            }
+        } catch (e) {
+            throw new Error('Invalid function parameters: ' + e.message);
+        }
+    }
+
+    // Calculate marginal cost (numerical derivative)
+    function calculateMarginalCost(costFunction, q, h = 0.001) {
+        try {
+            if (q === 0) {
+                return (costFunction(h) - costFunction(0)) / h;
+            }
+            return (costFunction(q + h) - costFunction(q - h)) / (2 * h);
+        } catch (e) {
+            return NaN;
+        }
+    }
+
+    // Calculate average cost
+    function calculateAverageCost(costFunction, q) {
+        if (q === 0) return NaN;
+        try {
+            return costFunction(q) / q;
+        } catch (e) {
+            return NaN;
+        }
+    }
+
+    // Draw cost curves
+    function drawCostCurves() {
+        if (!currentCostFunction) return;
+        
+        clearCanvas();
+        
+        const minQ = parseFloat(document.getElementById('min-quantity').value);
+        const maxQ = parseFloat(document.getElementById('max-quantity').value);
+        
+        const showTotalCost = document.getElementById('show-total-cost').checked;
+        const showMarginalCost = document.getElementById('show-marginal-cost').checked;
+        const showAverageCost = document.getElementById('show-average-cost').checked;
+        const showFixedCost = document.getElementById('show-fixed-cost').checked;
+        
+        // Calculate data points
+        const points = [];
+        const step = (maxQ - minQ) / 100;
+        
+        for (let q = minQ; q <= maxQ; q += step) {
+            try {
+                const totalCost = currentCostFunction(q);
+                const marginalCost = calculateMarginalCost(currentCostFunction, q);
+                const averageCost = calculateAverageCost(currentCostFunction, q);
+                
+                points.push({
+                    q: q,
+                    totalCost: totalCost,
+                    marginalCost: marginalCost,
+                    averageCost: averageCost
+                });
+            } catch (e) {
+                // Skip invalid points
+            }
+        }
+        
+        if (points.length === 0) return;
+        
+        // Find max values for scaling
+        let maxCost = Math.max(...points.map(p => p.totalCost).filter(c => !isNaN(c)));
+        if (showMarginalCost) {
+            maxCost = Math.max(maxCost, ...points.map(p => p.marginalCost).filter(c => !isNaN(c)));
+        }
+        if (showAverageCost) {
+            maxCost = Math.max(maxCost, ...points.map(p => p.averageCost).filter(c => !isNaN(c)));
+        }
+        
+        // Draw axes
+        const isDark = document.documentElement.classList.contains('dark');
+        ctx.strokeStyle = isDark ? '#6b7280' : '#9ca3af';
+        ctx.lineWidth = 1;
+        
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(50, 50);
+        ctx.lineTo(50, canvas.height - 50);
+        ctx.stroke();
+        
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(50, canvas.height - 50);
+        ctx.lineTo(canvas.width - 50, canvas.height - 50);
+        ctx.stroke();
+        
+        // Labels
+        ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('Quantity', canvas.width - 80, canvas.height - 20);
+        ctx.save();
+        ctx.translate(20, canvas.height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('Cost', 0, 0);
+        ctx.restore();
+        
+        // Draw curves
+        const drawCurve = (data, color, label) => {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            let firstPoint = true;
+            for (const point of points) {
+                if (isNaN(data(point))) continue;
+                
+                const x = 50 + ((point.q - minQ) / (maxQ - minQ)) * (canvas.width - 100);
+                const y = canvas.height - 50 - (data(point) / maxCost) * (canvas.height - 100);
+                
+                if (firstPoint) {
+                    ctx.moveTo(x, y);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // Legend
+            const legendY = 70 + Object.keys(arguments).length * 20;
+            ctx.fillStyle = color;
+            ctx.fillRect(canvas.width - 150, legendY, 15, 15);
+            ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+            ctx.fillText(label, canvas.width - 130, legendY + 12);
+        };
+        
+        if (showTotalCost) {
+            drawCurve(p => p.totalCost, '#3b82f6', 'Total Cost');
+        }
+        if (showMarginalCost) {
+            drawCurve(p => p.marginalCost, '#ef4444', 'Marginal Cost');
+        }
+        if (showAverageCost) {
+            drawCurve(p => p.averageCost, '#10b981', 'Average Cost');
+        }
+        if (showFixedCost) {
+            const fixedCost = currentCostFunction(0);
+            ctx.strokeStyle = '#8b5cf6';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            const y = canvas.height - 50 - (fixedCost / maxCost) * (canvas.height - 100);
+            ctx.beginPath();
+            ctx.moveTo(50, y);
+            ctx.lineTo(canvas.width - 50, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Legend
+            ctx.fillStyle = '#8b5cf6';
+            ctx.fillRect(canvas.width - 150, 110, 15, 15);
+            ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+            ctx.fillText('Fixed Cost', canvas.width - 130, 122);
+        }
+    }
+
+    // Calculate cost function analysis
+    function calculateCostFunction() {
+        try {
+            currentCostFunction = getCostFunction();
+            
+            const minQ = parseFloat(document.getElementById('min-quantity').value);
+            const maxQ = parseFloat(document.getElementById('max-quantity').value);
+            
+            // Draw visualization
+            drawCostCurves();
+            
+            // Calculate key metrics
+            const fixedCost = currentCostFunction(0);
+            
+            // Find minimum average cost
+            let minAvgCost = Infinity;
+            let optimalQ = 0;
+            
+            for (let q = Math.max(1, minQ); q <= maxQ; q += 0.1) {
+                const avgCost = calculateAverageCost(currentCostFunction, q);
+                if (!isNaN(avgCost) && avgCost < minAvgCost) {
+                    minAvgCost = avgCost;
+                    optimalQ = q;
+                }
+            }
+            
+            // Display key metrics
+            document.getElementById('fixed-cost-value').textContent = `$${fixedCost.toFixed(2)}`;
+            document.getElementById('min-avg-cost').textContent = `$${minAvgCost.toFixed(2)}`;
+            document.getElementById('optimal-quantity').textContent = optimalQ.toFixed(1);
+            
+            // Economic analysis
+            analyzeEconomics(minQ, maxQ);
+            
+            // Generate cost table
+            generateCostTable(minQ, maxQ);
+            
+            // Update formulas
+            updateFormulas();
+            
+            document.getElementById('result-container').classList.remove('hidden');
+            
+            // Scroll to results
+            setTimeout(() => {
+                document.getElementById('result-container').scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 100);
+            
+        } catch (error) {
+            alert('Error: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    // Analyze economics
+    function analyzeEconomics(minQ, maxQ) {
+        try {
+            // Returns to scale analysis
+            const midQ = (minQ + maxQ) / 2;
+            const cost1 = currentCostFunction(midQ);
+            const cost2 = currentCostFunction(midQ * 2);
+            const ratio = cost2 / (2 * cost1);
+            
+            let returnsToScale;
+            if (ratio < 0.95) {
+                returnsToScale = "Increasing returns to scale (economies of scale)";
+            } else if (ratio > 1.05) {
+                returnsToScale = "Decreasing returns to scale (diseconomies of scale)";
+            } else {
+                returnsToScale = "Constant returns to scale";
+            }
+            
+            // Economies of scale
+            const q1 = Math.max(1, minQ);
+            const q3 = maxQ;
+            const ac1 = calculateAverageCost(currentCostFunction, q1);
+            const ac3 = calculateAverageCost(currentCostFunction, q3);
+            
+            let economiesOfScale;
+            if (ac3 < ac1 * 0.95) {
+                economiesOfScale = "Strong economies of scale present";
+            } else if (ac3 > ac1 * 1.05) {
+                economiesOfScale = "Diseconomies of scale present";
+            } else {
+                economiesOfScale = "Relatively constant average costs";
+            }
+            
+            // Production insights
+            const fixedCost = currentCostFunction(0);
+            const totalCostAtMax = currentCostFunction(maxQ);
+            const fixedRatio = fixedCost / totalCostAtMax;
+            
+            let insights;
+            if (fixedRatio > 0.5) {
+                insights = "High fixed costs suggest benefits from large-scale production to spread fixed costs.";
+            } else if (fixedRatio < 0.2) {
+                insights = "Low fixed costs allow for flexible production scaling with market demand.";
+            } else {
+                insights = "Moderate fixed costs provide balanced production flexibility and scale benefits.";
+            }
+            
+            document.getElementById('returns-to-scale').textContent = returnsToScale;
+            document.getElementById('economies-of-scale').textContent = economiesOfScale;
+            document.getElementById('production-insights').textContent = insights;
+            
+        } catch (e) {
+            document.getElementById('returns-to-scale').textContent = "Unable to analyze returns to scale";
+            document.getElementById('economies-of-scale').textContent = "Unable to analyze economies of scale";
+            document.getElementById('production-insights').textContent = "Unable to generate production insights";
+        }
+    }
+
+    // Generate cost table
+    function generateCostTable(minQ, maxQ) {
+        const tableBody = document.getElementById('cost-table-body');
+        tableBody.innerHTML = '';
+        
+        const step = Math.max(1, (maxQ - minQ) / 20); // Show about 20 rows
+        
+        for (let q = minQ; q <= maxQ; q += step) {
+            const totalCost = currentCostFunction(q);
+            const marginalCost = calculateMarginalCost(currentCostFunction, q);
+            const averageCost = calculateAverageCost(currentCostFunction, q);
+            const variableCost = totalCost - currentCostFunction(0);
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${q.toFixed(1)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">$${totalCost.toFixed(2)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">$${isNaN(marginalCost) ? 'N/A' : marginalCost.toFixed(2)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">$${isNaN(averageCost) ? 'N/A' : averageCost.toFixed(2)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">$${variableCost.toFixed(2)}</td>
+            `;
+            tableBody.appendChild(row);
+        }
+    }
+
+    // Update formulas
+    function updateFormulas() {
+        const functionType = document.getElementById('function-type').value;
+        
+        // Cost function formula
+        document.getElementById('cost-function-formula').textContent = document.getElementById('function-display').textContent;
+        
+        // Marginal cost formula (derivative)
+        let marginalFormula = '';
+        switch (functionType) {
+            case 'linear':
+                const vc = document.getElementById('linear-vc').value;
+                marginalFormula = `MC(q) = ${vc}`;
+                break;
+            case 'quadratic':
+                const b = document.getElementById('quadratic-b').value;
+                const c = document.getElementById('quadratic-c').value;
+                marginalFormula = `MC(q) = ${b} + ${2 * c}q`;
+                break;
+            case 'cubic':
+                const bCubic = document.getElementById('cubic-b').value;
+                const cCubic = document.getElementById('cubic-c').value;
+                const dCubic = document.getElementById('cubic-d').value;
+                marginalFormula = `MC(q) = ${bCubic} + ${2 * cCubic}q + ${3 * dCubic}q²`;
+                break;
+            default:
+                marginalFormula = 'MC(q) = dC/dq (numerical derivative)';
+        }
+        
+        document.getElementById('marginal-cost-formula').textContent = marginalFormula;
+        document.getElementById('average-cost-formula').textContent = 'AC(q) = C(q) / q';
+    }
+
+    // Export visualization
+    function exportVisualization() {
+        const link = document.createElement('a');
+        link.download = 'cost-function-analysis.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+
+    // Clear calculator
+    function clearCalculator() {
+        // Reset all inputs to defaults
+        document.getElementById('function-type').value = 'linear';
+        document.getElementById('linear-fc').value = '1000';
+        document.getElementById('linear-vc').value = '50';
+        document.getElementById('min-quantity').value = '0';
+        document.getElementById('max-quantity').value = '100';
+        
+        // Reset checkboxes
+        document.getElementById('show-total-cost').checked = true;
+        document.getElementById('show-marginal-cost').checked = false;
+        document.getElementById('show-average-cost').checked = false;
+        document.getElementById('show-fixed-cost').checked = false;
+        
+        // Hide results
+        document.getElementById('result-container').classList.add('hidden');
+        
+        // Reset function type display
+        document.querySelectorAll('#parameter-inputs > div').forEach(div => {
+            div.classList.add('hidden');
+        });
+        document.getElementById('linear-params').classList.remove('hidden');
+        
+        updateFunctionDisplay();
+        clearCanvas();
+        
+        currentCostFunction = null;
+    }
+
+    // Render math formulas
+    function renderMathFormulas() {
+        // Render main cost formula
+        katex.render('C(q) = FC + VC(q)', 
+            document.getElementById('cost-formula'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        // Render all other math elements
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initCanvas();
+        addParameterListeners();
+        updateFunctionDisplay();
+        renderMathFormulas();
+        lucide.createIcons();
+        
+        // Add event listeners for visualization options
+        ['show-total-cost', 'show-marginal-cost', 'show-average-cost', 'show-fixed-cost'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                if (currentCostFunction) {
+                    drawCostCurves();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

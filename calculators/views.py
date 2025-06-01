@@ -1,6 +1,5 @@
 from django.shortcuts import render, get_object_or_404
 from .models import Category, Calculator
-from .math_utils import solve_linear_congruence
 
 
 def category_list(request):
@@ -27,5 +26,13 @@ def calculator_detail(request, slug):
             return render(request, 'math/hessian-matrix.html')
         case 'circle-packing-calculator':
             return render(request, 'math/circle-packing.html')
+        case 'nonagon-area-calculator':
+            return render(request, 'math/nonago.html')
+        case 'tangent-plane-calculator':
+            return render(request, 'math/tanget.html')
+        case 'cost-function-calculator':
+            return render(request, 'math/cost.html')
+        case 'sum-of-squared-errors-calculator':
+            return render(request, 'math/sse.html')
         case _:
             return render(request, 'math/default.html')

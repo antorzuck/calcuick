@@ -1,0 +1,899 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Math.js for calculations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+<!-- KaTeX for math rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+    .katex { font-size: 1.1em; }
+    #nonagon-canvas {
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f9fafb;
+    }
+    .dark #nonagon-canvas {
+        border-color: #374151;
+        background: #1f2937;
+    }
+    .measurement-display {
+        font-family: 'Courier New', monospace;
+        background: #f3f4f6;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        border: 1px solid #d1d5db;
+    }
+    .dark .measurement-display {
+        background: #374151;
+        border-color: #4b5563;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="octagon" class="w-8 h-8 text-amber-600 dark:text-amber-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Nonagon Area Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate the area, perimeter, and other properties of regular and irregular nonagons (9-sided polygons).
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div id="nonagon-formula" class="text-blue-800 dark:text-blue-300"></div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Nonagon Configuration</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Inputs -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Nonagon Type:
+                        </label>
+                        <select id="nonagon-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                            <option value="regular">Regular Nonagon</option>
+                            <option value="irregular">Irregular Nonagon</option>
+                        </select>
+                    </div>
+
+                    <div id="regular-inputs">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Regular Nonagon Properties</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Input Method:
+                                </label>
+                                <select id="input-method" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                                    <option value="side">Side Length</option>
+                                    <option value="circumradius">Circumradius (R)</option>
+                                    <option value="inradius">Inradius (r)</option>
+                                    <option value="area">Area</option>
+                                    <option value="perimeter">Perimeter</option>
+                                </select>
+                            </div>
+
+                            <div id="input-value-container">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" id="input-label">
+                                    Side Length:
+                                </label>
+                                <input type="number" id="input-value" value="5" min="0.1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" id="input-description">Length of each side of the regular nonagon</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="irregular-inputs" class="hidden">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Irregular Nonagon Vertices</h3>
+                        
+                        <div class="space-y-4">
+                            <p class="text-gray-600 dark:text-gray-300 text-sm">
+                                Enter the coordinates of all 9 vertices in order (clockwise or counterclockwise):
+                            </p>
+                            
+                            <div class="grid grid-cols-2 gap-3" id="vertex-inputs">
+                                <!-- Vertex inputs will be generated here -->
+                            </div>
+                            
+                            <button onclick="generateRegularVertices()" class="w-full bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+                                Generate Regular Nonagon Vertices
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Calculations -->
+                    <div class="border-t border-gray-200 dark:border-gray-600 pt-6">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Quick Reference</h3>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-300">Interior Angle:</span>
+                                    <div class="measurement-display">140°</div>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-300">Central Angle:</span>
+                                    <div class="measurement-display">40°</div>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-300">Exterior Angle:</span>
+                                    <div class="measurement-display">40°</div>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-300">Diagonals:</span>
+                                    <div class="measurement-display">27</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Visualization -->
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Nonagon Visualization</h3>
+                    <div class="flex justify-center">
+                        <canvas id="nonagon-canvas" width="400" height="400"></canvas>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="drawNonagon()" class="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200 mr-2">
+                            Draw Nonagon
+                        </button>
+                        <button onclick="exportVisualization()" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Export Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button onclick="calculateNonagon()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Calculate Nonagon
+            </button>
+            <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+
+        <!-- Result -->
+        <div id="result-container" class="hidden">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Nonagon Results</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Area:</h4>
+                        <div id="area-result" class="text-gray-800 dark:text-gray-200 text-lg font-semibold"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Perimeter:</h4>
+                        <div id="perimeter-result" class="text-gray-800 dark:text-gray-200 text-lg font-semibold"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Type:</h4>
+                        <div id="type-result" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Detailed Measurements</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Linear Measurements:</h4>
+                        <div id="linear-measurements" class="space-y-2"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Angular Measurements:</h4>
+                        <div id="angular-measurements" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="irregular-analysis" class="hidden">
+                <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Irregular Nonagon Analysis</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Side Lengths:</h4>
+                            <div id="side-lengths" class="text-gray-800 dark:text-gray-200 max-h-40 overflow-y-auto"></div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Interior Angles:</h4>
+                            <div id="interior-angles" class="text-gray-800 dark:text-gray-200 max-h-40 overflow-y-auto"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Centroid:</h4>
+                        <div id="centroid-coords" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4">Mathematical Formulas</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-orange-700 dark:text-orange-400 mb-2">Area Formula:</h4>
+                        <div id="area-formula-display" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-orange-700 dark:text-orange-400 mb-2">Relationship Formulas:</h4>
+                        <div id="relationship-formulas" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Nonagons</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is a Nonagon?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    A nonagon (also called an enneagon) is a polygon with nine sides and nine vertices. 
+                    In a regular nonagon, all sides are equal in length and all interior angles are equal (140°). 
+                    Nonagons appear in architecture, art, and various geometric applications.
+                </p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key Properties</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Regular Nonagon</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                            <li>9 equal sides and angles</li>
+                            <li>Interior angle: 140°</li>
+                            <li>Central angle: 40°</li>
+                            <li>Sum of interior angles: 1260°</li>
+                            <li>Number of diagonals: 27</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Irregular Nonagon</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                            <li>9 sides of varying lengths</li>
+                            <li>9 angles of varying measures</li>
+                            <li>Sum of interior angles: 1260°</li>
+                            <li>Area calculated using shoelace formula</li>
+                            <li>Can be convex or concave</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li>Choose between regular or irregular nonagon</li>
+                    <li>For regular: Select input method (side length, radius, area, etc.)</li>
+                    <li>For irregular: Enter the coordinates of all 9 vertices</li>
+                    <li>Click "Draw Nonagon" to visualize the shape</li>
+                    <li>Click "Calculate Nonagon" to get detailed measurements</li>
+                    <li>View area, perimeter, and other geometric properties</li>
+                </ol>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Input Methods for Regular Nonagon</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                        <li><strong>Side Length:</strong> Length of each side of the regular nonagon</li>
+                        <li><strong>Circumradius (R):</strong> Radius of the circumscribed circle</li>
+                        <li><strong>Inradius (r):</strong> Radius of the inscribed circle</li>
+                        <li><strong>Area:</strong> Total area of the nonagon</li>
+                        <li><strong>Perimeter:</strong> Total length around the nonagon</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Mathematical Formulas</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div class="space-y-3">
+                        <div>
+                            <strong class="text-gray-900 dark:text-white">Area (regular):</strong>
+                            <div id="formula-area" class="mt-1"></div>
+                        </div>
+                        <div>
+                            <strong class="text-gray-900 dark:text-white">Circumradius:</strong>
+                            <div id="formula-circumradius" class="mt-1"></div>
+                        </div>
+                        <div>
+                            <strong class="text-gray-900 dark:text-white">Inradius:</strong>
+                            <div id="formula-inradius" class="mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Architecture:</strong> Building design and floor plans</li>
+                    <li><strong>Art and Design:</strong> Decorative patterns and logos</li>
+                    <li><strong>Engineering:</strong> Structural components and mechanical parts</li>
+                    <li><strong>Mathematics:</strong> Geometric studies and polygon theory</li>
+                    <li><strong>Games:</strong> Board game design and puzzle creation</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Example Calculations</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Try These Examples:</h4>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                        <li>Regular nonagon with side length 5 units</li>
+                        <li>Regular nonagon with circumradius 10 units</li>
+                        <li>Irregular nonagon with custom vertex coordinates</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+    let canvas, ctx;
+    let currentVertices = [];
+
+    // Initialize canvas
+    function initCanvas() {
+        canvas = document.getElementById('nonagon-canvas');
+        ctx = canvas.getContext('2d');
+        clearCanvas();
+    }
+
+    // Clear canvas
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Set background
+        const isDark = document.documentElement.classList.contains('dark');
+        ctx.fillStyle = isDark ? '#1f2937' : '#f9fafb';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Update input method
+    document.getElementById('input-method').addEventListener('change', function() {
+        const method = this.value;
+        const label = document.getElementById('input-label');
+        const description = document.getElementById('input-description');
+        
+        switch(method) {
+            case 'side':
+                label.textContent = 'Side Length:';
+                description.textContent = 'Length of each side of the regular nonagon';
+                break;
+            case 'circumradius':
+                label.textContent = 'Circumradius (R):';
+                description.textContent = 'Radius of the circle that passes through all vertices';
+                break;
+            case 'inradius':
+                label.textContent = 'Inradius (r):';
+                description.textContent = 'Radius of the inscribed circle';
+                break;
+            case 'area':
+                label.textContent = 'Area:';
+                description.textContent = 'Total area of the nonagon';
+                break;
+            case 'perimeter':
+                label.textContent = 'Perimeter:';
+                description.textContent = 'Total length around the nonagon';
+                break;
+        }
+    });
+
+    // Update nonagon type
+    document.getElementById('nonagon-type').addEventListener('change', function() {
+        const type = this.value;
+        
+        document.getElementById('regular-inputs').classList.toggle('hidden', type !== 'regular');
+        document.getElementById('irregular-inputs').classList.toggle('hidden', type !== 'irregular');
+        
+        if (type === 'irregular') {
+            generateVertexInputs();
+        }
+    });
+
+    // Generate vertex input fields
+    function generateVertexInputs() {
+        const container = document.getElementById('vertex-inputs');
+        container.innerHTML = '';
+        
+        for (let i = 0; i < 9; i++) {
+            const vertexDiv = document.createElement('div');
+            vertexDiv.className = 'col-span-2 grid grid-cols-2 gap-2';
+            vertexDiv.innerHTML = `
+                <div>
+                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">V${i+1} X:</label>
+                    <input type="number" id="vertex-${i}-x" step="0.1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">V${i+1} Y:</label>
+                    <input type="number" id="vertex-${i}-y" step="0.1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500 text-sm">
+                </div>
+            `;
+            container.appendChild(vertexDiv);
+        }
+    }
+
+    // Generate regular nonagon vertices
+    function generateRegularVertices() {
+        const centerX = 0;
+        const centerY = 0;
+        const radius = 5;
+        
+        for (let i = 0; i < 9; i++) {
+            const angle = (i * 2 * Math.PI) / 9 - Math.PI / 2; // Start from top
+            const x = centerX + radius * Math.cos(angle);
+            const y = centerY + radius * Math.sin(angle);
+            
+            document.getElementById(`vertex-${i}-x`).value = x.toFixed(2);
+            document.getElementById(`vertex-${i}-y`).value = y.toFixed(2);
+        }
+    }
+
+    // Calculate regular nonagon properties from different inputs
+    function calculateRegularProperties(inputMethod, inputValue) {
+        const n = 9; // Number of sides
+        let side, circumradius, inradius, area, perimeter;
+        
+        // Convert input to side length first
+        switch(inputMethod) {
+            case 'side':
+                side = inputValue;
+                break;
+            case 'circumradius':
+                circumradius = inputValue;
+                side = 2 * circumradius * Math.sin(Math.PI / n);
+                break;
+            case 'inradius':
+                inradius = inputValue;
+                side = 2 * inradius * Math.tan(Math.PI / n);
+                break;
+            case 'area':
+                area = inputValue;
+                side = Math.sqrt((4 * area) / (n * (1 / Math.tan(Math.PI / n))));
+                break;
+            case 'perimeter':
+                perimeter = inputValue;
+                side = perimeter / n;
+                break;
+        }
+        
+        // Calculate all other properties from side length
+        circumradius = side / (2 * Math.sin(Math.PI / n));
+        inradius = side / (2 * Math.tan(Math.PI / n));
+        area = (n * side * side) / (4 * Math.tan(Math.PI / n));
+        perimeter = n * side;
+        
+        // Calculate apothem (same as inradius for regular polygon)
+        const apothem = inradius;
+        
+        return {
+            side,
+            circumradius,
+            inradius,
+            apothem,
+            area,
+            perimeter,
+            interiorAngle: ((n - 2) * 180) / n,
+            centralAngle: 360 / n,
+            exteriorAngle: 360 / n
+        };
+    }
+
+    // Calculate irregular nonagon properties using shoelace formula
+    function calculateIrregularProperties(vertices) {
+        if (vertices.length !== 9) {
+            throw new Error('Nonagon must have exactly 9 vertices');
+        }
+        
+        // Calculate area using shoelace formula
+        let area = 0;
+        for (let i = 0; i < 9; i++) {
+            const j = (i + 1) % 9;
+            area += vertices[i].x * vertices[j].y;
+            area -= vertices[j].x * vertices[i].y;
+        }
+        area = Math.abs(area) / 2;
+        
+        // Calculate perimeter and side lengths
+        const sideLengths = [];
+        let perimeter = 0;
+        for (let i = 0; i < 9; i++) {
+            const j = (i + 1) % 9;
+            const dx = vertices[j].x - vertices[i].x;
+            const dy = vertices[j].y - vertices[i].y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            sideLengths.push(length);
+            perimeter += length;
+        }
+        
+        // Calculate interior angles
+        const interiorAngles = [];
+        for (let i = 0; i < 9; i++) {
+            const prev = (i - 1 + 9) % 9;
+            const next = (i + 1) % 9;
+            
+            const v1x = vertices[prev].x - vertices[i].x;
+            const v1y = vertices[prev].y - vertices[i].y;
+            const v2x = vertices[next].x - vertices[i].x;
+            const v2y = vertices[next].y - vertices[i].y;
+            
+            const dot = v1x * v2x + v1y * v2y;
+            const mag1 = Math.sqrt(v1x * v1x + v1y * v1y);
+            const mag2 = Math.sqrt(v2x * v2x + v2y * v2y);
+            
+            const angle = Math.acos(dot / (mag1 * mag2)) * (180 / Math.PI);
+            interiorAngles.push(angle);
+        }
+        
+        // Calculate centroid
+        let centroidX = 0, centroidY = 0;
+        for (const vertex of vertices) {
+            centroidX += vertex.x;
+            centroidY += vertex.y;
+        }
+        centroidX /= 9;
+        centroidY /= 9;
+        
+        return {
+            area,
+            perimeter,
+            sideLengths,
+            interiorAngles,
+            centroid: { x: centroidX, y: centroidY }
+        };
+    }
+
+    // Draw nonagon on canvas
+    function drawNonagon() {
+        clearCanvas();
+        
+        const type = document.getElementById('nonagon-type').value;
+        const isDark = document.documentElement.classList.contains('dark');
+        
+        if (type === 'regular') {
+            const inputMethod = document.getElementById('input-method').value;
+            const inputValue = parseFloat(document.getElementById('input-value').value);
+            
+            if (isNaN(inputValue) || inputValue <= 0) {
+                alert('Please enter a valid positive number.');
+                return;
+            }
+            
+            const props = calculateRegularProperties(inputMethod, inputValue);
+            
+            // Generate vertices for regular nonagon
+            const centerX = 200;
+            const centerY = 200;
+            const radius = Math.min(150, props.circumradius * 10); // Scale for display
+            
+            currentVertices = [];
+            for (let i = 0; i < 9; i++) {
+                const angle = (i * 2 * Math.PI) / 9 - Math.PI / 2;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                currentVertices.push({ x, y });
+            }
+            
+        } else {
+            // Get vertices from input fields
+            currentVertices = [];
+            for (let i = 0; i < 9; i++) {
+                const x = parseFloat(document.getElementById(`vertex-${i}-x`).value);
+                const y = parseFloat(document.getElementById(`vertex-${i}-y`).value);
+                
+                if (isNaN(x) || isNaN(y)) {
+                    alert(`Please enter valid coordinates for vertex ${i + 1}.`);
+                    return;
+                }
+                
+                currentVertices.push({ x, y });
+            }
+            
+            // Scale and center vertices for display
+            const bounds = getBounds(currentVertices);
+            const scale = Math.min(300 / (bounds.maxX - bounds.minX), 300 / (bounds.maxY - bounds.minY));
+            const offsetX = 200 - (bounds.minX + bounds.maxX) * scale / 2;
+            const offsetY = 200 - (bounds.minY + bounds.maxY) * scale / 2;
+            
+            currentVertices = currentVertices.map(v => ({
+                x: v.x * scale + offsetX,
+                y: v.y * scale + offsetY
+            }));
+        }
+        
+        // Draw the nonagon
+        ctx.beginPath();
+        ctx.moveTo(currentVertices[0].x, currentVertices[0].y);
+        for (let i = 1; i < 9; i++) {
+            ctx.lineTo(currentVertices[i].x, currentVertices[i].y);
+        }
+        ctx.closePath();
+        
+        // Fill
+        ctx.fillStyle = isDark ? 'rgba(251, 191, 36, 0.3)' : 'rgba(245, 158, 11, 0.3)';
+        ctx.fill();
+        
+        // Stroke
+        ctx.strokeStyle = isDark ? '#f59e0b' : '#d97706';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Draw vertices
+        currentVertices.forEach((vertex, index) => {
+            ctx.beginPath();
+            ctx.arc(vertex.x, vertex.y, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = isDark ? '#fbbf24' : '#f59e0b';
+            ctx.fill();
+            
+            // Label vertices
+            ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+            ctx.font = '12px sans-serif';
+            ctx.fillText(`${index + 1}`, vertex.x + 8, vertex.y - 8);
+        });
+    }
+
+    // Get bounding box of vertices
+    function getBounds(vertices) {
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        
+        vertices.forEach(v => {
+            minX = Math.min(minX, v.x);
+            maxX = Math.max(maxX, v.x);
+            minY = Math.min(minY, v.y);
+            maxY = Math.max(maxY, v.y);
+        });
+        
+        return { minX, maxX, minY, maxY };
+    }
+
+    // Calculate nonagon properties
+    function calculateNonagon() {
+        try {
+            const type = document.getElementById('nonagon-type').value;
+            let results;
+            
+            if (type === 'regular') {
+                const inputMethod = document.getElementById('input-method').value;
+                const inputValue = parseFloat(document.getElementById('input-value').value);
+                
+                if (isNaN(inputValue) || inputValue <= 0) {
+                    alert('Please enter a valid positive number.');
+                    return;
+                }
+                
+                results = calculateRegularProperties(inputMethod, inputValue);
+                results.type = 'Regular';
+                
+            } else {
+                // Get vertices from input fields
+                const vertices = [];
+                for (let i = 0; i < 9; i++) {
+                    const x = parseFloat(document.getElementById(`vertex-${i}-x`).value);
+                    const y = parseFloat(document.getElementById(`vertex-${i}-y`).value);
+                    
+                    if (isNaN(x) || isNaN(y)) {
+                        alert(`Please enter valid coordinates for vertex ${i + 1}.`);
+                        return;
+                    }
+                    
+                    vertices.push({ x, y });
+                }
+                
+                results = calculateIrregularProperties(vertices);
+                results.type = 'Irregular';
+            }
+            
+            displayResults(results, type);
+            
+            // Scroll to results
+            setTimeout(() => {
+                document.getElementById('result-container').scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 100);
+            
+        } catch (error) {
+            alert('Calculation error: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    // Display calculation results
+    function displayResults(results, type) {
+        // Basic results
+        document.getElementById('area-result').textContent = `${results.area.toFixed(4)} square units`;
+        document.getElementById('perimeter-result').textContent = `${results.perimeter.toFixed(4)} units`;
+        document.getElementById('type-result').textContent = results.type;
+        
+        if (type === 'regular') {
+            // Linear measurements
+            const linearMeasurements = `
+                <div class="measurement-display">Side Length: ${results.side.toFixed(4)} units</div>
+                <div class="measurement-display">Circumradius: ${results.circumradius.toFixed(4)} units</div>
+                <div class="measurement-display">Inradius: ${results.inradius.toFixed(4)} units</div>
+                <div class="measurement-display">Apothem: ${results.apothem.toFixed(4)} units</div>
+            `;
+            document.getElementById('linear-measurements').innerHTML = linearMeasurements;
+            
+            // Angular measurements
+            const angularMeasurements = `
+                <div class="measurement-display">Interior Angle: ${results.interiorAngle.toFixed(2)}°</div>
+                <div class="measurement-display">Central Angle: ${results.centralAngle.toFixed(2)}°</div>
+                <div class="measurement-display">Exterior Angle: ${results.exteriorAngle.toFixed(2)}°</div>
+                <div class="measurement-display">Sum of Interior Angles: 1260°</div>
+            `;
+            document.getElementById('angular-measurements').innerHTML = angularMeasurements;
+            
+            // Hide irregular analysis
+            document.getElementById('irregular-analysis').classList.add('hidden');
+            
+        } else {
+            // For irregular nonagon
+            document.getElementById('linear-measurements').innerHTML = `
+                <div class="measurement-display">Average Side: ${(results.perimeter / 9).toFixed(4)} units</div>
+                <div class="measurement-display">Longest Side: ${Math.max(...results.sideLengths).toFixed(4)} units</div>
+                <div class="measurement-display">Shortest Side: ${Math.min(...results.sideLengths).toFixed(4)} units</div>
+            `;
+            
+            document.getElementById('angular-measurements').innerHTML = `
+                <div class="measurement-display">Average Angle: ${(results.interiorAngles.reduce((a, b) => a + b, 0) / 9).toFixed(2)}°</div>
+                <div class="measurement-display">Largest Angle: ${Math.max(...results.interiorAngles).toFixed(2)}°</div>
+                <div class="measurement-display">Smallest Angle: ${Math.min(...results.interiorAngles).toFixed(2)}°</div>
+                <div class="measurement-display">Sum of Interior Angles: 1260°</div>
+            `;
+            
+            // Side lengths
+            let sideLengthsHtml = '';
+            results.sideLengths.forEach((length, index) => {
+                sideLengthsHtml += `<div class="measurement-display">Side ${index + 1}: ${length.toFixed(4)} units</div>`;
+            });
+            document.getElementById('side-lengths').innerHTML = sideLengthsHtml;
+            
+            // Interior angles
+            let anglesHtml = '';
+            results.interiorAngles.forEach((angle, index) => {
+                anglesHtml += `<div class="measurement-display">Angle ${index + 1}: ${angle.toFixed(2)}°</div>`;
+            });
+            document.getElementById('interior-angles').innerHTML = anglesHtml;
+            
+            // Centroid
+            document.getElementById('centroid-coords').innerHTML = 
+                `<div class="measurement-display">(${results.centroid.x.toFixed(4)}, ${results.centroid.y.toFixed(4)})</div>`;
+            
+            document.getElementById('irregular-analysis').classList.remove('hidden');
+        }
+        
+        // Mathematical formulas
+        document.getElementById('area-formula-display').innerHTML = 
+            type === 'regular' ? 
+            '$$A = \\frac{9s^2}{4\\tan(\\pi/9)} = \\frac{9s^2}{4\\tan(20°)}$$' :
+            '$$A = \\frac{1}{2}|\\sum_{i=0}^{8}(x_i y_{i+1} - x_{i+1} y_i)|$$';
+        
+        document.getElementById('relationship-formulas').innerHTML = 
+            type === 'regular' ? 
+            '$$R = \\frac{s}{2\\sin(\\pi/9)}, \\quad r = \\frac{s}{2\\tan(\\pi/9)}, \\quad P = 9s$$' :
+            '$$P = \\sum_{i=0}^{8}\\sqrt{(x_{i+1}-x_i)^2 + (y_{i+1}-y_i)^2}$$';
+        
+        document.getElementById('result-container').classList.remove('hidden');
+        
+        // Render math formulas
+        renderMathFormulas();
+    }
+
+    // Export visualization
+    function exportVisualization() {
+        const link = document.createElement('a');
+        link.download = 'nonagon.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+
+    // Clear calculator
+    function clearCalculator() {
+        document.getElementById('input-value').value = '5';
+        document.getElementById('result-container').classList.add('hidden');
+        document.getElementById('irregular-analysis').classList.add('hidden');
+        
+        // Clear vertex inputs
+        for (let i = 0; i < 9; i++) {
+            const xInput = document.getElementById(`vertex-${i}-x`);
+            const yInput = document.getElementById(`vertex-${i}-y`);
+            if (xInput) xInput.value = '';
+            if (yInput) yInput.value = '';
+        }
+        
+        currentVertices = [];
+        clearCanvas();
+    }
+
+    // Render math formulas
+    function renderMathFormulas() {
+        // Render main nonagon formula
+        katex.render('A = \\frac{9s^2}{4\\tan(\\frac{\\pi}{9})} \\approx 6.1818s^2', 
+            document.getElementById('nonagon-formula'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        // Render formula examples
+        katex.render('A = \\frac{9s^2}{4\\tan(\\frac{\\pi}{9})}', 
+            document.getElementById('formula-area'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        katex.render('R = \\frac{s}{2\\sin(\\frac{\\pi}{9})}', 
+            document.getElementById('formula-circumradius'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        katex.render('r = \\frac{s}{2\\tan(\\frac{\\pi}{9})}', 
+            document.getElementById('formula-inradius'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        // Render all other math elements
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initCanvas();
+        generateVertexInputs();
+        renderMathFormulas();
+        lucide.createIcons();
+        
+        // Draw initial nonagon
+        drawNonagon();
+    });
+</script>
+{% endblock %}
