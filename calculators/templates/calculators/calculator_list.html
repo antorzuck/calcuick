@@ -1,6 +1,131 @@
-<h1>{{ category.name }} Calculators</h1>
-<ul>
-  {% for calculator in calculators %}
-    <li><a href="{% url 'calculator_detail' calculator.slug %}">{{ calculator.name }}</a></li>
-  {% endfor %}
-</ul>
+{% extends 'base.html' %}
+
+{% block body %}
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Back Button -->
+        <div class="mb-6">
+            <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                <span>Back to Categories</span>
+            </button>
+        </div>
+
+        <!-- Header -->
+        <div class="mb-12">
+            <div class="flex items-center space-x-4 mb-6">
+                <div class="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                    <i data-lucide="banknote" class="w-8 h-8 text-green-600 dark:text-green-400"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">{{ category.name }}</h1>
+                    <p class="text-lg text-gray-600 dark:text-gray-300">
+                        {{category.description}}
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="max-w-md">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                    <input type="text" id="search-input" placeholder="Search calculators..." class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculator Grid -->
+        <div id="calculators-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+         
+          {% for calculator in calculators %}
+
+
+          <a href="{% url 'calculator_detail' calculator.slug %}">
+
+            <div class="calculator-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 group" data-name="loan calculator">
+                <div class="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-5 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
+                    <i data-lucide="{{calculator.icon}}" class="w-7 h-7 text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">{{calculator.name}}</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">{{calculator.description}}</p>
+                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors duration-200">
+                    Use Calculator
+                </button>
+            </div>
+          </a>
+          {% endfor %}
+
+            
+        </div>
+
+        <!-- No Results Message -->
+        <div id="no-results" class="hidden text-center py-12">
+            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="search-x" class="w-8 h-8 text-gray-400"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No calculators found</h3>
+            <p class="text-gray-600 dark:text-gray-300">Try adjusting your search criteria.</p>
+        </div>
+    </main>
+
+
+    <!-- JavaScript -->
+    <script>
+        // Theme toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const themeIcon = document.getElementById('theme-icon');
+            if (document.documentElement.classList.contains('dark')) {
+                themeIcon.setAttribute('data-lucide', 'moon');
+            } else {
+                themeIcon.setAttribute('data-lucide', 'sun');
+            }
+            lucide.createIcons();
+        }
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Search functionality
+        function filterCalculators() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const calculatorCards = document.querySelectorAll('.calculator-card');
+            let visibleCount = 0;
+            
+            calculatorCards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const description = card.querySelector('p').textContent.toLowerCase();
+                
+                const matchesSearch = name.includes(searchTerm) || 
+                                    title.includes(searchTerm) ||
+                                    description.includes(searchTerm);
+                
+                if (matchesSearch) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Show/hide no results message
+            const noResults = document.getElementById('no-results');
+            if (visibleCount === 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+            }
+        }
+
+        // Search input event listener
+        document.getElementById('search-input').addEventListener('input', filterCalculators);
+
+        // Initialize Lucide icons
+    
+    </script>
+{% endblock %}
+
+

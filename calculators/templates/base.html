@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calcuick - Quick Calculator Tools</title>
-    <!-- Tailwind CSS CDN -->
+   
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    {% block head %}
+    {% endblock %}
     <script>
-        // Configure Tailwind theme
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -19,24 +20,6 @@
                     }
                 }
             }
-        }
-
-        // Toggle mobile menu
-        function toggleMenu() {
-            const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
-        }
-
-        // Toggle theme (light/dark)
-        function toggleTheme() {
-            document.documentElement.classList.toggle('dark');
-            const themeIcon = document.getElementById('theme-icon');
-            if (document.documentElement.classList.contains('dark')) {
-                themeIcon.setAttribute('data-lucide', 'moon');
-            } else {
-                themeIcon.setAttribute('data-lucide', 'sun');
-            }
-            lucide.createIcons();
         }
     </script>
     <style>
@@ -52,12 +35,16 @@
         <div class="max-w-6xl mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
                 <!-- Logo -->
+                <a href="/">
                 <div class="flex items-center space-x-3">
+                    
                     <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                         <i data-lucide="calculator" class="w-6 h-6 text-white"></i>
                     </div>
                     <span class="text-xl font-semibold text-gray-900 dark:text-white">Calcuick</span>
+              
                 </div>
+            </a>
                 
                 <!-- Navigation Links -->
                 <div class="hidden md:flex items-center space-x-8">
@@ -89,7 +76,10 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
+
+{% block body %}
+
+
     <main class="max-w-6xl mx-auto px-4 py-16">
         <!-- Hero Section -->
         <div class="text-center mb-16">
@@ -139,8 +129,26 @@
         </div>
     </nav>
 
-    <!-- Initialize Lucide Icons -->
+    {% endblock %}
+ 
     <script>
+                // Toggle mobile menu
+       function toggleMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Toggle theme (light/dark)
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const themeIcon = document.getElementById('theme-icon');
+            if (document.documentElement.classList.contains('dark')) {
+                themeIcon.setAttribute('data-lucide', 'moon');
+            } else {
+                themeIcon.setAttribute('data-lucide', 'sun');
+            }
+            lucide.createIcons();
+        }
         lucide.createIcons();
     </script>
 </body>

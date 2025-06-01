@@ -1,0 +1,762 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    <!-- KaTeX for math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+{% endblock %}
+
+{% block body %}
+ 
+    <main class="max-w-4xl mx-auto px-4 py-8">
+     
+        <div class="mb-6">
+            <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                <span>Back to Calculators</span>
+            </button>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <div class="w-16 h-16 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="infinity" class="w-8 h-8 text-purple-600 dark:text-purple-400"></i>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Stokes' Theorem Calculator</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Calculate and verify Stokes' Theorem for vector fields and surfaces.
+            </p>
+            <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+                <div id="stokes-formula" class="text-blue-800 dark:text-blue-300"></div>
+            </div>
+        </div>
+
+        <!-- Calculator -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+            <!-- Input Section -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Vector Field Input</h2>
+                <p class="text-gray-600 dark:text-gray-300 mb-6">
+                    Enter the components of your vector field F(x,y,z) = [P, Q, R]:
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            P(x,y,z) component:
+                        </label>
+                        <input type="text" id="p-component" placeholder="e.g., y" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Q(x,y,z) component:
+                        </label>
+                        <input type="text" id="q-component" placeholder="e.g., -x" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            R(x,y,z) component:
+                        </label>
+                        <input type="text" id="r-component" placeholder="e.g., 0" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Surface and Curve Selection -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Surface and Curve</h2>
+                <p class="text-gray-600 dark:text-gray-300 mb-6">
+                    Select a predefined surface and its boundary curve:
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Select Surface:
+                        </label>
+                        <select id="surface-select" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <option value="disk">Unit Disk in xy-plane (z=0)</option>
+                            <option value="hemisphere">Upper Hemisphere (x²+y²+z²=1, z≥0)</option>
+                            <option value="paraboloid">Paraboloid (z=x²+y², 0≤z≤1)</option>
+                            <option value="rectangle">Rectangle in xy-plane (0≤x≤a, 0≤y≤b)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Surface Parameters:
+                        </label>
+                        <div id="parameter-inputs" class="space-y-3">
+                            <!-- Parameters will be dynamically added here -->
+                            <div id="disk-params" class="space-y-3">
+                                <div>
+                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Radius:</label>
+                                    <input type="number" id="disk-radius" value="1" min="0.1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-6">
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-2">Surface Description:</h3>
+                    <p id="surface-description" class="text-gray-600 dark:text-gray-300 text-sm">
+                        Unit disk in the xy-plane centered at the origin with radius 1. The boundary is a circle traversed counterclockwise.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                <button onclick="calculateStokesTheorem()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                    Calculate
+                </button>
+                <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                    Clear
+                </button>
+            </div>
+
+            <!-- Result -->
+            <div id="result-container" class="hidden">
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Results</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Line Integral:</h4>
+                            <div id="line-integral-result" class="text-gray-800 dark:text-gray-200"></div>
+                            <p id="line-integral-value" class="text-lg font-semibold mt-2 text-green-700 dark:text-green-300"></p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Surface Integral:</h4>
+                            <div id="surface-integral-result" class="text-gray-800 dark:text-gray-200"></div>
+                            <p id="surface-integral-value" class="text-lg font-semibold mt-2 text-green-700 dark:text-green-300"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t border-green-200 dark:border-green-800">
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Verification:</h4>
+                        <p id="verification-result" class="text-lg font-semibold text-green-700 dark:text-green-300"></p>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Calculation Details</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Vector Field:</h4>
+                            <div id="vector-field-display" class="text-gray-800 dark:text-gray-200"></div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Curl of Vector Field:</h4>
+                            <div id="curl-display" class="text-gray-800 dark:text-gray-200"></div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Parametrization:</h4>
+                            <div id="parametrization-display" class="text-gray-800 dark:text-gray-200"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- How to Use -->
+        <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Stokes' Theorem</h2>
+            
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Stokes' Theorem?</h3>
+                    <p class="text-gray-600 dark:text-gray-300">
+                        Stokes' Theorem relates the surface integral of the curl of a vector field over a surface to the line integral of the vector field around the boundary of the surface. It's a fundamental theorem in vector calculus with applications in physics and engineering.
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+                    <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                        <li>Enter the components of your vector field F(x,y,z) = [P, Q, R]</li>
+                        <li>Select a predefined surface and its boundary</li>
+                        <li>Adjust any parameters for the selected surface</li>
+                        <li>Click "Calculate" to compute both sides of Stokes' Theorem</li>
+                        <li>View the results and verification</li>
+                    </ol>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Input Format</h3>
+                    <p class="text-gray-600 dark:text-gray-300">
+                        Enter expressions using standard mathematical notation. Use * for multiplication, ^ for exponents, and variables x, y, and z.
+                        <br><br>
+                        Examples:
+                    </p>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 mt-2">
+                        <li>y (y variable)</li>
+                        <li>-x (negative x)</li>
+                        <li>x*y (x times y)</li>
+                        <li>y^2 (y squared)</li>
+                        <li>sin(x) + cos(y) (trigonometric functions)</li>
+                        <li>exp(x) (exponential function)</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Example Vector Fields</h3>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Example 1: Simple Rotational Field</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                            <li>P(x,y,z): y</li>
+                            <li>Q(x,y,z): -x</li>
+                            <li>R(x,y,z): 0</li>
+                            <li>Expected result: -2π ≈ -6.283</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-200 dark:border-gray-700 mt-20">
+        <div class="max-w-6xl mx-auto px-4 py-8">
+            <div class="text-center text-gray-600 dark:text-gray-300">
+                <p>&copy; 2025 Calcuick. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Theme toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const themeIcon = document.getElementById('theme-icon');
+            if (document.documentElement.classList.contains('dark')) {
+                themeIcon.setAttribute('data-lucide', 'moon');
+            } else {
+                themeIcon.setAttribute('data-lucide', 'sun');
+            }
+            lucide.createIcons();
+            renderMathFormulas();
+        }
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Surface selection change handler
+        document.getElementById('surface-select').addEventListener('change', function() {
+            updateSurfaceParameters();
+        });
+
+        // Update surface parameters based on selection
+        function updateSurfaceParameters() {
+            const surfaceType = document.getElementById('surface-select').value;
+            const parameterInputs = document.getElementById('parameter-inputs');
+            
+            // Clear existing parameters
+            parameterInputs.innerHTML = '';
+            
+            // Add parameters based on surface type
+            switch(surfaceType) {
+                case 'disk':
+                    parameterInputs.innerHTML = `
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Radius:</label>
+                            <input type="number" id="disk-radius" value="1" min="0.1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                    `;
+                    document.getElementById('surface-description').textContent = 'Unit disk in the xy-plane centered at the origin with radius 1. The boundary is a circle traversed counterclockwise.';
+                    break;
+                case 'hemisphere':
+                    parameterInputs.innerHTML = `
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Radius:</label>
+                            <input type="number" id="hemisphere-radius" value="1" min="0.1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                    `;
+                    document.getElementById('surface-description').textContent = 'Upper hemisphere with radius 1 centered at the origin. The boundary is a circle in the xy-plane traversed counterclockwise.';
+                    break;
+                case 'paraboloid':
+                    parameterInputs.innerHTML = `
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Height:</label>
+                            <input type="number" id="paraboloid-height" value="1" min="0.1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                    `;
+                    document.getElementById('surface-description').textContent = 'Paraboloid z = x² + y² from z = 0 to z = 1. The boundary is a circle in the xy-plane where z = 1.';
+                    break;
+                case 'rectangle':
+                    parameterInputs.innerHTML = `
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Width (a):</label>
+                                <input type="number" id="rectangle-width" value="2" min="0.1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Height (b):</label>
+                                <input type="number" id="rectangle-height" value="1" min="0.1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('surface-description').textContent = 'Rectangle in the xy-plane with corners at (0,0), (a,0), (a,b), and (0,b). The boundary is traversed counterclockwise.';
+                    break;
+            }
+        }
+
+        // Calculate Stokes' Theorem
+        function calculateStokesTheorem() {
+            try {
+                // Get vector field components
+                const pComponent = document.getElementById('p-component').value || '0';
+                const qComponent = document.getElementById('q-component').value || '0';
+                const rComponent = document.getElementById('r-component').value || '0';
+                
+                // Get surface type and parameters
+                const surfaceType = document.getElementById('surface-select').value;
+                
+                // Create functions for vector field components
+                const pFunc = (x, y, z) => {
+                    try {
+                        return math.evaluate(pComponent, { x, y, z });
+                    } catch (e) {
+                        return 0;
+                    }
+                };
+                
+                const qFunc = (x, y, z) => {
+                    try {
+                        return math.evaluate(qComponent, { x, y, z });
+                    } catch (e) {
+                        return 0;
+                    }
+                };
+                
+                const rFunc = (x, y, z) => {
+                    try {
+                        return math.evaluate(rComponent, { x, y, z });
+                    } catch (e) {
+                        return 0;
+                    }
+                };
+                
+                // Calculate partial derivatives for curl
+                // We'll use numerical differentiation for simplicity
+                const h = 0.0001; // Step size for numerical differentiation
+                
+                const dRdy = (x, y, z) => (rFunc(x, y + h, z) - rFunc(x, y - h, z)) / (2 * h);
+                const dQdz = (x, y, z) => (qFunc(x, y, z + h) - qFunc(x, y, z - h)) / (2 * h);
+                const dPdz = (x, y, z) => (pFunc(x, y, z + h) - pFunc(x, y, z - h)) / (2 * h);
+                const dRdx = (x, y, z) => (rFunc(x + h, y, z) - rFunc(x - h, y, z)) / (2 * h);
+                const dQdx = (x, y, z) => (qFunc(x + h, y, z) - qFunc(x - h, y, z)) / (2 * h);
+                const dPdy = (x, y, z) => (pFunc(x, y + h, z) - pFunc(x, y - h, z)) / (2 * h);
+                
+                // Curl components
+                const curlX = (x, y, z) => dRdy(x, y, z) - dQdz(x, y, z);
+                const curlY = (x, y, z) => dPdz(x, y, z) - dRdx(x, y, z);
+                const curlZ = (x, y, z) => dQdx(x, y, z) - dPdy(x, y, z);
+                
+                // Calculate based on surface type
+                let lineIntegral, surfaceIntegral;
+                
+                switch(surfaceType) {
+                    case 'disk':
+                        const diskRadius = parseFloat(document.getElementById('disk-radius').value) || 1;
+                        [lineIntegral, surfaceIntegral] = calculateForDisk(pFunc, qFunc, rFunc, curlX, curlY, curlZ, diskRadius);
+                        break;
+                    case 'hemisphere':
+                        const hemisphereRadius = parseFloat(document.getElementById('hemisphere-radius').value) || 1;
+                        [lineIntegral, surfaceIntegral] = calculateForHemisphere(pFunc, qFunc, rFunc, curlX, curlY, curlZ, hemisphereRadius);
+                        break;
+                    case 'paraboloid':
+                        const paraboloidHeight = parseFloat(document.getElementById('paraboloid-height').value) || 1;
+                        [lineIntegral, surfaceIntegral] = calculateForParaboloid(pFunc, qFunc, rFunc, curlX, curlY, curlZ, paraboloidHeight);
+                        break;
+                    case 'rectangle':
+                        const rectWidth = parseFloat(document.getElementById('rectangle-width').value) || 2;
+                        const rectHeight = parseFloat(document.getElementById('rectangle-height').value) || 1;
+                        [lineIntegral, surfaceIntegral] = calculateForRectangle(pFunc, qFunc, rFunc, curlX, curlY, curlZ, rectWidth, rectHeight);
+                        break;
+                }
+                
+                // Display results
+                displayResults(
+                    pComponent, qComponent, rComponent,
+                    curlX.toString(), curlY.toString(), curlZ.toString(),
+                    lineIntegral, surfaceIntegral,
+                    surfaceType
+                );
+                
+            } catch (error) {
+                alert("Calculation error: " + error.message);
+                console.error(error);
+            }
+        }
+
+        // Calculate for unit disk in xy-plane
+        function calculateForDisk(pFunc, qFunc, rFunc, curlX, curlY, curlZ, radius) {
+            // Line integral around the circle
+            let lineIntegral = 0;
+            const numPoints = 1000;
+            const dt = 2 * Math.PI / numPoints;
+            
+            for (let i = 0; i < numPoints; i++) {
+                const t = i * dt;
+                const x = radius * Math.cos(t);
+                const y = radius * Math.sin(t);
+                const z = 0;
+                
+                // Tangent vector components
+                const dx = -radius * Math.sin(t) * dt;
+                const dy = radius * Math.cos(t) * dt;
+                const dz = 0;
+                
+                // F·dr = P*dx + Q*dy + R*dz
+                const p = pFunc(x, y, z);
+                const q = qFunc(x, y, z);
+                const r = rFunc(x, y, z);
+                
+                lineIntegral += p * dx + q * dy + r * dz;
+            }
+            
+            // Surface integral of curl·dS over the disk
+            let surfaceIntegral = 0;
+            const numRadialPoints = 100;
+            const numAngularPoints = 100;
+            const dr = radius / numRadialPoints;
+            const dtheta = 2 * Math.PI / numAngularPoints;
+            
+            for (let i = 0; i < numRadialPoints; i++) {
+                const r = (i + 0.5) * dr;
+                for (let j = 0; j < numAngularPoints; j++) {
+                    const theta = j * dtheta;
+                    const x = r * Math.cos(theta);
+                    const y = r * Math.sin(theta);
+                    const z = 0;
+                    
+                    // For disk in xy-plane, normal is (0,0,1)
+                    const curl_z = curlZ(x, y, z);
+                    
+                    // Area element is r*dr*dtheta
+                    surfaceIntegral += curl_z * r * dr * dtheta;
+                }
+            }
+            
+            return [lineIntegral, surfaceIntegral];
+        }
+
+        // Calculate for hemisphere
+        function calculateForHemisphere(pFunc, qFunc, rFunc, curlX, curlY, curlZ, radius) {
+            // Line integral around the circle in xy-plane
+            let lineIntegral = 0;
+            const numPoints = 1000;
+            const dt = 2 * Math.PI / numPoints;
+            
+            for (let i = 0; i < numPoints; i++) {
+                const t = i * dt;
+                const x = radius * Math.cos(t);
+                const y = radius * Math.sin(t);
+                const z = 0;
+                
+                // Tangent vector components
+                const dx = -radius * Math.sin(t) * dt;
+                const dy = radius * Math.cos(t) * dt;
+                const dz = 0;
+                
+                // F·dr = P*dx + Q*dy + R*dz
+                const p = pFunc(x, y, z);
+                const q = qFunc(x, y, z);
+                const r = rFunc(x, y, z);
+                
+                lineIntegral += p * dx + q * dy + r * dz;
+            }
+            
+            // Surface integral of curl·dS over the hemisphere
+            let surfaceIntegral = 0;
+            const numThetaPoints = 100;
+            const numPhiPoints = 100;
+            const dtheta = Math.PI / 2 / numThetaPoints; // Only upper hemisphere
+            const dphi = 2 * Math.PI / numPhiPoints;
+            
+            for (let i = 0; i < numThetaPoints; i++) {
+                const theta = i * dtheta;
+                for (let j = 0; j < numPhiPoints; j++) {
+                    const phi = j * dphi;
+                    
+                    // Spherical coordinates to Cartesian
+                    const x = radius * Math.sin(theta) * Math.cos(phi);
+                    const y = radius * Math.sin(theta) * Math.sin(phi);
+                    const z = radius * Math.cos(theta);
+                    
+                    // Normal vector components (outward)
+                    const nx = Math.sin(theta) * Math.cos(phi);
+                    const ny = Math.sin(theta) * Math.sin(phi);
+                    const nz = Math.cos(theta);
+                    
+                    // Curl components
+                    const curl_x = curlX(x, y, z);
+                    const curl_y = curlY(x, y, z);
+                    const curl_z = curlZ(x, y, z);
+                    
+                    // curl·dS = curl·n*dS
+                    const curlDotN = curl_x * nx + curl_y * ny + curl_z * nz;
+                    
+                    // Area element is r²*sin(theta)*dtheta*dphi
+                    surfaceIntegral += curlDotN * radius * radius * Math.sin(theta) * dtheta * dphi;
+                }
+            }
+            
+            return [lineIntegral, surfaceIntegral];
+        }
+
+        // Calculate for paraboloid
+        function calculateForParaboloid(pFunc, qFunc, rFunc, curlX, curlY, curlZ, height) {
+            // Radius of the circle at z = height
+            const radius = Math.sqrt(height);
+            
+            // Line integral around the circle at z = height
+            let lineIntegral = 0;
+            const numPoints = 1000;
+            const dt = 2 * Math.PI / numPoints;
+            
+            for (let i = 0; i < numPoints; i++) {
+                const t = i * dt;
+                const x = radius * Math.cos(t);
+                const y = radius * Math.sin(t);
+                const z = height;
+                
+                // Tangent vector components
+                const dx = -radius * Math.sin(t) * dt;
+                const dy = radius * Math.cos(t) * dt;
+                const dz = 0;
+                
+                // F·dr = P*dx + Q*dy + R*dz
+                const p = pFunc(x, y, z);
+                const q = qFunc(x, y, z);
+                const r = rFunc(x, y, z);
+                
+                lineIntegral += p * dx + q * dy + r * dz;
+            }
+            
+            // Surface integral of curl·dS over the paraboloid
+            let surfaceIntegral = 0;
+            const numRadialPoints = 100;
+            const numAngularPoints = 100;
+            const dr = radius / numRadialPoints;
+            const dtheta = 2 * Math.PI / numAngularPoints;
+            
+            for (let i = 0; i < numRadialPoints; i++) {
+                const r = (i + 0.5) * dr;
+                for (let j = 0; j < numAngularPoints; j++) {
+                    const theta = j * dtheta;
+                    const x = r * Math.cos(theta);
+                    const y = r * Math.sin(theta);
+                    const z = x*x + y*y;
+                    
+                    // Normal vector to paraboloid
+                    const nx = -2 * x;
+                    const ny = -2 * y;
+                    const nz = 1;
+                    const normFactor = Math.sqrt(nx*nx + ny*ny + nz*nz);
+                    
+                    // Normalize
+                    const normalX = nx / normFactor;
+                    const normalY = ny / normFactor;
+                    const normalZ = nz / normFactor;
+                    
+                    // Curl components
+                    const curl_x = curlX(x, y, z);
+                    const curl_y = curlY(x, y, z);
+                    const curl_z = curlZ(x, y, z);
+                    
+                    // curl·dS = curl·n*dS
+                    const curlDotN = curl_x * normalX + curl_y * normalY + curl_z * normalZ;
+                    
+                    // Area element includes the surface factor
+                    const surfaceFactor = Math.sqrt(1 + 4*x*x + 4*y*y);
+                    surfaceIntegral += curlDotN * r * dr * dtheta * surfaceFactor;
+                }
+            }
+            
+            return [lineIntegral, surfaceIntegral];
+        }
+
+        // Calculate for rectangle in xy-plane
+        function calculateForRectangle(pFunc, qFunc, rFunc, curlX, curlY, curlZ, width, height) {
+            // Line integral around the rectangle
+            let lineIntegral = 0;
+            
+            // Bottom edge: (0,0) to (width,0)
+            const numPointsBottom = 100;
+            const dx1 = width / numPointsBottom;
+            for (let i = 0; i < numPointsBottom; i++) {
+                const x = i * dx1;
+                const y = 0;
+                const z = 0;
+                
+                const p = pFunc(x, y, z);
+                lineIntegral += p * dx1;
+            }
+            
+            // Right edge: (width,0) to (width,height)
+            const numPointsRight = 100;
+            const dy1 = height / numPointsRight;
+            for (let i = 0; i < numPointsRight; i++) {
+                const x = width;
+                const y = i * dy1;
+                const z = 0;
+                
+                const q = qFunc(x, y, z);
+                lineIntegral += q * dy1;
+            }
+            
+            // Top edge: (width,height) to (0,height)
+            const numPointsTop = 100;
+            const dx2 = -width / numPointsTop;
+            for (let i = 0; i < numPointsTop; i++) {
+                const x = width - i * width / numPointsTop;
+                const y = height;
+                const z = 0;
+                
+                const p = pFunc(x, y, z);
+                lineIntegral += p * dx2;
+            }
+            
+            // Left edge: (0,height) to (0,0)
+            const numPointsLeft = 100;
+            const dy2 = -height / numPointsLeft;
+            for (let i = 0; i < numPointsLeft; i++) {
+                const x = 0;
+                const y = height - i * height / numPointsLeft;
+                const z = 0;
+                
+                const q = qFunc(x, y, z);
+                lineIntegral += q * dy2;
+            }
+            
+            // Surface integral of curl·dS over the rectangle
+            let surfaceIntegral = 0;
+            const numXPoints = 100;
+            const numYPoints = 100;
+            const dx = width / numXPoints;
+            const dy = height / numYPoints;
+            
+            for (let i = 0; i < numXPoints; i++) {
+                const x = (i + 0.5) * dx;
+                for (let j = 0; j < numYPoints; j++) {
+                    const y = (j + 0.5) * dy;
+                    const z = 0;
+                    
+                    // For rectangle in xy-plane, normal is (0,0,1)
+                    const curl_z = curlZ(x, y, z);
+                    
+                    // Area element is dx*dy
+                    surfaceIntegral += curl_z * dx * dy;
+                }
+            }
+            
+            return [lineIntegral, surfaceIntegral];
+        }
+
+        // Display results
+        function displayResults(p, q, r, curlX, curlY, curlZ, lineIntegral, surfaceIntegral, surfaceType) {
+            // Show result container
+            document.getElementById('result-container').classList.remove('hidden');
+            
+            // Format vector field
+            const vectorField = `\\mathbf{F}(x,y,z) = (${p})\\mathbf{i} + (${q})\\mathbf{j} + (${r})\\mathbf{k}`;
+            document.getElementById('vector-field-display').innerHTML = `$$${vectorField}$$`;
+            
+            // Format curl
+            const curl = `\\nabla \\times \\mathbf{F} = \\text{curl}\\mathbf{F}`;
+            document.getElementById('curl-display').innerHTML = `$$${curl}$$`;
+            
+            // Format parametrization based on surface type
+            let parametrization = '';
+            switch(surfaceType) {
+                case 'disk':
+                    const diskRadius = document.getElementById('disk-radius').value || '1';
+                    parametrization = `\\text{Disk: } x^2 + y^2 \\leq ${diskRadius}^2, z = 0`;
+                    break;
+                case 'hemisphere':
+                    const hemisphereRadius = document.getElementById('hemisphere-radius').value || '1';
+                    parametrization = `\\text{Hemisphere: } x^2 + y^2 + z^2 = ${hemisphereRadius}^2, z \\geq 0`;
+                    break;
+                case 'paraboloid':
+                    const paraboloidHeight = document.getElementById('paraboloid-height').value || '1';
+                    parametrization = `\\text{Paraboloid: } z = x^2 + y^2, 0 \\leq z \\leq ${paraboloidHeight}`;
+                    break;
+                case 'rectangle':
+                    const rectWidth = document.getElementById('rectangle-width').value || '2';
+                    const rectHeight = document.getElementById('rectangle-height').value || '1';
+                    parametrization = `\\text{Rectangle: } 0 \\leq x \\leq ${rectWidth}, 0 \\leq y \\leq ${rectHeight}, z = 0`;
+                    break;
+            }
+            document.getElementById('parametrization-display').innerHTML = `$$${parametrization}$$`;
+            
+            // Format line integral
+            document.getElementById('line-integral-result').innerHTML = `$$\\oint_C \\mathbf{F} \\cdot d\\mathbf{r}$$`;
+            document.getElementById('line-integral-value').textContent = lineIntegral.toFixed(6);
+            
+            // Format surface integral
+            document.getElementById('surface-integral-result').innerHTML = `$$\\iint_S (\\nabla \\times \\mathbf{F}) \\cdot d\\mathbf{S}$$`;
+            document.getElementById('surface-integral-value').textContent = surfaceIntegral.toFixed(6);
+            
+            // Verification
+            const difference = Math.abs(lineIntegral - surfaceIntegral);
+            const isVerified = difference < 0.01;
+            document.getElementById('verification-result').textContent = isVerified 
+                ? `Stokes' Theorem is verified! The difference is ${difference.toFixed(6)}.`
+                : `The difference between the integrals is ${difference.toFixed(6)}. This may be due to numerical approximation or an error in the input.`;
+            
+            // Render math formulas
+            renderMathFormulas();
+        }
+
+        // Clear calculator
+        function clearCalculator() {
+            document.getElementById('p-component').value = '';
+            document.getElementById('q-component').value = '';
+            document.getElementById('r-component').value = '';
+            document.getElementById('result-container').classList.add('hidden');
+            
+            // Reset surface selection
+            document.getElementById('surface-select').value = 'disk';
+            updateSurfaceParameters();
+        }
+
+        // Render math formulas
+        function renderMathFormulas() {
+            // Render Stokes' Theorem formula
+            katex.render('\\oint_C \\mathbf{F} \\cdot d\\mathbf{r} = \\iint_S (\\nabla \\times \\mathbf{F}) \\cdot d\\mathbf{S}', 
+                document.getElementById('stokes-formula'), {
+                displayMode: true,
+                throwOnError: false
+            });
+            
+            // Render all other math elements
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true}
+                ],
+                throwOnError: false
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSurfaceParameters();
+            renderMathFormulas();
+            lucide.createIcons();
+        });
+    </script>
+
+
+{% endblock %}

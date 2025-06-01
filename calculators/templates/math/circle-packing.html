@@ -1,0 +1,762 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Math.js for calculations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+<!-- KaTeX for math rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+    .katex { font-size: 1.1em; }
+    #packing-canvas {
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f9fafb;
+    }
+    .dark #packing-canvas {
+        border-color: #374151;
+        background: #1f2937;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-cyan-50 dark:bg-cyan-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="circle-dot" class="w-8 h-8 text-cyan-600 dark:text-cyan-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Circle Packing Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate optimal circle packing arrangements, packing density, and visualize circle configurations.
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div id="packing-formula" class="text-blue-800 dark:text-blue-300"></div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Packing Configuration</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Inputs -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Packing Type:
+                        </label>
+                        <select id="packing-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            <option value="container">Circles in Container</option>
+                            <option value="infinite">Infinite Plane Packing</option>
+                            <option value="custom">Custom Circle Arrangement</option>
+                        </select>
+                    </div>
+
+                    <div id="container-inputs">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Container Properties</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Container Shape:
+                                </label>
+                                <select id="container-shape" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                                    <option value="circle">Circular Container</option>
+                                    <option value="square">Square Container</option>
+                                    <option value="rectangle">Rectangular Container</option>
+                                </select>
+                            </div>
+
+                            <div id="container-dimensions">
+                                <div id="circle-container-inputs">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Container Radius:
+                                    </label>
+                                    <input type="number" id="container-radius" value="10" min="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Circle Radius:
+                                </label>
+                                <input type="number" id="circle-radius" value="1" min="0.1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            </div>
+
+                            <div id="circle-count-input">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Number of Circles:
+                                </label>
+                                <input type="number" id="circle-count" value="7" min="1" max="50" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="infinite-inputs" class="hidden">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Infinite Packing Properties</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Packing Pattern:
+                                </label>
+                                <select id="packing-pattern" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                                    <option value="hexagonal">Hexagonal (Optimal)</option>
+                                    <option value="square">Square Grid</option>
+                                    <option value="triangular">Triangular</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Circle Radius:
+                                </label>
+                                <input type="number" id="infinite-circle-radius" value="1" min="0.1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="custom-inputs" class="hidden">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Custom Arrangement</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Circle Data (x,y,radius per line):
+                                </label>
+                                <textarea id="custom-circles" rows="6" placeholder="1,1,0.5&#10;3,2,0.8&#10;5,1,0.6" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"></textarea>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: x,y,radius (one circle per line)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Visualization -->
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Visualization</h3>
+                    <div class="flex justify-center">
+                        <canvas id="packing-canvas" width="400" height="400"></canvas>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="generatePacking()" class="bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200 mr-2">
+                            Generate Packing
+                        </button>
+                        <button onclick="exportVisualization()" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Export Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button onclick="calculatePacking()" class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Calculate Packing
+            </button>
+            <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+
+        <!-- Result -->
+        <div id="result-container" class="hidden">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Packing Results</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Configuration:</h4>
+                        <div id="config-info" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Packing Density:</h4>
+                        <div id="packing-density" class="text-gray-800 dark:text-gray-200 text-lg font-semibold"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Efficiency:</h4>
+                        <div id="packing-efficiency" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Detailed Analysis</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Areas:</h4>
+                        <div id="area-analysis" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Coordinates:</h4>
+                        <div id="coordinates-list" class="text-gray-800 dark:text-gray-200 max-h-40 overflow-y-auto"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="optimization-results" class="hidden">
+                <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Optimization Results</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Maximum Circles:</h4>
+                            <div id="max-circles" class="text-gray-800 dark:text-gray-200"></div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Optimal Arrangement:</h4>
+                            <div id="optimal-arrangement" class="text-gray-800 dark:text-gray-200"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Circle Packing</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Circle Packing?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Circle packing is the study of arranging circles in a given space to maximize density or minimize wasted space. 
+                    It has applications in materials science, computer graphics, facility location, and mathematical optimization.
+                </p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Packing Types</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Container Packing</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Pack circles within a bounded container (circle, square, or rectangle). 
+                            Useful for storage optimization and space planning.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Infinite Packing</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Arrange circles in infinite patterns. Hexagonal packing achieves 
+                            the optimal density of π/(2√3) ≈ 90.69%.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Custom Arrangement</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Analyze existing circle arrangements or test specific configurations 
+                            for density and overlap detection.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li>Select your packing type (container, infinite, or custom)</li>
+                    <li>Configure the parameters (container size, circle radius, etc.)</li>
+                    <li>Click "Generate Packing" to visualize the arrangement</li>
+                    <li>Click "Calculate Packing" to get detailed analysis</li>
+                    <li>View density, efficiency, and optimization results</li>
+                </ol>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key Concepts</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Packing Density:</strong> Ratio of area covered by circles to total area</li>
+                    <li><strong>Hexagonal Packing:</strong> Optimal infinite packing pattern</li>
+                    <li><strong>Kissing Number:</strong> Maximum number of circles that can touch a given circle</li>
+                    <li><strong>Packing Efficiency:</strong> How close the arrangement is to theoretical optimum</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Materials Science:</strong> Atomic arrangements in crystals</li>
+                    <li><strong>Manufacturing:</strong> Optimal cutting patterns for circular parts</li>
+                    <li><strong>Computer Graphics:</strong> Procedural texture generation</li>
+                    <li><strong>Facility Planning:</strong> Optimal placement of circular objects</li>
+                    <li><strong>Art and Design:</strong> Aesthetic pattern creation</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Example Configurations</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Try These Examples:</h4>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                        <li>7 circles of radius 1 in a circular container of radius 3</li>
+                        <li>Hexagonal packing with circle radius 1 (density ≈ 90.69%)</li>
+                        <li>Custom arrangement: 0,0,1 | 2.5,0,1 | 1.25,2.17,1 (equilateral triangle)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+    let currentPacking = [];
+    let canvas, ctx;
+
+    // Initialize canvas
+    function initCanvas() {
+        canvas = document.getElementById('packing-canvas');
+        ctx = canvas.getContext('2d');
+        clearCanvas();
+    }
+
+    // Clear canvas
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Set background
+        const isDark = document.documentElement.classList.contains('dark');
+        ctx.fillStyle = isDark ? '#1f2937' : '#f9fafb';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Update input visibility based on packing type
+    document.getElementById('packing-type').addEventListener('change', function() {
+        const packingType = this.value;
+        
+        document.getElementById('container-inputs').classList.toggle('hidden', packingType !== 'container');
+        document.getElementById('infinite-inputs').classList.toggle('hidden', packingType !== 'infinite');
+        document.getElementById('custom-inputs').classList.toggle('hidden', packingType !== 'custom');
+    });
+
+    // Update container dimension inputs based on shape
+    document.getElementById('container-shape').addEventListener('change', function() {
+        const shape = this.value;
+        const dimensionsDiv = document.getElementById('container-dimensions');
+        
+        if (shape === 'circle') {
+            dimensionsDiv.innerHTML = `
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Container Radius:
+                </label>
+                <input type="number" id="container-radius" value="10" min="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+            `;
+        } else if (shape === 'square') {
+            dimensionsDiv.innerHTML = `
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Square Side Length:
+                </label>
+                <input type="number" id="container-side" value="20" min="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+            `;
+        } else if (shape === 'rectangle') {
+            dimensionsDiv.innerHTML = `
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Width:</label>
+                        <input type="number" id="container-width" value="20" min="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Height:</label>
+                        <input type="number" id="container-height" value="15" min="1" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    // Generate hexagonal packing pattern
+    function generateHexagonalPacking(radius, canvasWidth, canvasHeight) {
+        const circles = [];
+        const spacing = radius * 2;
+        const rowHeight = spacing * Math.sqrt(3) / 2;
+        
+        for (let row = 0; row * rowHeight < canvasHeight + radius; row++) {
+            const y = row * rowHeight;
+            const offset = (row % 2) * radius;
+            
+            for (let col = 0; col * spacing + offset < canvasWidth + radius; col++) {
+                const x = col * spacing + offset;
+                
+                if (x >= -radius && x <= canvasWidth + radius && 
+                    y >= -radius && y <= canvasHeight + radius) {
+                    circles.push({ x, y, radius });
+                }
+            }
+        }
+        
+        return circles;
+    }
+
+    // Generate square grid packing
+    function generateSquarePacking(radius, canvasWidth, canvasHeight) {
+        const circles = [];
+        const spacing = radius * 2;
+        
+        for (let y = radius; y < canvasHeight; y += spacing) {
+            for (let x = radius; x < canvasWidth; x += spacing) {
+                circles.push({ x, y, radius });
+            }
+        }
+        
+        return circles;
+    }
+
+    // Generate triangular packing
+    function generateTriangularPacking(radius, canvasWidth, canvasHeight) {
+        const circles = [];
+        const spacing = radius * 2;
+        const rowHeight = spacing * Math.sqrt(3) / 2;
+        
+        for (let row = 0; row * rowHeight < canvasHeight; row++) {
+            const y = radius + row * rowHeight;
+            const offset = (row % 2) * radius;
+            
+            for (let col = 0; col * spacing + offset < canvasWidth; col++) {
+                const x = radius + col * spacing + offset;
+                circles.push({ x, y, radius });
+            }
+        }
+        
+        return circles;
+    }
+
+    // Simple circle packing in container (basic algorithm)
+    function packCirclesInContainer(containerShape, containerParams, circleRadius, numCircles) {
+        const circles = [];
+        const maxAttempts = 1000;
+        
+        for (let i = 0; i < numCircles; i++) {
+            let placed = false;
+            let attempts = 0;
+            
+            while (!placed && attempts < maxAttempts) {
+                let x, y;
+                
+                if (containerShape === 'circle') {
+                    const angle = Math.random() * 2 * Math.PI;
+                    const distance = Math.random() * (containerParams.radius - circleRadius);
+                    x = 200 + distance * Math.cos(angle);
+                    y = 200 + distance * Math.sin(angle);
+                } else if (containerShape === 'square') {
+                    x = circleRadius + Math.random() * (containerParams.side - 2 * circleRadius);
+                    y = circleRadius + Math.random() * (containerParams.side - 2 * circleRadius);
+                } else if (containerShape === 'rectangle') {
+                    x = circleRadius + Math.random() * (containerParams.width - 2 * circleRadius);
+                    y = circleRadius + Math.random() * (containerParams.height - 2 * circleRadius);
+                }
+                
+                // Check for overlaps
+                let overlap = false;
+                for (const circle of circles) {
+                    const distance = Math.sqrt((x - circle.x) ** 2 + (y - circle.y) ** 2);
+                    if (distance < circleRadius + circle.radius) {
+                        overlap = true;
+                        break;
+                    }
+                }
+                
+                if (!overlap) {
+                    circles.push({ x, y, radius: circleRadius });
+                    placed = true;
+                }
+                
+                attempts++;
+            }
+        }
+        
+        return circles;
+    }
+
+    // Draw container outline
+    function drawContainer(containerShape, containerParams) {
+        const isDark = document.documentElement.classList.contains('dark');
+        ctx.strokeStyle = isDark ? '#6b7280' : '#374151';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        if (containerShape === 'circle') {
+            ctx.arc(200, 200, containerParams.radius * 10, 0, 2 * Math.PI);
+        } else if (containerShape === 'square') {
+            const size = containerParams.side * 10;
+            const offset = (400 - size) / 2;
+            ctx.rect(offset, offset, size, size);
+        } else if (containerShape === 'rectangle') {
+            const width = containerParams.width * 10;
+            const height = containerParams.height * 10;
+            const offsetX = (400 - width) / 2;
+            const offsetY = (400 - height) / 2;
+            ctx.rect(offsetX, offsetY, width, height);
+        }
+        
+        ctx.stroke();
+    }
+
+    // Draw circles
+    function drawCircles(circles, scale = 10) {
+        const isDark = document.documentElement.classList.contains('dark');
+        
+        circles.forEach((circle, index) => {
+            ctx.beginPath();
+            ctx.arc(circle.x * scale, circle.y * scale, circle.radius * scale, 0, 2 * Math.PI);
+            
+            // Fill with semi-transparent color
+            const hue = (index * 137.5) % 360; // Golden angle for color distribution
+            ctx.fillStyle = `hsla(${hue}, 70%, ${isDark ? '60%' : '50%'}, 0.7)`;
+            ctx.fill();
+            
+            // Stroke
+            ctx.strokeStyle = isDark ? '#e5e7eb' : '#374151';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        });
+    }
+
+    // Generate packing visualization
+    function generatePacking() {
+        clearCanvas();
+        const packingType = document.getElementById('packing-type').value;
+        
+        if (packingType === 'container') {
+            const containerShape = document.getElementById('container-shape').value;
+            const circleRadius = parseFloat(document.getElementById('circle-radius').value);
+            const numCircles = parseInt(document.getElementById('circle-count').value);
+            
+            let containerParams = {};
+            if (containerShape === 'circle') {
+                containerParams.radius = parseFloat(document.getElementById('container-radius').value);
+            } else if (containerShape === 'square') {
+                containerParams.side = parseFloat(document.getElementById('container-side').value);
+            } else if (containerShape === 'rectangle') {
+                containerParams.width = parseFloat(document.getElementById('container-width').value);
+                containerParams.height = parseFloat(document.getElementById('container-height').value);
+            }
+            
+            drawContainer(containerShape, containerParams);
+            currentPacking = packCirclesInContainer(containerShape, containerParams, circleRadius, numCircles);
+            drawCircles(currentPacking);
+            
+        } else if (packingType === 'infinite') {
+            const pattern = document.getElementById('packing-pattern').value;
+            const radius = parseFloat(document.getElementById('infinite-circle-radius').value);
+            
+            if (pattern === 'hexagonal') {
+                currentPacking = generateHexagonalPacking(radius, 40, 40);
+            } else if (pattern === 'square') {
+                currentPacking = generateSquarePacking(radius, 40, 40);
+            } else if (pattern === 'triangular') {
+                currentPacking = generateTriangularPacking(radius, 40, 40);
+            }
+            
+            drawCircles(currentPacking);
+            
+        } else if (packingType === 'custom') {
+            const customData = document.getElementById('custom-circles').value;
+            currentPacking = [];
+            
+            const lines = customData.split('\n');
+            lines.forEach(line => {
+                const parts = line.trim().split(',');
+                if (parts.length === 3) {
+                    const x = parseFloat(parts[0]);
+                    const y = parseFloat(parts[1]);
+                    const radius = parseFloat(parts[2]);
+                    
+                    if (!isNaN(x) && !isNaN(y) && !isNaN(radius)) {
+                        currentPacking.push({ x, y, radius });
+                    }
+                }
+            });
+            
+            drawCircles(currentPacking);
+        }
+    }
+
+    // Calculate packing density and efficiency
+    function calculatePacking() {
+        if (currentPacking.length === 0) {
+            alert('Please generate a packing first.');
+            return;
+        }
+        
+        const packingType = document.getElementById('packing-type').value;
+        let totalCircleArea = 0;
+        let containerArea = 0;
+        let density = 0;
+        let efficiency = 0;
+        
+        // Calculate total circle area
+        currentPacking.forEach(circle => {
+            totalCircleArea += Math.PI * circle.radius * circle.radius;
+        });
+        
+        if (packingType === 'container') {
+            const containerShape = document.getElementById('container-shape').value;
+            
+            if (containerShape === 'circle') {
+                const radius = parseFloat(document.getElementById('container-radius').value);
+                containerArea = Math.PI * radius * radius;
+            } else if (containerShape === 'square') {
+                const side = parseFloat(document.getElementById('container-side').value);
+                containerArea = side * side;
+            } else if (containerShape === 'rectangle') {
+                const width = parseFloat(document.getElementById('container-width').value);
+                const height = parseFloat(document.getElementById('container-height').value);
+                containerArea = width * height;
+            }
+            
+            density = totalCircleArea / containerArea;
+            efficiency = density; // For container packing, efficiency is relative to container
+            
+        } else if (packingType === 'infinite') {
+            const pattern = document.getElementById('packing-pattern').value;
+            const radius = parseFloat(document.getElementById('infinite-circle-radius').value);
+            
+            // Calculate density for infinite patterns
+            if (pattern === 'hexagonal') {
+                density = Math.PI / (2 * Math.sqrt(3)); // Optimal density ≈ 0.9069
+                efficiency = 1.0; // Hexagonal is optimal
+            } else if (pattern === 'square') {
+                density = Math.PI / 4; // ≈ 0.7854
+                efficiency = density / (Math.PI / (2 * Math.sqrt(3))); // Relative to optimal
+            } else if (pattern === 'triangular') {
+                density = Math.PI / (2 * Math.sqrt(3)); // Same as hexagonal
+                efficiency = 1.0;
+            }
+            
+        } else if (packingType === 'custom') {
+            // For custom, calculate density within bounding box
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+            
+            currentPacking.forEach(circle => {
+                minX = Math.min(minX, circle.x - circle.radius);
+                maxX = Math.max(maxX, circle.x + circle.radius);
+                minY = Math.min(minY, circle.y - circle.radius);
+                maxY = Math.max(maxY, circle.y + circle.radius);
+            });
+            
+            containerArea = (maxX - minX) * (maxY - minY);
+            density = totalCircleArea / containerArea;
+            efficiency = density / (Math.PI / (2 * Math.sqrt(3))); // Relative to optimal
+        }
+        
+        // Display results
+        displayResults(packingType, density, efficiency, totalCircleArea, containerArea);
+        
+        // Scroll to results
+        setTimeout(() => {
+            document.getElementById('result-container').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+    }
+
+    // Display calculation results
+    function displayResults(packingType, density, efficiency, totalCircleArea, containerArea) {
+        // Configuration info
+        let configInfo = '';
+        if (packingType === 'container') {
+            const shape = document.getElementById('container-shape').value;
+            const numCircles = currentPacking.length;
+            configInfo = `${numCircles} circles in ${shape} container`;
+        } else if (packingType === 'infinite') {
+            const pattern = document.getElementById('packing-pattern').value;
+            configInfo = `${pattern.charAt(0).toUpperCase() + pattern.slice(1)} infinite packing`;
+        } else {
+            configInfo = `Custom arrangement with ${currentPacking.length} circles`;
+        }
+        
+        document.getElementById('config-info').textContent = configInfo;
+        document.getElementById('packing-density').textContent = `${(density * 100).toFixed(2)}%`;
+        document.getElementById('packing-efficiency').textContent = `${(efficiency * 100).toFixed(2)}% of optimal`;
+        
+        // Area analysis
+        let areaAnalysis = `Total circle area: ${totalCircleArea.toFixed(4)}\n`;
+        if (packingType !== 'infinite') {
+            areaAnalysis += `Container area: ${containerArea.toFixed(4)}\n`;
+            areaAnalysis += `Unused area: ${(containerArea - totalCircleArea).toFixed(4)}`;
+        }
+        document.getElementById('area-analysis').innerHTML = `<pre>${areaAnalysis}</pre>`;
+        
+        // Coordinates list
+        let coordsList = '';
+        currentPacking.forEach((circle, index) => {
+            coordsList += `Circle ${index + 1}: (${circle.x.toFixed(2)}, ${circle.y.toFixed(2)}, r=${circle.radius.toFixed(2)})\n`;
+        });
+        document.getElementById('coordinates-list').innerHTML = `<pre>${coordsList}</pre>`;
+        
+        document.getElementById('result-container').classList.remove('hidden');
+        
+        // Render math formulas
+        renderMathFormulas();
+    }
+
+    // Export visualization
+    function exportVisualization() {
+        const link = document.createElement('a');
+        link.download = 'circle-packing.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+
+    // Clear calculator
+    function clearCalculator() {
+        document.getElementById('function-input').value = '';
+        document.getElementById('result-container').classList.add('hidden');
+        document.getElementById('optimization-results').classList.add('hidden');
+        currentPacking = [];
+        clearCanvas();
+    }
+
+    // Render math formulas
+    function renderMathFormulas() {
+        // Render packing density formula
+        katex.render('\\text{Density} = \\frac{\\text{Area of circles}}{\\text{Total area}} = \\frac{\\sum \\pi r_i^2}{A_{\\text{container}}}', 
+            document.getElementById('packing-formula'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        // Render all other math elements
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initCanvas();
+        renderMathFormulas();
+        lucide.createIcons();
+        
+        // Generate initial packing
+        generatePacking();
+    });
+</script>
+{% endblock %}

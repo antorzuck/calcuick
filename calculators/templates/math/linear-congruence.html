@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Math.js for calculations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+<!-- KaTeX for math rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+    .katex { font-size: 1.1em; }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-4xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="hash" class="w-8 h-8 text-indigo-600 dark:text-indigo-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Linear Congruence Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Solve linear congruences of the form ax ≡ b (mod m) and find all solutions.
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div id="congruence-formula" class="text-blue-800 dark:text-blue-300"></div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Linear Congruence Input</h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">
+                Enter the coefficients for the linear congruence ax ≡ b (mod m):
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Coefficient a:
+                    </label>
+                    <input type="number" id="coefficient-a" placeholder="e.g., 3" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Coefficient of x</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Constant b:
+                    </label>
+                    <input type="number" id="constant-b" placeholder="e.g., 7" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Right side constant</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Modulus m:
+                    </label>
+                    <input type="number" id="modulus-m" placeholder="e.g., 12" min="2" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Modulus (≥ 2)</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-6">
+                <h3 class="font-medium text-gray-900 dark:text-white mb-2">Current Congruence:</h3>
+                <div id="current-congruence" class="text-gray-600 dark:text-gray-300 text-lg font-mono">
+                    Enter values to see the congruence
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button onclick="solveCongruence()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Solve Congruence
+            </button>
+            <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+
+        <!-- Result -->
+        <div id="result-container" class="hidden">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Solution</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Congruence:</h4>
+                        <div id="solution-congruence" class="text-gray-800 dark:text-gray-200 text-lg font-mono"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Solutions:</h4>
+                        <div id="solution-result" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                    
+                    <div id="solution-list" class="hidden">
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">All Solutions (mod m):</h4>
+                        <div id="all-solutions" class="text-gray-800 dark:text-gray-200 font-mono"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Solution Steps</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Step 1: Check Solvability</h4>
+                        <div id="gcd-check" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                    
+                    <div id="extended-euclidean" class="hidden">
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Step 2: Extended Euclidean Algorithm</h4>
+                        <div id="euclidean-steps" class="text-gray-800 dark:text-gray-200 font-mono text-sm"></div>
+                    </div>
+                    
+                    <div id="solution-construction" class="hidden">
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Step 3: Construct Solution</h4>
+                        <div id="construction-steps" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- No Solution -->
+        <div id="no-solution-container" class="hidden">
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-red-800 dark:text-red-300 mb-4">No Solution</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-red-700 dark:text-red-400 mb-2">Reason:</h4>
+                        <div id="no-solution-reason" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-red-700 dark:text-red-400 mb-2">Explanation:</h4>
+                        <p class="text-gray-600 dark:text-gray-300">
+                            A linear congruence ax ≡ b (mod m) has a solution if and only if gcd(a,m) divides b.
+                            Since this condition is not satisfied, there is no solution to this congruence.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Linear Congruences</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is a Linear Congruence?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    A linear congruence is an equation of the form ax ≡ b (mod m), where we want to find all values of x that satisfy the equation. 
+                    This is fundamental in number theory and has applications in cryptography, computer science, and mathematics.
+                </p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Solution Method</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li><strong>Check Solvability:</strong> Calculate gcd(a,m). The congruence has a solution if and only if gcd(a,m) divides b.</li>
+                    <li><strong>Find Inverse:</strong> If solvable, use the Extended Euclidean Algorithm to find the modular inverse of a/gcd(a,m) modulo m/gcd(a,m).</li>
+                    <li><strong>Construct Solutions:</strong> The general solution is x ≡ x₀ + k(m/gcd(a,m)) (mod m), where x₀ is a particular solution.</li>
+                    <li><strong>List All Solutions:</strong> There are exactly gcd(a,m) distinct solutions modulo m.</li>
+                </ol>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Examples</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Example 1: Unique Solution</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                            <li>a = 3, b = 7, m = 10</li>
+                            <li>3x ≡ 7 (mod 10)</li>
+                            <li>gcd(3,10) = 1, and 1 divides 7</li>
+                            <li>Solution: x ≡ 9 (mod 10)</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Example 2: Multiple Solutions</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                            <li>a = 6, b = 9, m = 15</li>
+                            <li>6x ≡ 9 (mod 15)</li>
+                            <li>gcd(6,15) = 3, and 3 divides 9</li>
+                            <li>Solutions: x ≡ 4, 9, 14 (mod 15)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Cryptography:</strong> RSA encryption, Diffie-Hellman key exchange</li>
+                    <li><strong>Computer Science:</strong> Hash functions, random number generation</li>
+                    <li><strong>Mathematics:</strong> Solving systems of congruences, Chinese Remainder Theorem</li>
+                    <li><strong>Calendar Calculations:</strong> Day of the week calculations</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+    // Update current congruence display
+    function updateCongruenceDisplay() {
+        const a = document.getElementById('coefficient-a').value || 'a';
+        const b = document.getElementById('constant-b').value || 'b';
+        const m = document.getElementById('modulus-m').value || 'm';
+        
+        document.getElementById('current-congruence').textContent = `${a}x ≡ ${b} (mod ${m})`;
+    }
+
+    // Add event listeners to update display
+    document.getElementById('coefficient-a').addEventListener('input', updateCongruenceDisplay);
+    document.getElementById('constant-b').addEventListener('input', updateCongruenceDisplay);
+    document.getElementById('modulus-m').addEventListener('input', updateCongruenceDisplay);
+
+    // Extended Euclidean Algorithm
+    function extendedGCD(a, b) {
+        if (b === 0) {
+            return { gcd: a, x: 1, y: 0, steps: [`${a} = 1 × ${a} + 0 × 0`] };
+        }
+        
+        let steps = [];
+        let oldR = a, r = b;
+        let oldS = 1, s = 0;
+        let oldT = 0, t = 1;
+        
+        while (r !== 0) {
+            const quotient = Math.floor(oldR / r);
+            steps.push(`${oldR} = ${quotient} × ${r} + ${oldR - quotient * r}`);
+            
+            [oldR, r] = [r, oldR - quotient * r];
+            [oldS, s] = [s, oldS - quotient * s];
+            [oldT, t] = [t, oldT - quotient * t];
+        }
+        
+        return { gcd: oldR, x: oldS, y: oldT, steps: steps };
+    }
+
+    // Modular inverse
+    function modInverse(a, m) {
+        const result = extendedGCD(a, m);
+        if (result.gcd !== 1) {
+            return null; // No inverse exists
+        }
+        return ((result.x % m) + m) % m;
+    }
+
+    // Solve linear congruence
+    function solveCongruence() {
+        try {
+            // Get input values
+            const a = parseInt(document.getElementById('coefficient-a').value);
+            const b = parseInt(document.getElementById('constant-b').value);
+            const m = parseInt(document.getElementById('modulus-m').value);
+            
+            // Validate inputs
+            if (isNaN(a) || isNaN(b) || isNaN(m)) {
+                alert('Please enter valid integers for all fields.');
+                return;
+            }
+            
+            if (m < 2) {
+                alert('Modulus must be at least 2.');
+                return;
+            }
+            
+            if (a === 0) {
+                alert('Coefficient a cannot be zero.');
+                return;
+            }
+            
+            // Hide previous results
+            document.getElementById('result-container').classList.add('hidden');
+            document.getElementById('no-solution-container').classList.add('hidden');
+            
+            // Calculate GCD
+            const gcdResult = extendedGCD(Math.abs(a), m);
+            const gcd = gcdResult.gcd;
+            
+            // Check if solution exists
+            if (b % gcd !== 0) {
+                // No solution
+                document.getElementById('no-solution-reason').innerHTML = 
+                    `gcd(${a}, ${m}) = ${gcd}, but ${gcd} does not divide ${b}`;
+                document.getElementById('no-solution-container').classList.remove('hidden');
+                return;
+            }
+            
+            // Solution exists
+            document.getElementById('solution-congruence').textContent = `${a}x ≡ ${b} (mod ${m})`;
+            
+            // Reduce the congruence
+            const a_reduced = a / gcd;
+            const b_reduced = b / gcd;
+            const m_reduced = m / gcd;
+            
+            // Find particular solution
+            const inv = modInverse(Math.abs(a_reduced), m_reduced);
+            if (inv === null) {
+                alert('Error finding modular inverse.');
+                return;
+            }
+            
+            let x0 = (inv * b_reduced) % m_reduced;
+            if (a_reduced < 0) {
+                x0 = (-x0 + m_reduced) % m_reduced;
+            }
+            
+            // Generate all solutions
+            const solutions = [];
+            for (let i = 0; i < gcd; i++) {
+                solutions.push((x0 + i * m_reduced) % m);
+            }
+            solutions.sort((a, b) => a - b);
+            
+            // Display results
+            if (gcd === 1) {
+                document.getElementById('solution-result').innerHTML = 
+                    `<strong>Unique solution:</strong> x ≡ ${solutions[0]} (mod ${m})`;
+            } else {
+                document.getElementById('solution-result').innerHTML = 
+                    `<strong>${gcd} solutions:</strong> x ≡ ${solutions.join(', ')} (mod ${m})`;
+                document.getElementById('all-solutions').textContent = solutions.join(', ');
+                document.getElementById('solution-list').classList.remove('hidden');
+            }
+            
+            // Display steps
+            document.getElementById('gcd-check').innerHTML = 
+                `gcd(${a}, ${m}) = ${gcd}<br>Since ${gcd} divides ${b}, the congruence has ${gcd} solution(s).`;
+            
+            if (gcd > 1) {
+                document.getElementById('euclidean-steps').innerHTML = gcdResult.steps.join('<br>');
+                document.getElementById('extended-euclidean').classList.remove('hidden');
+            }
+            
+            document.getElementById('construction-steps').innerHTML = 
+                `Reduced congruence: ${a_reduced}x ≡ ${b_reduced} (mod ${m_reduced})<br>` +
+                `Modular inverse of ${a_reduced} mod ${m_reduced}: ${inv}<br>` +
+                `Particular solution: x₀ ≡ ${x0} (mod ${m_reduced})<br>` +
+                `General solution: x ≡ ${x0} + k×${m_reduced} (mod ${m}) for k = 0, 1, ..., ${gcd-1}`;
+            document.getElementById('solution-construction').classList.remove('hidden');
+            
+            document.getElementById('result-container').classList.remove('hidden');
+            
+            // Render math formulas
+            renderMathFormulas();
+            
+        } catch (error) {
+            alert('Calculation error: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    // Clear calculator
+    function clearCalculator() {
+        document.getElementById('coefficient-a').value = '';
+        document.getElementById('constant-b').value = '';
+        document.getElementById('modulus-m').value = '';
+        document.getElementById('result-container').classList.add('hidden');
+        document.getElementById('no-solution-container').classList.add('hidden');
+        document.getElementById('solution-list').classList.add('hidden');
+        document.getElementById('extended-euclidean').classList.add('hidden');
+        document.getElementById('solution-construction').classList.add('hidden');
+        updateCongruenceDisplay();
+    }
+
+    // Render math formulas
+    function renderMathFormulas() {
+        // Render linear congruence formula
+        katex.render('ax \\equiv b \\pmod{m}', 
+            document.getElementById('congruence-formula'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        // Render all other math elements
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCongruenceDisplay();
+        renderMathFormulas();
+        lucide.createIcons();
+    });
+</script>
+{% endblock %}

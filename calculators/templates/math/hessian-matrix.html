@@ -1,0 +1,644 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Math.js for calculations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+<!-- KaTeX for math rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+    .katex { font-size: 1.1em; }
+    .matrix-display {
+        font-family: 'Courier New', monospace;
+        white-space: pre;
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-4xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="grid-3x3" class="w-8 h-8 text-emerald-600 dark:text-emerald-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Hessian Matrix Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate the Hessian matrix of second partial derivatives for multivariable functions.
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div id="hessian-formula" class="text-blue-800 dark:text-blue-300"></div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Function Input</h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">
+                Enter a multivariable function f(x,y) or f(x,y,z):
+            </p>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Number of Variables:
+                </label>
+                <select id="variable-count" class="w-full md:w-48 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                    <option value="2">2 variables (x, y)</option>
+                    <option value="3">3 variables (x, y, z)</option>
+                </select>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Function f(x,y) or f(x,y,z):
+                </label>
+                <input type="text" id="function-input" placeholder="e.g., x^2 + y^2 + x*y" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Use * for multiplication, ^ for exponents, and standard math functions</p>
+            </div>
+
+            <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-6">
+                <h3 class="font-medium text-gray-900 dark:text-white mb-2">Current Function:</h3>
+                <div id="current-function" class="text-gray-600 dark:text-gray-300 text-lg font-mono">
+                    Enter a function to see it displayed here
+                </div>
+            </div>
+
+            <!-- Point Evaluation (Optional) -->
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Evaluate at Point (Optional)</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-4">
+                    Enter coordinates to evaluate the Hessian matrix at a specific point:
+                </p>
+                
+                <div id="point-inputs" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">x =</label>
+                        <input type="number" id="point-x" step="any" placeholder="e.g., 1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">y =</label>
+                        <input type="number" id="point-y" step="any" placeholder="e.g., 2" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                    </div>
+                    <div id="point-z-container" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">z =</label>
+                        <input type="number" id="point-z" step="any" placeholder="e.g., 0" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button onclick="calculateHessian()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Calculate Hessian Matrix
+            </button>
+            <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+
+        <!-- Result -->
+        <div id="result-container" class="hidden">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Hessian Matrix</h3>
+                
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Function:</h4>
+                        <div id="result-function" class="text-gray-800 dark:text-gray-200 text-lg"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Hessian Matrix (Symbolic):</h4>
+                        <div id="hessian-symbolic" class="bg-white dark:bg-gray-800 p-4 rounded border text-gray-800 dark:text-gray-200 matrix-display overflow-x-auto"></div>
+                    </div>
+                    
+                    <div id="hessian-evaluated" class="hidden">
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-2">Hessian Matrix at Point:</h4>
+                        <div id="evaluation-point" class="text-gray-600 dark:text-gray-300 mb-2"></div>
+                        <div id="hessian-numeric" class="bg-white dark:bg-gray-800 p-4 rounded border text-gray-800 dark:text-gray-200 matrix-display overflow-x-auto"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Partial Derivatives</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">First Partial Derivatives (Gradient):</h4>
+                        <div id="first-derivatives" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Second Partial Derivatives:</h4>
+                        <div id="second-derivatives" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="analysis-container" class="hidden">
+                <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Matrix Analysis</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Determinant:</h4>
+                            <div id="determinant-value" class="text-gray-800 dark:text-gray-200"></div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Eigenvalues:</h4>
+                            <div id="eigenvalues" class="text-gray-800 dark:text-gray-200"></div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Classification:</h4>
+                            <div id="classification" class="text-gray-800 dark:text-gray-200"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Hessian Matrices</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is a Hessian Matrix?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    The Hessian matrix is a square matrix of second-order partial derivatives of a scalar-valued function. 
+                    It describes the local curvature of a multivariable function and is fundamental in optimization, 
+                    machine learning, and mathematical analysis.
+                </p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Mathematical Definition</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    For a function f(x₁, x₂, ..., xₙ), the Hessian matrix H is defined as:
+                </p>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 mt-2">
+                    <div id="hessian-definition" class="text-center"></div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li>Select the number of variables (2 or 3)</li>
+                    <li>Enter your function using standard mathematical notation</li>
+                    <li>Optionally, enter coordinates to evaluate the Hessian at a specific point</li>
+                    <li>Click "Calculate Hessian Matrix" to see the results</li>
+                    <li>View the symbolic matrix, partial derivatives, and analysis</li>
+                </ol>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Input Format</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Enter expressions using standard mathematical notation:
+                </p>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 mt-2">
+                    <li>Use * for multiplication: x*y</li>
+                    <li>Use ^ for exponents: x^2</li>
+                    <li>Use standard functions: sin(x), cos(y), exp(x), log(x)</li>
+                    <li>Use parentheses for grouping: (x+y)^2</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Example Functions</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">2D Examples</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                            <li>x^2 + y^2 (paraboloid)</li>
+                            <li>x^2 - y^2 (saddle)</li>
+                            <li>x^2 + x*y + y^2</li>
+                            <li>sin(x) + cos(y)</li>
+                            <li>exp(x^2 + y^2)</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">3D Examples</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                            <li>x^2 + y^2 + z^2</li>
+                            <li>x*y + y*z + x*z</li>
+                            <li>x^3 + y^3 + z^3</li>
+                            <li>sin(x)*cos(y)*exp(z)</li>
+                            <li>x^2*y + y^2*z + z^2*x</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Optimization:</strong> Finding critical points and determining their nature</li>
+                    <li><strong>Machine Learning:</strong> Second-order optimization methods (Newton's method)</li>
+                    <li><strong>Physics:</strong> Analyzing potential energy surfaces and stability</li>
+                    <li><strong>Economics:</strong> Studying utility functions and market equilibria</li>
+                    <li><strong>Computer Graphics:</strong> Surface curvature analysis</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+    // Update variable count
+    document.getElementById('variable-count').addEventListener('change', function() {
+        const count = parseInt(this.value);
+        const zContainer = document.getElementById('point-z-container');
+        
+        if (count === 3) {
+            zContainer.classList.remove('hidden');
+        } else {
+            zContainer.classList.add('hidden');
+        }
+        
+        updateFunctionDisplay();
+    });
+
+    // Update function display
+    function updateFunctionDisplay() {
+        const func = document.getElementById('function-input').value || 'f(x,y) or f(x,y,z)';
+        const varCount = parseInt(document.getElementById('variable-count').value);
+        
+        if (func === 'f(x,y) or f(x,y,z)') {
+            document.getElementById('current-function').textContent = 'Enter a function to see it displayed here';
+        } else {
+            const variables = varCount === 2 ? 'f(x,y) = ' : 'f(x,y,z) = ';
+            document.getElementById('current-function').textContent = variables + func;
+        }
+    }
+
+    // Add event listener to function input
+    document.getElementById('function-input').addEventListener('input', updateFunctionDisplay);
+
+    // Numerical differentiation
+    function numericalDerivative(func, variable, point, h = 1e-8) {
+        const vars = ['x', 'y', 'z'];
+        const scope1 = { ...point };
+        const scope2 = { ...point };
+        
+        scope1[variable] = point[variable] + h;
+        scope2[variable] = point[variable] - h;
+        
+        try {
+            const f1 = math.evaluate(func, scope1);
+            const f2 = math.evaluate(func, scope2);
+            return (f1 - f2) / (2 * h);
+        } catch (e) {
+            return NaN;
+        }
+    }
+
+    // Second partial derivative
+    function secondPartialDerivative(func, var1, var2, point, h = 1e-6) {
+        if (var1 === var2) {
+            // Pure second derivative
+            const scope1 = { ...point };
+            const scope2 = { ...point };
+            const scope3 = { ...point };
+            
+            scope1[var1] = point[var1] + h;
+            scope2[var1] = point[var1] - h;
+            
+            try {
+                const f1 = math.evaluate(func, scope1);
+                const f0 = math.evaluate(func, point);
+                const f2 = math.evaluate(func, scope2);
+                return (f1 - 2*f0 + f2) / (h*h);
+            } catch (e) {
+                return NaN;
+            }
+        } else {
+            // Mixed partial derivative
+            const scope1 = { ...point };
+            const scope2 = { ...point };
+            const scope3 = { ...point };
+            const scope4 = { ...point };
+            
+            scope1[var1] = point[var1] + h;
+            scope1[var2] = point[var2] + h;
+            
+            scope2[var1] = point[var1] + h;
+            scope2[var2] = point[var2] - h;
+            
+            scope3[var1] = point[var1] - h;
+            scope3[var2] = point[var2] + h;
+            
+            scope4[var1] = point[var1] - h;
+            scope4[var2] = point[var2] - h;
+            
+            try {
+                const f1 = math.evaluate(func, scope1);
+                const f2 = math.evaluate(func, scope2);
+                const f3 = math.evaluate(func, scope3);
+                const f4 = math.evaluate(func, scope4);
+                return (f1 - f2 - f3 + f4) / (4*h*h);
+            } catch (e) {
+                return NaN;
+            }
+        }
+    }
+
+    // Symbolic differentiation (simplified)
+    function getSymbolicDerivative(func, variable) {
+        try {
+            const expr = math.parse(func);
+            const derivative = math.derivative(expr, variable);
+            return math.format(derivative);
+        } catch (e) {
+            return `∂f/∂${variable}`;
+        }
+    }
+
+    // Format matrix for display
+    function formatMatrix(matrix) {
+        const rows = matrix.length;
+        const cols = matrix[0].length;
+        let result = '[\n';
+        
+        for (let i = 0; i < rows; i++) {
+            result += '  [';
+            for (let j = 0; j < cols; j++) {
+                if (typeof matrix[i][j] === 'number') {
+                    result += matrix[i][j].toFixed(6).padStart(12);
+                } else {
+                    result += String(matrix[i][j]).padStart(12);
+                }
+                if (j < cols - 1) result += ', ';
+            }
+            result += ']';
+            if (i < rows - 1) result += ',';
+            result += '\n';
+        }
+        result += ']';
+        return result;
+    }
+
+    // Calculate eigenvalues for 2x2 matrix
+    function eigenvalues2x2(matrix) {
+        const a = matrix[0][0];
+        const b = matrix[0][1];
+        const c = matrix[1][0];
+        const d = matrix[1][1];
+        
+        const trace = a + d;
+        const det = a * d - b * c;
+        const discriminant = trace * trace - 4 * det;
+        
+        if (discriminant < 0) {
+            return ['Complex eigenvalues'];
+        }
+        
+        const sqrt_disc = Math.sqrt(discriminant);
+        const lambda1 = (trace + sqrt_disc) / 2;
+        const lambda2 = (trace - sqrt_disc) / 2;
+        
+        return [lambda1.toFixed(6), lambda2.toFixed(6)];
+    }
+
+    // Calculate eigenvalues for 3x3 matrix (simplified)
+    function eigenvalues3x3(matrix) {
+        try {
+            const mathMatrix = math.matrix(matrix);
+            const eigenvals = math.eigs(mathMatrix).values;
+            return eigenvals.map(val => {
+                if (math.typeOf(val) === 'Complex') {
+                    return `${val.re.toFixed(4)} + ${val.im.toFixed(4)}i`;
+                } else {
+                    return val.toFixed(6);
+                }
+            });
+        } catch (e) {
+            return ['Unable to compute'];
+        }
+    }
+
+    // Classify critical point
+    function classifyPoint(matrix, varCount) {
+        if (varCount === 2) {
+            const det = matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+            const trace = matrix[0][0] + matrix[1][1];
+            
+            if (det > 0 && trace > 0) {
+                return 'Local minimum (positive definite)';
+            } else if (det > 0 && trace < 0) {
+                return 'Local maximum (negative definite)';
+            } else if (det < 0) {
+                return 'Saddle point (indefinite)';
+            } else {
+                return 'Inconclusive (det = 0)';
+            }
+        } else {
+            // For 3x3, we'd need to check all principal minors
+            return 'Classification requires eigenvalue analysis';
+        }
+    }
+
+    // Calculate Hessian matrix
+    function calculateHessian() {
+        try {
+            // Get input values
+            const func = document.getElementById('function-input').value.trim();
+            const varCount = parseInt(document.getElementById('variable-count').value);
+            
+            if (!func) {
+                alert('Please enter a function.');
+                return;
+            }
+            
+            // Test if function is valid
+            try {
+                math.evaluate(func, { x: 1, y: 1, z: 1 });
+            } catch (e) {
+                alert('Invalid function. Please check your syntax.');
+                return;
+            }
+            
+            const variables = varCount === 2 ? ['x', 'y'] : ['x', 'y', 'z'];
+            
+            // Get point coordinates if provided
+            const pointX = parseFloat(document.getElementById('point-x').value);
+            const pointY = parseFloat(document.getElementById('point-y').value);
+            const pointZ = parseFloat(document.getElementById('point-z').value) || 0;
+            
+            const hasPoint = !isNaN(pointX) && !isNaN(pointY) && (varCount === 2 || !isNaN(pointZ));
+            const point = { x: pointX, y: pointY, z: pointZ };
+            
+            // Calculate symbolic first derivatives
+            const firstDerivatives = {};
+            variables.forEach(variable => {
+                firstDerivatives[variable] = getSymbolicDerivative(func, variable);
+            });
+            
+            // Calculate symbolic second derivatives (simplified display)
+            const secondDerivatives = {};
+            const hessianSymbolic = [];
+            const hessianNumeric = [];
+            
+            for (let i = 0; i < varCount; i++) {
+                hessianSymbolic[i] = [];
+                hessianNumeric[i] = [];
+                
+                for (let j = 0; j < varCount; j++) {
+                    const var1 = variables[i];
+                    const var2 = variables[j];
+                    const key = `${var1}${var2}`;
+                    
+                    // For display purposes, show simplified notation
+                    if (i === j) {
+                        secondDerivatives[key] = `∂²f/∂${var1}²`;
+                        hessianSymbolic[i][j] = `f_${var1}${var1}`;
+                    } else {
+                        secondDerivatives[key] = `∂²f/∂${var1}∂${var2}`;
+                        hessianSymbolic[i][j] = `f_${var1}${var2}`;
+                    }
+                    
+                    // Calculate numerical value if point is provided
+                    if (hasPoint) {
+                        hessianNumeric[i][j] = secondPartialDerivative(func, var1, var2, point);
+                    }
+                }
+            }
+            
+            // Display results
+            const funcDisplay = varCount === 2 ? `f(x,y) = ${func}` : `f(x,y,z) = ${func}`;
+            document.getElementById('result-function').innerHTML = `$$${funcDisplay}$$`;
+            
+            // Display symbolic Hessian
+            document.getElementById('hessian-symbolic').textContent = formatMatrix(hessianSymbolic);
+            
+            // Display first derivatives
+            let firstDerivDisplay = '';
+            variables.forEach(variable => {
+                firstDerivDisplay += `∂f/∂${variable} = ${firstDerivatives[variable]}\n`;
+            });
+            document.getElementById('first-derivatives').innerHTML = `<pre>${firstDerivDisplay}</pre>`;
+            
+            // Display second derivatives
+            let secondDerivDisplay = '';
+            Object.entries(secondDerivatives).forEach(([key, value]) => {
+                secondDerivDisplay += `${value}\n`;
+            });
+            document.getElementById('second-derivatives').innerHTML = `<pre>${secondDerivDisplay}</pre>`;
+            
+            // Display numerical evaluation if point provided
+            if (hasPoint) {
+                const pointStr = varCount === 2 ? 
+                    `(${pointX}, ${pointY})` : 
+                    `(${pointX}, ${pointY}, ${pointZ})`;
+                document.getElementById('evaluation-point').textContent = `At point ${pointStr}:`;
+                document.getElementById('hessian-numeric').textContent = formatMatrix(hessianNumeric);
+                document.getElementById('hessian-evaluated').classList.remove('hidden');
+                
+                // Matrix analysis
+                const det = varCount === 2 ? 
+                    hessianNumeric[0][0] * hessianNumeric[1][1] - hessianNumeric[0][1] * hessianNumeric[1][0] :
+                    math.det(hessianNumeric);
+                
+                document.getElementById('determinant-value').textContent = det.toFixed(6);
+                
+                const eigenvals = varCount === 2 ? 
+                    eigenvalues2x2(hessianNumeric) : 
+                    eigenvalues3x3(hessianNumeric);
+                document.getElementById('eigenvalues').textContent = eigenvals.join(', ');
+                
+                const classification = classifyPoint(hessianNumeric, varCount);
+                document.getElementById('classification').textContent = classification;
+                
+                document.getElementById('analysis-container').classList.remove('hidden');
+            } else {
+                document.getElementById('hessian-evaluated').classList.add('hidden');
+                document.getElementById('analysis-container').classList.add('hidden');
+            }
+            
+            document.getElementById('result-container').classList.remove('hidden');
+            
+            // Render math formulas
+            renderMathFormulas();
+            
+            // Scroll to results
+            setTimeout(() => {
+                document.getElementById('result-container').scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 100);
+            
+        } catch (error) {
+            alert('Calculation error: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    // Clear calculator
+    function clearCalculator() {
+        document.getElementById('function-input').value = '';
+        document.getElementById('point-x').value = '';
+        document.getElementById('point-y').value = '';
+        document.getElementById('point-z').value = '';
+        document.getElementById('result-container').classList.add('hidden');
+        document.getElementById('hessian-evaluated').classList.add('hidden');
+        document.getElementById('analysis-container').classList.add('hidden');
+        document.getElementById('variable-count').value = '2';
+        document.getElementById('point-z-container').classList.add('hidden');
+        updateFunctionDisplay();
+    }
+
+    // Render math formulas
+    function renderMathFormulas() {
+        // Render Hessian formula
+        katex.render('H = \\begin{bmatrix} \\frac{\\partial^2 f}{\\partial x_1^2} & \\frac{\\partial^2 f}{\\partial x_1 \\partial x_2} & \\cdots \\\\ \\frac{\\partial^2 f}{\\partial x_2 \\partial x_1} & \\frac{\\partial^2 f}{\\partial x_2^2} & \\cdots \\\\ \\vdots & \\vdots & \\ddots \\end{bmatrix}', 
+            document.getElementById('hessian-formula'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        // Render Hessian definition
+        katex.render('H_{ij} = \\frac{\\partial^2 f}{\\partial x_i \\partial x_j}', 
+            document.getElementById('hessian-definition'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        // Render all other math elements
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        updateFunctionDisplay();
+        renderMathFormulas();
+        lucide.createIcons();
+    });
+</script>
+{% endblock %}
