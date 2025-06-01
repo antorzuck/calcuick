@@ -104,10 +104,10 @@
             <!-- Percentage Calculator -->
 
             {% for category in categories %}
-            <a href="{% url 'calculator_list' category.name %}">
+            <a href="{% url 'calculator_list' category.slug %}">
             <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 group">
                 <div class="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-5 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
-                    <i data-lucide="percent" class="w-7 h-7 text-blue-600 dark:text-blue-400"></i>
+                    <i data-lucide="{{category.icon}}" class="w-7 h-7 text-blue-600 dark:text-blue-400"></i>
                 </div>
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">{{ category.name }}</h3>
                 <p class="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">Calculate percentages, discounts, and tips easily with our intuitive interface.</p>
@@ -120,17 +120,17 @@
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-gray-200 dark:border-gray-700 mt-20">
+
+
+    {% endblock %}
+     <!-- Footer -->
+     <footer class="border-t border-gray-200 dark:border-gray-700 mt-20">
         <div class="max-w-6xl mx-auto px-4 py-8">
             <div class="text-center text-gray-600 dark:text-gray-300">
                 <p>&copy; 2025 Calcuick. All rights reserved.</p>
             </div>
         </div>
-    </nav>
-
-    {% endblock %}
- 
+    </footer>
     <script>
                 // Toggle mobile menu
        function toggleMenu() {
