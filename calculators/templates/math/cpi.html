@@ -1,0 +1,898 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<style>
+#cpi-canvas {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    max-width: 100%;
+    height: auto;
+}
+.dark #cpi-canvas {
+    border-color: #374151;
+    background: #1f2937;
+}
+.instruction-row {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+}
+.dark .instruction-row {
+    background: #1e293b;
+    border-color: #334155;
+}
+.performance-metric {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+.dark .performance-metric {
+    background: #1e293b;
+    border-color: #334155;
+}
+@media (max-width: 768px) {
+    #cpi-canvas {
+        width: 100% !important;
+        height: 250px !important;
+    }
+    .instruction-row {
+        padding: 0.75rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="cpu" class="w-8 h-8 text-indigo-600 dark:text-indigo-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Cycles per Instruction Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate CPU performance metrics including CPI, MIPS, and execution time for different instruction mixes.
+        </p>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 md:p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Instruction Configuration</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Instruction Types -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">System Parameters</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Clock Frequency (MHz):</label>
+                                <input type="number" id="clock-frequency" value="1000" min="1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Total Instructions:</label>
+                                <input type="number" id="total-instructions" value="1000000" min="1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-medium text-gray-900 dark:text-white">Instruction Types</h3>
+                            <button onclick="addInstructionType()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+                                Add Instruction Type
+                            </button>
+                        </div>
+                        
+                        <div id="instruction-types">
+                            <!-- Default instruction types -->
+                            <div class="instruction-row">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type:</label>
+                                        <input type="text" value="ALU" class="instruction-name w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Frequency (%):</label>
+                                        <input type="number" value="40" min="0" max="100" class="instruction-frequency w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">CPI:</label>
+                                        <input type="number" value="1" min="0.1" step="0.1" class="instruction-cpi w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                </div>
+                                <button onclick="removeInstructionType(this)" class="mt-3 text-red-500 hover:text-red-700 text-sm">
+                                    <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>Remove
+                                </button>
+                            </div>
+
+                            <div class="instruction-row">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type:</label>
+                                        <input type="text" value="Load/Store" class="instruction-name w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Frequency (%):</label>
+                                        <input type="number" value="30" min="0" max="100" class="instruction-frequency w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">CPI:</label>
+                                        <input type="number" value="3" min="0.1" step="0.1" class="instruction-cpi w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                </div>
+                                <button onclick="removeInstructionType(this)" class="mt-3 text-red-500 hover:text-red-700 text-sm">
+                                    <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>Remove
+                                </button>
+                            </div>
+
+                            <div class="instruction-row">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type:</label>
+                                        <input type="text" value="Branch" class="instruction-name w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Frequency (%):</label>
+                                        <input type="number" value="20" min="0" max="100" class="instruction-frequency w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">CPI:</label>
+                                        <input type="number" value="2" min="0.1" step="0.1" class="instruction-cpi w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                </div>
+                                <button onclick="removeInstructionType(this)" class="mt-3 text-red-500 hover:text-red-700 text-sm">
+                                    <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>Remove
+                                </button>
+                            </div>
+
+                            <div class="instruction-row">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type:</label>
+                                        <input type="text" value="Floating Point" class="instruction-name w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Frequency (%):</label>
+                                        <input type="number" value="10" min="0" max="100" class="instruction-frequency w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">CPI:</label>
+                                        <input type="number" value="5" min="0.1" step="0.1" class="instruction-cpi w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                </div>
+                                <button onclick="removeInstructionType(this)" class="mt-3 text-red-500 hover:text-red-700 text-sm">
+                                    <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>Remove
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                            <p class="text-sm text-yellow-800 dark:text-yellow-300">
+                                <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+                                Total frequency should equal 100%. Current total: <span id="frequency-total">100</span>%
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Visualization -->
+                <div class="space-y-6">
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Performance Visualization</h3>
+                    <div class="flex justify-center">
+                        <canvas id="cpi-canvas" width="350" height="300"></canvas>
+                    </div>
+                    <div class="text-center">
+                        <button onclick="exportVisualization()" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Export Chart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button onclick="calculateCPI()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Calculate CPI & Performance
+            </button>
+            <button onclick="loadPresets()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Load Presets
+            </button>
+            <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Performance Metrics</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="performance-metric">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Average CPI:</h4>
+                        <div id="average-cpi" class="text-2xl font-bold text-indigo-600 dark:text-indigo-400"></div>
+                    </div>
+                    
+                    <div class="performance-metric">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">MIPS:</h4>
+                        <div id="mips-value" class="text-2xl font-bold text-indigo-600 dark:text-indigo-400"></div>
+                    </div>
+                    
+                    <div class="performance-metric">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Execution Time:</h4>
+                        <div id="execution-time" class="text-2xl font-bold text-indigo-600 dark:text-indigo-400"></div>
+                    </div>
+                    
+                    <div class="performance-metric">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Total Cycles:</h4>
+                        <div id="total-cycles" class="text-2xl font-bold text-indigo-600 dark:text-indigo-400"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Instruction Breakdown</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Instruction Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Frequency</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">CPI</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Instructions</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Cycles</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% of Total Cycles</th>
+                            </tr>
+                        </thead>
+                        <tbody id="breakdown-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Breakdown rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Performance Analysis</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Performance Rating:</h4>
+                        <div id="performance-rating" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Bottleneck Analysis:</h4>
+                        <div id="bottleneck-analysis" class="text-gray-800 dark:text-gray-200"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Optimization Suggestions:</h4>
+                    <div id="optimization-suggestions" class="text-gray-800 dark:text-gray-200"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Cycles per Instruction (CPI)</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is CPI?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Cycles per Instruction (CPI) is a key performance metric in computer architecture that measures the average number 
+                    of clock cycles required to execute one instruction. It's calculated as the total number of clock cycles divided 
+                    by the total number of instructions executed. Lower CPI values generally indicate better processor performance.
+                </p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key Formulas</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <ul class="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                        <li><strong>Average CPI:</strong> Σ(CPI_i × Frequency_i) where i represents each instruction type</li>
+                        <li><strong>Total Cycles:</strong> Total Instructions × Average CPI</li>
+                        <li><strong>Execution Time:</strong> Total Cycles ÷ Clock Frequency</li>
+                        <li><strong>MIPS:</strong> (Clock Frequency ÷ Average CPI) ÷ 1,000,000</li>
+                        <li><strong>Performance:</strong> 1 ÷ Execution Time</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Instruction Types & Typical CPI Values</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Simple Instructions</h4>
+                        <ul class="text-gray-600 dark:text-gray-300 text-sm space-y-1">
+                            <li>• ALU Operations: 1-2 cycles</li>
+                            <li>• Register-Register: 1 cycle</li>
+                            <li>• Simple Branches: 1-2 cycles</li>
+                            <li>• Logical Operations: 1 cycle</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Complex Instructions</h4>
+                        <ul class="text-gray-600 dark:text-gray-300 text-sm space-y-1">
+                            <li>• Memory Load/Store: 2-5 cycles</li>
+                            <li>• Floating Point: 3-10 cycles</li>
+                            <li>• Division: 10-50 cycles</li>
+                            <li>• Cache Misses: 10-100+ cycles</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Performance Optimization</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <ul class="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                        <li><strong>Reduce High-CPI Instructions:</strong> Minimize floating-point and memory operations when possible</li>
+                        <li><strong>Improve Cache Performance:</strong> Better cache design reduces memory access cycles</li>
+                        <li><strong>Pipeline Optimization:</strong> Reduce pipeline stalls and hazards</li>
+                        <li><strong>Instruction Scheduling:</strong> Reorder instructions to minimize dependencies</li>
+                        <li><strong>Branch Prediction:</strong> Improve branch prediction to reduce misprediction penalties</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li>Set the system parameters (clock frequency and total instructions)</li>
+                    <li>Define instruction types with their frequencies and CPI values</li>
+                    <li>Ensure the total frequency equals 100%</li>
+                    <li>Click "Calculate CPI & Performance" to analyze the results</li>
+                    <li>Review the performance metrics and optimization suggestions</li>
+                    <li>Use the visualization to understand the instruction mix impact</li>
+                </ol>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Processor Design:</strong> Evaluate and compare different CPU architectures</li>
+                    <li><strong>Compiler Optimization:</strong> Analyze the impact of different compilation strategies</li>
+                    <li><strong>Performance Tuning:</strong> Identify bottlenecks in program execution</li>
+                    <li><strong>Benchmark Analysis:</strong> Compare performance across different workloads</li>
+                    <li><strong>Academic Research:</strong> Study computer architecture performance characteristics</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+let canvas, ctx;
+
+// Initialize canvas
+function initCanvas() {
+    canvas = document.getElementById('cpi-canvas');
+    ctx = canvas.getContext('2d');
+    
+    // Make canvas responsive
+    function resizeCanvas() {
+        const container = canvas.parentElement;
+        const containerWidth = container.clientWidth;
+        
+        if (window.innerWidth <= 768) {
+            canvas.width = Math.min(containerWidth - 20, 350);
+            canvas.height = 250;
+        } else {
+            canvas.width = 350;
+            canvas.height = 300;
+        }
+        
+        drawVisualization();
+    }
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    clearCanvas();
+}
+
+// Clear canvas
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Set background
+    const isDark = document.documentElement.classList.contains('dark');
+    ctx.fillStyle = isDark ? '#1f2937' : '#f9fafb';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// Add instruction type
+function addInstructionType() {
+    const container = document.getElementById('instruction-types');
+    const newRow = document.createElement('div');
+    newRow.className = 'instruction-row';
+    newRow.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type:</label>
+                <input type="text" placeholder="Instruction Type" class="instruction-name w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Frequency (%):</label>
+                <input type="number" value="0" min="0" max="100" class="instruction-frequency w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">CPI:</label>
+                <input type="number" value="1" min="0.1" step="0.1" class="instruction-cpi w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            </div>
+        </div>
+        <button onclick="removeInstructionType(this)" class="mt-3 text-red-500 hover:text-red-700 text-sm">
+            <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>Remove
+        </button>
+    `;
+    container.appendChild(newRow);
+    
+    // Update lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    
+    updateFrequencyTotal();
+}
+
+// Remove instruction type
+function removeInstructionType(button) {
+    const instructionRows = document.querySelectorAll('.instruction-row');
+    if (instructionRows.length > 1) {
+        button.parentElement.remove();
+        updateFrequencyTotal();
+    } else {
+        alert('At least one instruction type is required.');
+    }
+}
+
+// Update frequency total
+function updateFrequencyTotal() {
+    const frequencies = document.querySelectorAll('.instruction-frequency');
+    let total = 0;
+    
+    frequencies.forEach(input => {
+        total += parseFloat(input.value) || 0;
+    });
+    
+    document.getElementById('frequency-total').textContent = total.toFixed(1);
+    
+    // Update color based on total
+    const totalElement = document.getElementById('frequency-total').parentElement;
+    if (Math.abs(total - 100) < 0.1) {
+        totalElement.className = totalElement.className.replace(/bg-yellow-\d+|bg-red-\d+|bg-green-\d+/g, 'bg-green-50');
+        totalElement.className = totalElement.className.replace(/border-yellow-\d+|border-red-\d+|border-green-\d+/g, 'border-green-200');
+        totalElement.className = totalElement.className.replace(/text-yellow-\d+|text-red-\d+|text-green-\d+/g, 'text-green-800');
+    } else if (total > 100) {
+        totalElement.className = totalElement.className.replace(/bg-yellow-\d+|bg-red-\d+|bg-green-\d+/g, 'bg-red-50');
+        totalElement.className = totalElement.className.replace(/border-yellow-\d+|border-red-\d+|border-green-\d+/g, 'border-red-200');
+        totalElement.className = totalElement.className.replace(/text-yellow-\d+|text-red-\d+|text-green-\d+/g, 'text-red-800');
+    } else {
+        totalElement.className = totalElement.className.replace(/bg-yellow-\d+|bg-red-\d+|bg-green-\d+/g, 'bg-yellow-50');
+        totalElement.className = totalElement.className.replace(/border-yellow-\d+|border-red-\d+|border-green-\d+/g, 'border-yellow-200');
+        totalElement.className = totalElement.className.replace(/text-yellow-\d+|text-red-\d+|text-green-\d+/g, 'text-yellow-800');
+    }
+}
+
+// Add event listeners for frequency inputs
+function addFrequencyListeners() {
+    const frequencies = document.querySelectorAll('.instruction-frequency');
+    frequencies.forEach(input => {
+        input.addEventListener('input', updateFrequencyTotal);
+    });
+}
+
+// Calculate CPI and performance metrics
+function calculateCPI() {
+    const clockFreq = parseFloat(document.getElementById('clock-frequency').value);
+    const totalInstructions = parseFloat(document.getElementById('total-instructions').value);
+    
+    if (!clockFreq || !totalInstructions) {
+        alert('Please enter valid clock frequency and total instructions.');
+        return;
+    }
+    
+    // Get instruction data
+    const instructionRows = document.querySelectorAll('.instruction-row');
+    const instructions = [];
+    let totalFreq = 0;
+    
+    instructionRows.forEach(row => {
+        const name = row.querySelector('.instruction-name').value || 'Unnamed';
+        const frequency = parseFloat(row.querySelector('.instruction-frequency').value) || 0;
+        const cpi = parseFloat(row.querySelector('.instruction-cpi').value) || 1;
+        
+        instructions.push({ name, frequency, cpi });
+        totalFreq += frequency;
+    });
+    
+    if (Math.abs(totalFreq - 100) > 0.1) {
+        alert('Total frequency must equal 100%. Current total: ' + totalFreq.toFixed(1) + '%');
+        return;
+    }
+    
+    // Calculate metrics
+    let avgCPI = 0;
+    let totalCycles = 0;
+    const breakdown = [];
+    
+    instructions.forEach(inst => {
+        const instCount = (inst.frequency / 100) * totalInstructions;
+        const instCycles = instCount * inst.cpi;
+        
+        avgCPI += (inst.frequency / 100) * inst.cpi;
+        totalCycles += instCycles;
+        
+        breakdown.push({
+            name: inst.name,
+            frequency: inst.frequency,
+            cpi: inst.cpi,
+            instructions: instCount,
+            cycles: instCycles,
+            cyclePercentage: (instCycles / (totalInstructions * avgCPI)) * 100
+        });
+    });
+    
+    const executionTime = totalCycles / (clockFreq * 1000000); // in seconds
+    const mips = (clockFreq / avgCPI) / 1000; // MIPS
+    
+    // Display results
+    displayResults(avgCPI, mips, executionTime, totalCycles, breakdown, instructions);
+    
+    // Draw visualization
+    drawVisualization(instructions, breakdown);
+}
+
+// Display calculation results
+function displayResults(avgCPI, mips, executionTime, totalCycles, breakdown, instructions) {
+    document.getElementById('result-container').classList.remove('hidden');
+    
+    // Basic metrics
+    document.getElementById('average-cpi').textContent = avgCPI.toFixed(3);
+    document.getElementById('mips-value').textContent = mips.toFixed(2);
+    document.getElementById('execution-time').textContent = formatTime(executionTime);
+    document.getElementById('total-cycles').textContent = formatNumber(totalCycles);
+    
+    // Breakdown table
+    const tableBody = document.getElementById('breakdown-table-body');
+    tableBody.innerHTML = '';
+    
+    breakdown.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${item.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${item.frequency.toFixed(1)}%</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${item.cpi.toFixed(2)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${formatNumber(item.instructions)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${formatNumber(item.cycles)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${item.cyclePercentage.toFixed(1)}%</td>
+        `;
+        tableBody.appendChild(row);
+    });
+    
+    // Performance analysis
+    analyzePerformance(avgCPI, breakdown);
+    
+    // Scroll to results
+    setTimeout(() => {
+        document.getElementById('result-container').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
+}
+
+// Analyze performance and provide insights
+function analyzePerformance(avgCPI, breakdown) {
+    // Performance rating
+    let rating;
+    if (avgCPI < 1.5) {
+        rating = "Excellent - Very efficient instruction execution";
+    } else if (avgCPI < 2.5) {
+        rating = "Good - Reasonable performance with room for improvement";
+    } else if (avgCPI < 4.0) {
+        rating = "Average - Moderate performance, optimization recommended";
+    } else {
+        rating = "Poor - High CPI indicates significant performance bottlenecks";
+    }
+    
+    // Bottleneck analysis
+    const sortedByImpact = [...breakdown].sort((a, b) => b.cyclePercentage - a.cyclePercentage);
+    const topBottleneck = sortedByImpact[0];
+    const bottleneck = `${topBottleneck.name} instructions consume ${topBottleneck.cyclePercentage.toFixed(1)}% of total cycles`;
+    
+    // Optimization suggestions
+    let suggestions = [];
+    
+    if (avgCPI > 3.0) {
+        suggestions.push("Consider reducing high-CPI instructions through algorithm optimization");
+    }
+    
+    const highCPIInstructions = breakdown.filter(inst => inst.cpi > 3);
+    if (highCPIInstructions.length > 0) {
+        suggestions.push(`Optimize ${highCPIInstructions.map(inst => inst.name).join(', ')} operations`);
+    }
+    
+    const highFreqInstructions = breakdown.filter(inst => inst.frequency > 30 && inst.cpi > 2);
+    if (highFreqInstructions.length > 0) {
+        suggestions.push("Focus on optimizing frequently executed, high-CPI instructions");
+    }
+    
+    if (suggestions.length === 0) {
+        suggestions.push("Performance is already well-optimized for this instruction mix");
+    }
+    
+    document.getElementById('performance-rating').textContent = rating;
+    document.getElementById('bottleneck-analysis').textContent = bottleneck;
+    document.getElementById('optimization-suggestions').innerHTML = suggestions.map(s => `• ${s}`).join('<br>');
+}
+
+// Draw visualization
+function drawVisualization(instructions = null, breakdown = null) {
+    clearCanvas();
+    
+    if (!instructions || !breakdown) return;
+    
+    const isDark = document.documentElement.classList.contains('dark');
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = Math.min(centerX, centerY) - 60;
+    
+    // Colors for different instruction types
+    const colors = [
+        '#3b82f6', '#ef4444', '#10b981', '#f59e0b', 
+        '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'
+    ];
+    
+    // Draw pie chart for instruction frequency
+    let startAngle = -Math.PI / 2;
+    
+    instructions.forEach((inst, index) => {
+        const sliceAngle = (inst.frequency / 100) * 2 * Math.PI;
+        
+        // Draw slice
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Draw slice border
+        ctx.strokeStyle = isDark ? '#374151' : '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Draw label
+        const labelAngle = startAngle + sliceAngle / 2;
+        const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7);
+        const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${inst.frequency.toFixed(1)}%`, labelX, labelY);
+        
+        startAngle += sliceAngle;
+    });
+    
+    // Draw legend
+    const legendX = 20;
+    let legendY = 20;
+    
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+    ctx.textAlign = 'left';
+    ctx.fillText('Instruction Mix', legendX, legendY);
+    legendY += 25;
+    
+    instructions.forEach((inst, index) => {
+        // Legend color box
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fillRect(legendX, legendY - 8, 12, 12);
+        
+        // Legend text
+        ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(`${inst.name} (CPI: ${inst.cpi})`, legendX + 18, legendY);
+        
+        legendY += 18;
+    });
+}
+
+// Format large numbers
+function formatNumber(num) {
+    if (num >= 1000000000) {
+        return (num / 1000000000).toFixed(2) + 'B';
+    } else if (num >= 1000000) {
+        return (num / 1000000).toFixed(2) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(2) + 'K';
+    } else {
+        return num.toFixed(0);
+    }
+}
+
+// Format time
+function formatTime(seconds) {
+    if (seconds >= 1) {
+        return seconds.toFixed(3) + ' s';
+    } else if (seconds >= 0.001) {
+        return (seconds * 1000).toFixed(3) + ' ms';
+    } else if (seconds >= 0.000001) {
+        return (seconds * 1000000).toFixed(3) + ' μs';
+    } else {
+        return (seconds * 1000000000).toFixed(3) + ' ns';
+    }
+}
+
+// Load preset configurations
+function loadPresets() {
+    const presets = [
+        {
+            name: "RISC Processor",
+            instructions: [
+                { name: "ALU", frequency: 45, cpi: 1 },
+                { name: "Load/Store", frequency: 25, cpi: 2 },
+                { name: "Branch", frequency: 20, cpi: 1.5 },
+                { name: "Floating Point", frequency: 10, cpi: 4 }
+            ]
+        },
+        {
+            name: "CISC Processor",
+            instructions: [
+                { name: "Simple ALU", frequency: 30, cpi: 1 },
+                { name: "Complex ALU", frequency: 20, cpi: 3 },
+                { name: "Memory", frequency: 35, cpi: 4 },
+                { name: "Control", frequency: 15, cpi: 2 }
+            ]
+        },
+        {
+            name: "DSP Processor",
+            instructions: [
+                { name: "MAC", frequency: 40, cpi: 1 },
+                { name: "Memory Access", frequency: 30, cpi: 2 },
+                { name: "Control", frequency: 20, cpi: 1.5 },
+                { name: "I/O", frequency: 10, cpi: 5 }
+            ]
+        }
+    ];
+    
+    const choice = prompt(`Select a preset:\n1. RISC Processor\n2. CISC Processor\n3. DSP Processor\n\nEnter 1, 2, or 3:`);
+    
+    if (choice >= 1 && choice <= 3) {
+        const preset = presets[choice - 1];
+        loadPresetData(preset);
+    }
+}
+
+// Load preset data
+function loadPresetData(preset) {
+    // Clear existing instructions
+    const container = document.getElementById('instruction-types');
+    container.innerHTML = '';
+    
+    // Add preset instructions
+    preset.instructions.forEach(inst => {
+        const newRow = document.createElement('div');
+        newRow.className = 'instruction-row';
+        newRow.innerHTML = `
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type:</label>
+                    <input type="text" value="${inst.name}" class="instruction-name w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Frequency (%):</label>
+                    <input type="number" value="${inst.frequency}" min="0" max="100" class="instruction-frequency w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">CPI:</label>
+                    <input type="number" value="${inst.cpi}" min="0.1" step="0.1" class="instruction-cpi w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+            </div>
+            <button onclick="removeInstructionType(this)" class="mt-3 text-red-500 hover:text-red-700 text-sm">
+                <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>Remove
+            </button>
+        `;
+        container.appendChild(newRow);
+    });
+    
+    // Update lucide icons and frequency total
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    addFrequencyListeners();
+    updateFrequencyTotal();
+}
+
+// Export visualization
+function exportVisualization() {
+    const link = document.createElement('a');
+    link.download = 'cpi-analysis.png';
+    link.href = canvas.toDataURL();
+    link.click();
+}
+
+// Clear calculator
+function clearCalculator() {
+    // Reset system parameters
+    document.getElementById('clock-frequency').value = '1000';
+    document.getElementById('total-instructions').value = '1000000';
+    
+    // Reset to default instruction types
+    const container = document.getElementById('instruction-types');
+    container.innerHTML = `
+        <div class="instruction-row">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type:</label>
+                    <input type="text" value="ALU" class="instruction-name w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Frequency (%):</label>
+                    <input type="number" value="40" min="0" max="100" class="instruction-frequency w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">CPI:</label>
+                    <input type="number" value="1" min="0.1" step="0.1" class="instruction-cpi w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+            </div>
+            <button onclick="removeInstructionType(this)" class="mt-3 text-red-500 hover:text-red-700 text-sm">
+                <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>Remove
+            </button>
+        </div>
+    `;
+    
+    // Hide results
+    document.getElementById('result-container').classList.add('hidden');
+    
+    // Clear canvas
+    clearCanvas();
+    
+    // Update frequency total and add listeners
+    addFrequencyListeners();
+    updateFrequencyTotal();
+    
+    // Update lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    initCanvas();
+    addFrequencyListeners();
+    updateFrequencyTotal();
+    
+    // Initialize lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+});
+</script>
+{% endblock %}

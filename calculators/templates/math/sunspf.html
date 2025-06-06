@@ -1,0 +1,872 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<style>
+.skin-type-card {
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.skin-type-card.selected {
+    border-color: #10b981;
+    background: #ecfdf5;
+}
+.dark .skin-type-card.selected {
+    background: #064e3b;
+    border-color: #34d399;
+}
+.uv-index-bar {
+    height: 20px;
+    border-radius: 10px;
+    background: linear-gradient(to right, #22c55e, #eab308, #f97316, #ef4444, #8b5cf6);
+    position: relative;
+}
+.uv-indicator {
+    position: absolute;
+    top: -5px;
+    width: 4px;
+    height: 30px;
+    background: #1f2937;
+    border-radius: 2px;
+    transition: left 0.3s ease;
+}
+.dark .uv-indicator {
+    background: #f9fafb;
+}
+.risk-level {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-align: center;
+}
+.risk-low { background: #dcfce7; color: #166534; }
+.risk-moderate { background: #fef3c7; color: #92400e; }
+.risk-high { background: #fee2e2; color: #991b1b; }
+.risk-very-high { background: #fde2e7; color: #7c2d12; }
+.risk-extreme { background: #f3e8ff; color: #581c87; }
+.dark .risk-low { background: #064e3b; color: #bbf7d0; }
+.dark .risk-moderate { background: #451a03; color: #fde68a; }
+.dark .risk-high { background: #450a0a; color: #fecaca; }
+.dark .risk-very-high { background: #431407; color: #fed7aa; }
+.dark .risk-extreme { background: #3b0764; color: #e9d5ff; }
+.spf-recommendation {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    text-align: center;
+}
+.application-guide {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+.dark .application-guide {
+    background: #1e293b;
+    border-color: #334155;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+<!-- Back Button -->
+<div class="mb-6">
+    <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        <span>Back to Calculators</span>
+    </button>
+</div>
+
+<!-- Header -->
+<div class="text-center mb-12">
+    <div class="w-16 h-16 bg-orange-50 dark:bg-orange-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+        <i data-lucide="sun" class="w-8 h-8 text-orange-600 dark:text-orange-400"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Sunscreen SPF Calculator</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Get personalized sunscreen recommendations based on your skin type, UV conditions, and sun exposure activities.
+    </p>
+</div>
+
+<!-- Calculator -->
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+    <!-- Input Section -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Personal & Environmental Factors</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: Personal Factors -->
+            <div class="space-y-6">
+                <!-- Skin Type Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        Your Skin Type (Fitzpatrick Scale):
+                    </label>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div class="skin-type-card p-4 border rounded-lg" data-skin-type="1">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-6 h-6 rounded-full bg-red-100 border border-red-300"></div>
+                                <div>
+                                    <div class="font-medium text-gray-900 dark:text-white">Type I - Very Fair</div>
+                                    <div class="text-sm text-gray-600 dark:text-gray-300">Always burns, never tans</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="skin-type-card p-4 border rounded-lg" data-skin-type="2">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-6 h-6 rounded-full bg-orange-100 border border-orange-300"></div>
+                                <div>
+                                    <div class="font-medium text-gray-900 dark:text-white">Type II - Fair</div>
+                                    <div class="text-sm text-gray-600 dark:text-gray-300">Usually burns, tans minimally</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="skin-type-card p-4 border rounded-lg" data-skin-type="3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-6 h-6 rounded-full bg-yellow-100 border border-yellow-300"></div>
+                                <div>
+                                    <div class="font-medium text-gray-900 dark:text-white">Type III - Medium</div>
+                                    <div class="text-sm text-gray-600 dark:text-gray-300">Sometimes burns, tans gradually</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="skin-type-card p-4 border rounded-lg" data-skin-type="4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-6 h-6 rounded-full bg-amber-200 border border-amber-400"></div>
+                                <div>
+                                    <div class="font-medium text-gray-900 dark:text-white">Type IV - Olive</div>
+                                    <div class="text-sm text-gray-600 dark:text-gray-300">Rarely burns, tans easily</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="skin-type-card p-4 border rounded-lg" data-skin-type="5">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-6 h-6 rounded-full bg-amber-400 border border-amber-600"></div>
+                                <div>
+                                    <div class="font-medium text-gray-900 dark:text-white">Type V - Brown</div>
+                                    <div class="text-sm text-gray-600 dark:text-gray-300">Very rarely burns, tans very easily</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="skin-type-card p-4 border rounded-lg" data-skin-type="6">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-6 h-6 rounded-full bg-amber-800 border border-amber-900"></div>
+                                <div>
+                                    <div class="font-medium text-gray-900 dark:text-white">Type VI - Dark</div>
+                                    <div class="text-sm text-gray-600 dark:text-gray-300">Never burns, always tans darkly</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exposure Duration -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Planned Sun Exposure Duration:
+                    </label>
+                    <select id="exposure-duration" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        <option value="30">30 minutes or less</option>
+                        <option value="60">1 hour</option>
+                        <option value="120">2 hours</option>
+                        <option value="240">4 hours</option>
+                        <option value="480">8+ hours (all day)</option>
+                    </select>
+                </div>
+
+                <!-- Activity Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Activity Type:
+                    </label>
+                    <select id="activity-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        <option value="indoor">Mostly indoors</option>
+                        <option value="casual">Casual outdoor activities</option>
+                        <option value="sports">Outdoor sports/exercise</option>
+                        <option value="beach">Beach/pool activities</option>
+                        <option value="water">Water sports</option>
+                        <option value="hiking">Hiking/mountaineering</option>
+                        <option value="snow">Snow sports</option>
+                    </select>
+                </div>
+
+                <!-- Water Exposure -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        Water Exposure:
+                    </label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="water-exposure" value="none" checked class="text-orange-600 focus:ring-orange-500">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">No water exposure</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="water-exposure" value="occasional" class="text-orange-600 focus:ring-orange-500">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Occasional swimming/splashing</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="water-exposure" value="frequent" class="text-orange-600 focus:ring-orange-500">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Frequent water activities</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Environmental Factors -->
+            <div class="space-y-6">
+                <!-- UV Index -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        UV Index: <span id="uv-value" class="font-bold text-orange-600 dark:text-orange-400">5</span>
+                    </label>
+                    <div class="uv-index-bar">
+                        <div class="uv-indicator" id="uv-indicator"></div>
+                    </div>
+                    <input type="range" id="uv-index" min="1" max="11" value="5" class="w-full mt-2 opacity-0 absolute">
+                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <span>Low (1-2)</span>
+                        <span>Moderate (3-5)</span>
+                        <span>High (6-7)</span>
+                        <span>Very High (8-10)</span>
+                        <span>Extreme (11+)</span>
+                    </div>
+                </div>
+
+                <!-- Time of Day -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Primary Sun Exposure Time:
+                    </label>
+                    <select id="time-of-day" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        <option value="early">Early morning (6-9 AM)</option>
+                        <option value="mid-morning">Mid-morning (9-11 AM)</option>
+                        <option value="midday">Midday (11 AM-2 PM)</option>
+                        <option value="afternoon">Afternoon (2-5 PM)</option>
+                        <option value="evening">Evening (5-7 PM)</option>
+                    </select>
+                </div>
+
+                <!-- Altitude -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Altitude:
+                    </label>
+                    <select id="altitude" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        <option value="sea-level">Sea level (0-500m)</option>
+                        <option value="low">Low elevation (500-1000m)</option>
+                        <option value="moderate">Moderate elevation (1000-2000m)</option>
+                        <option value="high">High elevation (2000-3000m)</option>
+                        <option value="very-high">Very high elevation (3000m+)</option>
+                    </select>
+                </div>
+
+                <!-- Season -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Season:
+                    </label>
+                    <select id="season" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        <option value="spring">Spring</option>
+                        <option value="summer">Summer</option>
+                        <option value="fall">Fall/Autumn</option>
+                        <option value="winter">Winter</option>
+                    </select>
+                </div>
+
+                <!-- Surface Reflection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Primary Surface:
+                    </label>
+                    <select id="surface" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        <option value="grass">Grass/soil</option>
+                        <option value="concrete">Concrete/pavement</option>
+                        <option value="sand">Sand</option>
+                        <option value="water">Water</option>
+                        <option value="snow">Snow</option>
+                    </select>
+                </div>
+
+                <!-- Current Risk Level Display -->
+                <div id="current-risk" class="risk-level risk-moderate">
+                    Moderate Risk
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculate Button -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <button onclick="calculateSPF()" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Get SPF Recommendation
+        </button>
+        <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Clear
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-container" class="hidden">
+        <!-- SPF Recommendation -->
+        <div class="spf-recommendation mb-6">
+            <h3 class="text-2xl font-bold mb-2">Recommended SPF</h3>
+            <div id="recommended-spf" class="text-6xl font-bold mb-2">30</div>
+            <div id="spf-explanation" class="text-lg opacity-90"></div>
+        </div>
+
+        <!-- Detailed Recommendations -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                <h4 class="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-4">Application Guidelines</h4>
+                <div class="space-y-3">
+                    <div class="application-guide">
+                        <div class="font-medium text-gray-900 dark:text-white mb-1">Amount Needed:</div>
+                        <div id="amount-needed" class="text-gray-700 dark:text-gray-300"></div>
+                    </div>
+                    <div class="application-guide">
+                        <div class="font-medium text-gray-900 dark:text-white mb-1">Reapplication:</div>
+                        <div id="reapplication-time" class="text-gray-700 dark:text-gray-300"></div>
+                    </div>
+                    <div class="application-guide">
+                        <div class="font-medium text-gray-900 dark:text-white mb-1">Application Timing:</div>
+                        <div class="text-gray-700 dark:text-gray-300">Apply 15-30 minutes before sun exposure</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+                <h4 class="text-lg font-semibold text-green-800 dark:text-green-300 mb-4">Protection Analysis</h4>
+                <div class="space-y-3">
+                    <div class="application-guide">
+                        <div class="font-medium text-gray-900 dark:text-white mb-1">Burn Time Without SPF:</div>
+                        <div id="burn-time-no-spf" class="text-gray-700 dark:text-gray-300"></div>
+                    </div>
+                    <div class="application-guide">
+                        <div class="font-medium text-gray-900 dark:text-white mb-1">Protected Time:</div>
+                        <div id="protected-time" class="text-gray-700 dark:text-gray-300"></div>
+                    </div>
+                    <div class="application-guide">
+                        <div class="font-medium text-gray-900 dark:text-white mb-1">UV Protection:</div>
+                        <div id="uv-protection" class="text-gray-700 dark:text-gray-300"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Recommendations -->
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <h4 class="text-lg font-semibold text-yellow-800 dark:text-yellow-300 mb-4">Additional Protection Tips</h4>
+            <div id="additional-tips" class="space-y-2 text-gray-700 dark:text-gray-300"></div>
+        </div>
+
+        <!-- Product Recommendations -->
+        <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-purple-800 dark:text-purple-300 mb-4">Sunscreen Type Recommendations</h4>
+            <div id="product-recommendations" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational Content -->
+<div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Understanding Sun Protection</h2>
+    
+    <div class="space-y-6">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is SPF?</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                SPF (Sun Protection Factor) measures how well a sunscreen protects against UVB rays, which cause sunburn. 
+                SPF 30 blocks about 97% of UVB rays, while SPF 50 blocks about 98%. The difference in protection is minimal, 
+                but higher SPF may provide longer protection time.
+            </p>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Skin Types (Fitzpatrick Scale)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Types I & II</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Very fair to fair skin. Burns easily, tans poorly. Requires highest SPF protection (30-50+).
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Types III & IV</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Medium to olive skin. Sometimes burns, tans gradually. SPF 15-30 usually sufficient.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Types V & VI</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Brown to dark skin. Rarely burns, tans easily. SPF 15-30 recommended for extended exposure.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">UV Index Guide</h3>
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <ul class="space-y-2 text-gray-600 dark:text-gray-300">
+                    <li><strong>1-2 (Low):</strong> Minimal protection needed for normal activities</li>
+                    <li><strong>3-5 (Moderate):</strong> Protection needed during midday hours</li>
+                    <li><strong>6-7 (High):</strong> Protection required, avoid midday sun</li>
+                    <li><strong>8-10 (Very High):</strong> Extra protection essential, minimize sun exposure</li>
+                    <li><strong>11+ (Extreme):</strong> Maximum protection required, avoid sun when possible</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Application Tips</h3>
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Apply 1 ounce (2 tablespoons) for full body coverage</li>
+                    <li>Use 1/4 teaspoon for face and neck</li>
+                    <li>Apply 15-30 minutes before sun exposure</li>
+                    <li>Reapply every 2 hours or after swimming/sweating</li>
+                    <li>Don't forget ears, lips, feet, and back of hands</li>
+                    <li>Use water-resistant formulas for swimming or sports</li>
+                    <li>Check expiration dates - sunscreen loses effectiveness over time</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Beyond Sunscreen</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                Sunscreen is just one part of sun protection. Also consider wearing protective clothing, 
+                wide-brimmed hats, UV-blocking sunglasses, and seeking shade during peak UV hours (10 AM - 4 PM). 
+                Remember that UV rays can penetrate clouds and reflect off surfaces like water, sand, and snow.
+            </p>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script>
+let selectedSkinType = null;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSkinTypeSelection();
+    initializeUVSlider();
+    updateRiskLevel();
+    lucide.createIcons();
+});
+
+// Initialize skin type selection
+function initializeSkinTypeSelection() {
+    const skinTypeCards = document.querySelectorAll('.skin-type-card');
+    
+    skinTypeCards.forEach(card => {
+        card.addEventListener('click', function() {
+            // Remove selected class from all cards
+            skinTypeCards.forEach(c => c.classList.remove('selected'));
+            
+            // Add selected class to clicked card
+            this.classList.add('selected');
+            
+            // Store selected skin type
+            selectedSkinType = parseInt(this.dataset.skinType);
+            
+            // Update risk level
+            updateRiskLevel();
+        });
+    });
+}
+
+// Initialize UV slider
+function initializeUVSlider() {
+    const uvSlider = document.getElementById('uv-index');
+    const uvValue = document.getElementById('uv-value');
+    const uvIndicator = document.getElementById('uv-indicator');
+    
+    uvSlider.addEventListener('input', function() {
+        const value = parseInt(this.value);
+        uvValue.textContent = value;
+        
+        // Update indicator position
+        const percentage = ((value - 1) / 10) * 100;
+        uvIndicator.style.left = `${percentage}%`;
+        
+        updateRiskLevel();
+    });
+    
+    // Set initial position
+    const initialValue = parseInt(uvSlider.value);
+    const initialPercentage = ((initialValue - 1) / 10) * 100;
+    uvIndicator.style.left = `${initialPercentage}%`;
+}
+
+// Update risk level display
+function updateRiskLevel() {
+    const uvIndex = parseInt(document.getElementById('uv-index').value);
+    const timeOfDay = document.getElementById('time-of-day').value;
+    const activity = document.getElementById('activity-type').value;
+    const riskDisplay = document.getElementById('current-risk');
+    
+    let riskLevel = 'moderate';
+    let riskText = 'Moderate Risk';
+    
+    // Calculate risk based on multiple factors
+    let riskScore = uvIndex;
+    
+    // Adjust for skin type
+    if (selectedSkinType) {
+        if (selectedSkinType <= 2) riskScore += 2;
+        else if (selectedSkinType <= 4) riskScore += 1;
+        else riskScore -= 1;
+    }
+    
+    // Adjust for time of day
+    if (timeOfDay === 'midday') riskScore += 2;
+    else if (timeOfDay === 'mid-morning' || timeOfDay === 'afternoon') riskScore += 1;
+    
+    // Adjust for activity
+    if (activity === 'water' || activity === 'snow') riskScore += 2;
+    else if (activity === 'beach' || activity === 'hiking') riskScore += 1;
+    
+    // Determine risk level
+    if (riskScore <= 3) {
+        riskLevel = 'low';
+        riskText = 'Low Risk';
+    } else if (riskScore <= 6) {
+        riskLevel = 'moderate';
+        riskText = 'Moderate Risk';
+    } else if (riskScore <= 8) {
+        riskLevel = 'high';
+        riskText = 'High Risk';
+    } else if (riskScore <= 10) {
+        riskLevel = 'very-high';
+        riskText = 'Very High Risk';
+    } else {
+        riskLevel = 'extreme';
+        riskText = 'Extreme Risk';
+    }
+    
+    // Update display
+    riskDisplay.className = `risk-level risk-${riskLevel}`;
+    riskDisplay.textContent = riskText;
+}
+
+// Add event listeners for risk level updates
+document.getElementById('time-of-day').addEventListener('change', updateRiskLevel);
+document.getElementById('activity-type').addEventListener('change', updateRiskLevel);
+
+// Calculate SPF recommendation
+function calculateSPF() {
+    if (!selectedSkinType) {
+        alert('Please select your skin type first.');
+        return;
+    }
+    
+    const uvIndex = parseInt(document.getElementById('uv-index').value);
+    const duration = parseInt(document.getElementById('exposure-duration').value);
+    const activity = document.getElementById('activity-type').value;
+    const waterExposure = document.querySelector('input[name="water-exposure"]:checked').value;
+    const timeOfDay = document.getElementById('time-of-day').value;
+    const altitude = document.getElementById('altitude').value;
+    const season = document.getElementById('season').value;
+    const surface = document.getElementById('surface').value;
+    
+    // Calculate base SPF recommendation
+    let recommendedSPF = calculateBaseSPF(selectedSkinType, uvIndex);
+    
+    // Adjust for various factors
+    recommendedSPF = adjustForFactors(recommendedSPF, {
+        duration, activity, waterExposure, timeOfDay, altitude, season, surface
+    });
+    
+    // Round to standard SPF values
+    recommendedSPF = roundToStandardSPF(recommendedSPF);
+    
+    // Display results
+    displayResults(recommendedSPF, {
+        skinType: selectedSkinType,
+        uvIndex,
+        duration,
+        activity,
+        waterExposure,
+        timeOfDay,
+        altitude,
+        season,
+        surface
+    });
+    
+    // Show results container
+    document.getElementById('result-container').classList.remove('hidden');
+    
+    // Scroll to results
+    setTimeout(() => {
+        document.getElementById('result-container').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
+}
+
+// Calculate base SPF based on skin type and UV index
+function calculateBaseSPF(skinType, uvIndex) {
+    const baseSPF = {
+        1: [30, 30, 50, 50, 50, 50, 50, 50, 50, 50, 50], // Type I
+        2: [15, 30, 30, 50, 50, 50, 50, 50, 50, 50, 50], // Type II
+        3: [15, 15, 30, 30, 30, 50, 50, 50, 50, 50, 50], // Type III
+        4: [15, 15, 15, 30, 30, 30, 50, 50, 50, 50, 50], // Type IV
+        5: [15, 15, 15, 15, 30, 30, 30, 50, 50, 50, 50], // Type V
+        6: [15, 15, 15, 15, 15, 30, 30, 30, 50, 50, 50]  // Type VI
+    };
+    
+    return baseSPF[skinType][uvIndex - 1] || 30;
+}
+
+// Adjust SPF for various factors
+function adjustForFactors(baseSPF, factors) {
+    let adjustedSPF = baseSPF;
+    
+    // Duration adjustment
+    if (factors.duration >= 240) adjustedSPF += 15;
+    else if (factors.duration >= 120) adjustedSPF += 10;
+    else if (factors.duration >= 60) adjustedSPF += 5;
+    
+    // Activity adjustment
+    const activityMultipliers = {
+        'indoor': 0.5,
+        'casual': 1.0,
+        'sports': 1.2,
+        'beach': 1.3,
+        'water': 1.5,
+        'hiking': 1.3,
+        'snow': 1.8
+    };
+    adjustedSPF *= activityMultipliers[factors.activity] || 1.0;
+    
+    // Water exposure adjustment
+    if (factors.waterExposure === 'frequent') adjustedSPF += 15;
+    else if (factors.waterExposure === 'occasional') adjustedSPF += 10;
+    
+    // Time of day adjustment
+    if (factors.timeOfDay === 'midday') adjustedSPF += 10;
+    else if (factors.timeOfDay === 'mid-morning' || factors.timeOfDay === 'afternoon') adjustedSPF += 5;
+    
+    // Altitude adjustment
+    const altitudeAdjustments = {
+        'sea-level': 0,
+        'low': 5,
+        'moderate': 10,
+        'high': 15,
+        'very-high': 20
+    };
+    adjustedSPF += altitudeAdjustments[factors.altitude] || 0;
+    
+    // Surface reflection adjustment
+    const surfaceAdjustments = {
+        'grass': 0,
+        'concrete': 5,
+        'sand': 10,
+        'water': 10,
+        'snow': 20
+    };
+    adjustedSPF += surfaceAdjustments[factors.surface] || 0;
+    
+    return Math.round(adjustedSPF);
+}
+
+// Round to standard SPF values
+function roundToStandardSPF(spf) {
+    const standardSPFs = [15, 30, 50, 70, 100];
+    
+    for (let standardSPF of standardSPFs) {
+        if (spf <= standardSPF) {
+            return standardSPF;
+        }
+    }
+    
+    return 100; // Maximum practical SPF
+}
+
+// Display results
+function displayResults(spf, factors) {
+    // Main SPF recommendation
+    document.getElementById('recommended-spf').textContent = spf;
+    
+    // SPF explanation
+    const protection = Math.round((1 - 1/spf) * 100);
+    document.getElementById('spf-explanation').textContent = 
+        `Blocks approximately ${protection}% of UVB rays`;
+    
+    // Amount needed
+    document.getElementById('amount-needed').textContent = 
+        '1 ounce (2 tablespoons) for full body, 1/4 teaspoon for face';
+    
+    // Reapplication time
+    let reapplicationTime = '2 hours';
+    if (factors.waterExposure === 'frequent') reapplicationTime = '40-80 minutes';
+    else if (factors.waterExposure === 'occasional') reapplicationTime = '80 minutes';
+    else if (factors.activity === 'sports') reapplicationTime = '80 minutes';
+    
+    document.getElementById('reapplication-time').textContent = 
+        `Every ${reapplicationTime}`;
+    
+    // Burn time calculations
+    const baseBurnTime = getBurnTime(factors.skinType, factors.uvIndex);
+    const protectedTime = baseBurnTime * spf;
+    
+    document.getElementById('burn-time-no-spf').textContent = 
+        `${baseBurnTime} minutes`;
+    document.getElementById('protected-time').textContent = 
+        `${Math.round(protectedTime)} minutes (${Math.round(protectedTime/60)} hours)`;
+    
+    // UV protection percentage
+    document.getElementById('uv-protection').textContent = 
+        `${Math.round((1 - 1/spf) * 100)}% UVB protection`;
+    
+    // Additional tips
+    generateAdditionalTips(factors);
+    
+    // Product recommendations
+    generateProductRecommendations(spf, factors);
+}
+
+// Get burn time for skin type and UV index
+function getBurnTime(skinType, uvIndex) {
+    const baseBurnTimes = {
+        1: [15, 12, 10, 8, 6, 5, 4, 3, 2, 2, 1],
+        2: [20, 15, 12, 10, 8, 6, 5, 4, 3, 2, 2],
+        3: [30, 25, 20, 15, 12, 10, 8, 6, 5, 4, 3],
+        4: [45, 35, 30, 25, 20, 15, 12, 10, 8, 6, 5],
+        5: [60, 50, 40, 30, 25, 20, 15, 12, 10, 8, 6],
+        6: [90, 75, 60, 45, 35, 30, 25, 20, 15, 12, 10]
+    };
+    
+    return baseBurnTimes[skinType][uvIndex - 1] || 10;
+}
+
+// Generate additional tips
+function generateAdditionalTips(factors) {
+    const tipsContainer = document.getElementById('additional-tips');
+    const tips = [];
+    
+    // General tips
+    tips.push('• Wear protective clothing, wide-brimmed hat, and UV-blocking sunglasses');
+    tips.push('• Seek shade during peak UV hours (10 AM - 4 PM)');
+    
+    // Activity-specific tips
+    if (factors.activity === 'water' || factors.activity === 'beach') {
+        tips.push('• Use water-resistant sunscreen and reapply after swimming');
+        tips.push('• Remember that water reflects UV rays, increasing exposure');
+    }
+    
+    if (factors.activity === 'snow') {
+        tips.push('• Snow reflects up to 80% of UV rays - extra protection needed');
+        tips.push('• Protect lips and areas around goggles/sunglasses');
+    }
+    
+    if (factors.activity === 'hiking') {
+        tips.push('• UV exposure increases with altitude - reapply more frequently');
+        tips.push('• Don\'t forget to protect ears and back of neck');
+    }
+    
+    // UV index specific tips
+    if (factors.uvIndex >= 8) {
+        tips.push('• Consider staying indoors during midday hours');
+        tips.push('• Use extra protective measures - clothing, shade, frequent reapplication');
+    }
+    
+    // Skin type specific tips
+    if (factors.skinType <= 2) {
+        tips.push('• Consider physical/mineral sunscreens for sensitive skin');
+        tips.push('• Start with shorter exposure times to build tolerance gradually');
+    }
+    
+    tipsContainer.innerHTML = tips.map(tip => `<div>${tip}</div>`).join('');
+}
+
+// Generate product recommendations
+function generateProductRecommendations(spf, factors) {
+    const container = document.getElementById('product-recommendations');
+    const recommendations = [];
+    
+    // Water resistance recommendation
+    if (factors.waterExposure !== 'none' || factors.activity === 'sports') {
+        recommendations.push({
+            title: 'Water-Resistant Formula',
+            description: 'Choose "Very Water Resistant" (80 minutes) for swimming or heavy sweating',
+            icon: 'droplets'
+        });
+    }
+    
+    // Broad spectrum recommendation
+    recommendations.push({
+        title: 'Broad Spectrum Protection',
+        description: 'Protects against both UVA and UVB rays - look for this label',
+        icon: 'shield'
+    });
+    
+    // Sensitive skin recommendation
+    if (factors.skinType <= 2) {
+        recommendations.push({
+            title: 'Mineral/Physical Sunscreen',
+            description: 'Zinc oxide or titanium dioxide - gentler for sensitive skin',
+            icon: 'heart'
+        });
+    }
+    
+    // High SPF recommendation
+    if (spf >= 50) {
+        recommendations.push({
+            title: 'High SPF Formula',
+            description: 'SPF 50+ recommended for your conditions - don\'t go below SPF 30',
+            icon: 'sun'
+        });
+    }
+    
+    container.innerHTML = recommendations.map(rec => `
+        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center space-x-3 mb-2">
+                <i data-lucide="${rec.icon}" class="w-5 h-5 text-purple-600 dark:text-purple-400"></i>
+                <h5 class="font-medium text-gray-900 dark:text-white">${rec.title}</h5>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-300">${rec.description}</p>
+        </div>
+    `).join('');
+    
+    // Re-initialize Lucide icons for new content
+    lucide.createIcons();
+}
+
+// Clear calculator
+function clearCalculator() {
+    // Reset skin type selection
+    document.querySelectorAll('.skin-type-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    selectedSkinType = null;
+    
+    // Reset form inputs
+    document.getElementById('exposure-duration').value = '60';
+    document.getElementById('activity-type').value = 'casual';
+    document.querySelector('input[name="water-exposure"][value="none"]').checked = true;
+    document.getElementById('uv-index').value = '5';
+    document.getElementById('time-of-day').value = 'midday';
+    document.getElementById('altitude').value = 'sea-level';
+    document.getElementById('season').value = 'summer';
+    document.getElementById('surface').value = 'grass';
+    
+    // Reset UV indicator
+    document.getElementById('uv-value').textContent = '5';
+    document.getElementById('uv-indicator').style.left = '40%';
+    
+    // Hide results
+    document.getElementById('result-container').classList.add('hidden');
+    
+    // Update risk level
+    updateRiskLevel();
+}
+</script>
+{% endblock %}

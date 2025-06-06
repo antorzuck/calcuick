@@ -1,0 +1,1193 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<style>
+    .sequence-display {
+        font-family: 'Courier New', monospace;
+        background: #f3f4f6;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid #d1d5db;
+        font-size: 1rem;
+        letter-spacing: 0.1em;
+        min-height: 3rem;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .dark .sequence-display {
+        background: #374151;
+        border-color: #4b5563;
+        color: #e5e7eb;
+    }
+    .operation-highlight {
+        padding: 0.2rem 0.3rem;
+        border-radius: 0.25rem;
+        font-weight: bold;
+        margin: 0.1rem;
+        display: inline-block;
+    }
+    .match-op {
+        background: #f0fdf4;
+        color: #16a34a;
+    }
+    .dark .match-op {
+        background: #14532d;
+        color: #86efac;
+    }
+    .substitute-op {
+        background: #fef2f2;
+        color: #dc2626;
+    }
+    .dark .substitute-op {
+        background: #7f1d1d;
+        color: #fca5a5;
+    }
+    .insert-op {
+        background: #eff6ff;
+        color: #2563eb;
+    }
+    .dark .insert-op {
+        background: #1e3a8a;
+        color: #93c5fd;
+    }
+    .delete-op {
+        background: #fefce8;
+        color: #ca8a04;
+    }
+    .dark .delete-op {
+        background: #713f12;
+        color: #fde047;
+    }
+    .metric-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    .dark .metric-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    #levenshtein-canvas {
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f9fafb;
+  max-width: 100%;
+    height: auto;
+    }
+    .dark #levenshtein-canvas {
+        border-color: #374151;
+        background: #1f2937;
+    }
+    .matrix-cell {
+        border: 1px solid #d1d5db;
+        padding: 0.25rem;
+        text-align: center;
+        font-family: 'Courier New', monospace;
+        font-size: 0.75rem;
+        min-width: 2rem;
+        min-height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .dark .matrix-cell {
+        border-color: #4b5563;
+    }
+    .matrix-header {
+        background: #f3f4f6;
+        font-weight: bold;
+    }
+    .dark .matrix-header {
+        background: #374151;
+    }
+    .matrix-path {
+        background: #dbeafe;
+        color: #1e40af;
+        font-weight: bold;
+    }
+    .dark .matrix-path {
+        background: #1e3a8a;
+        color: #93c5fd;
+    }
+    .matrix-container {
+        max-height: 400px;
+        overflow: auto;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+    }
+    .dark .matrix-container {
+        border-color: #4b5563;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="edit-3" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Levenshtein Distance Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate the edit distance between two strings using insertions, deletions, and substitutions. Visualize the optimal alignment and transformation steps.
+        </p>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">String Input & Configuration</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Input Configuration -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Algorithm Type:
+                        </label>
+                        <select id="algorithm-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="standard">Standard Levenshtein (equal costs)</option>
+                            <option value="weighted">Weighted Edit Distance</option>
+                            <option value="damerau">Damerau-Levenshtein (with transpositions)</option>
+                        </select>
+                    </div>
+
+                    <div id="cost-configuration" class="hidden">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Operation Costs</h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Insert Cost:</label>
+                                <input type="number" id="insert-cost" value="1" min="0" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Delete Cost:</label>
+                                <input type="number" id="delete-cost" value="1" min="0" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Substitute Cost:</label>
+                                <input type="number" id="substitute-cost" value="1" min="0" step="0.1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Case Sensitivity:
+                        </label>
+                        <select id="case-sensitivity" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="sensitive">Case Sensitive</option>
+                            <option value="insensitive">Case Insensitive</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            First String:
+                        </label>
+                        <textarea id="string1" rows="3" placeholder="Enter first string..." class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"></textarea>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Length: <span id="length1">0</span></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Second String:
+                        </label>
+                        <textarea id="string2" rows="3" placeholder="Enter second string..." class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"></textarea>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Length: <span id="length2">0</span></p>
+                    </div>
+
+                    <!-- Quick Examples -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Quick Examples:</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="loadExample('words')" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded text-sm transition-colors">
+                                Similar Words
+                            </button>
+                            <button onclick="loadExample('dna')" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded text-sm transition-colors">
+                                DNA Sequences
+                            </button>
+                            <button onclick="loadExample('typos')" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded text-sm transition-colors">
+                                Typo Correction
+                            </button>
+                            <button onclick="loadExample('programming')" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded text-sm transition-colors">
+                                Code Diff
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Visualization -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">String Alignment Preview</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">String 1:</label>
+                                <div id="string1-display" class="sequence-display">
+                                    Enter strings to see alignment
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">String 2:</label>
+                                <div id="string2-display" class="sequence-display">
+                                    Enter strings to see alignment
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Operations:</label>
+                                <div id="operations-display" class="sequence-display">
+                                    Operations will be shown here
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Distance Visualization -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Distance Visualization</h3>
+                        <div class="flex justify-center">
+                            <canvas id="levenshtein-canvas" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button onclick="calculateLevenshteinDistance()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Calculate Edit Distance
+            </button>
+            <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Edit Distance Results</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Edit Distance:</h4>
+                        <div id="edit-distance" class="text-3xl font-bold text-blue-600 dark:text-blue-400"></div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Similarity (%):</h4>
+                        <div id="similarity-percent" class="text-3xl font-bold text-blue-600 dark:text-blue-400"></div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Operations:</h4>
+                        <div id="total-operations" class="text-3xl font-bold text-blue-600 dark:text-blue-400"></div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Efficiency:</h4>
+                        <div id="efficiency-score" class="text-3xl font-bold text-blue-600 dark:text-blue-400"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Operation Breakdown</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Matches:</h4>
+                        <div id="matches-count" class="text-2xl font-bold text-green-600 dark:text-green-400"></div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Substitutions:</h4>
+                        <div id="substitutions-count" class="text-2xl font-bold text-red-600 dark:text-red-400"></div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Insertions:</h4>
+                        <div id="insertions-count" class="text-2xl font-bold text-blue-600 dark:text-blue-400"></div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Deletions:</h4>
+                        <div id="deletions-count" class="text-2xl font-bold text-yellow-600 dark:text-yellow-400"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Transformation Steps</h3>
+                
+                <div id="transformation-steps" class="space-y-2">
+                    <!-- Steps will be inserted here -->
+                </div>
+            </div>
+
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4">Dynamic Programming Matrix</h3>
+                
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="show-matrix" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Show DP Matrix (may be large for long strings)</span>
+                    </label>
+                </div>
+                
+                <div id="matrix-container" class="matrix-container hidden">
+                    <div id="dp-matrix" class="inline-block">
+                        <!-- Matrix will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-300 mb-4">Analysis & Export</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-gray-700 dark:text-gray-400 mb-2">Detailed Analysis:</h4>
+                        <div id="detailed-analysis" class="sequence-display"></div>
+                    </div>
+                    
+                    <div class="flex gap-4">
+                        <button onclick="exportResults()" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg font-medium transition-colors">
+                            Export Results
+                        </button>
+                        <button onclick="exportVisualization()" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg font-medium transition-colors">
+                            Export Chart
+                        </button>
+                        <button onclick="exportMatrix()" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg font-medium transition-colors">
+                            Export Matrix
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Levenshtein Distance</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Levenshtein Distance?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    The Levenshtein distance, also known as edit distance, is the minimum number of single-character 
+                    edits (insertions, deletions, or substitutions) required to change one string into another. 
+                    Unlike Hamming distance, it works with strings of different lengths and provides a more flexible 
+                    measure of string similarity.
+                </p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Algorithm Variants</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Standard Levenshtein</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Uses insertions, deletions, and substitutions with equal cost (typically 1).
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Weighted Edit Distance</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Allows different costs for different operations based on application needs.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Damerau-Levenshtein</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Includes transpositions (swapping adjacent characters) as a fourth operation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Spell Checking</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Find the closest correctly spelled words to a misspelled input.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">DNA Sequence Analysis</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Compare genetic sequences and identify mutations or variations.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Fuzzy String Matching</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Find approximate matches in databases and search systems.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Version Control</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Calculate differences between file versions in Git and other VCS.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Natural Language Processing</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Measure text similarity and perform approximate text matching.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Data Deduplication</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Identify and merge similar records in databases.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Algorithm Complexity</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <ul class="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                        <li><strong>Time Complexity:</strong> O(m × n) where m and n are string lengths</li>
+                        <li><strong>Space Complexity:</strong> O(m × n) for full matrix, O(min(m,n)) with optimization</li>
+                        <li><strong>Dynamic Programming:</strong> Uses optimal substructure and overlapping subproblems</li>
+                        <li><strong>Optimization:</strong> Can be optimized to use only O(min(m,n)) space</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li>Choose the algorithm type (Standard, Weighted, or Damerau-Levenshtein)</li>
+                    <li>Set operation costs if using weighted edit distance</li>
+                    <li>Configure case sensitivity as needed</li>
+                    <li>Enter the two strings you want to compare</li>
+                    <li>Click "Calculate Edit Distance" to analyze</li>
+                    <li>Review the alignment, transformation steps, and DP matrix</li>
+                    <li>Export results for documentation or further analysis</li>
+                </ol>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Example Calculations</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div class="space-y-3">
+                        <div>
+                            <strong>Word Similarity:</strong><br>
+                            "kitten" → "sitting"<br>
+                            Distance: 3 (substitute k→s, substitute e→i, insert g)
+                        </div>
+                        <div>
+                            <strong>Typo Correction:</strong><br>
+                            "recieve" → "receive"<br>
+                            Distance: 2 (transpose ie→ei)
+                        </div>
+                        <div>
+                            <strong>DNA Mutation:</strong><br>
+                            "ATCG" → "AGTCG"<br>
+                            Distance: 1 (insert G at position 2)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Comparison with Other Metrics</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>vs Hamming Distance:</strong> Works with different length strings, allows insertions/deletions</li>
+                    <li><strong>vs Jaro-Winkler:</strong> More intuitive for character-level edits, better for short strings</li>
+                    <li><strong>vs Cosine Similarity:</strong> Character-based rather than token-based, preserves order</li>
+                    <li><strong>vs Longest Common Subsequence:</strong> Counts all operations, not just matches</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+    let canvas, ctx;
+    let currentStrings = { str1: '', str2: '' };
+    let dpMatrix = [];
+    let alignment = [];
+
+    // Initialize canvas
+    function initCanvas() {
+        canvas = document.getElementById('levenshtein-canvas');
+        ctx = canvas.getContext('2d');
+        clearCanvas();
+    }
+
+    // Clear canvas
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Set background
+        const isDark = document.documentElement.classList.contains('dark');
+        ctx.fillStyle = isDark ? '#1f2937' : '#f9fafb';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Update algorithm type
+    document.getElementById('algorithm-type').addEventListener('change', function() {
+        const type = this.value;
+        const costConfig = document.getElementById('cost-configuration');
+        
+        if (type === 'weighted') {
+            costConfig.classList.remove('hidden');
+        } else {
+            costConfig.classList.add('hidden');
+        }
+        
+        updateStringDisplay();
+    });
+
+    // Add event listeners for string inputs
+    function addStringListeners() {
+        const str1 = document.getElementById('string1');
+        const str2 = document.getElementById('string2');
+        
+        str1.addEventListener('input', function() {
+            document.getElementById('length1').textContent = this.value.length;
+            updateStringDisplay();
+        });
+        
+        str2.addEventListener('input', function() {
+            document.getElementById('length2').textContent = this.value.length;
+            updateStringDisplay();
+        });
+    }
+
+    // Process strings based on case sensitivity
+    function processStrings(str1, str2) {
+        const caseSensitive = document.getElementById('case-sensitivity').value === 'sensitive';
+        
+        if (!caseSensitive) {
+            return [str1.toLowerCase(), str2.toLowerCase()];
+        }
+        
+        return [str1, str2];
+    }
+
+    // Update string display
+    function updateStringDisplay() {
+        const str1 = document.getElementById('string1').value;
+        const str2 = document.getElementById('string2').value;
+        
+        const [processedStr1, processedStr2] = processStrings(str1, str2);
+        
+        // Update displays
+        const str1Display = document.getElementById('string1-display');
+        const str2Display = document.getElementById('string2-display');
+        const opsDisplay = document.getElementById('operations-display');
+        
+        if (!processedStr1 && !processedStr2) {
+            str1Display.textContent = 'Enter strings to see alignment';
+            str2Display.textContent = 'Enter strings to see alignment';
+            opsDisplay.textContent = 'Operations will be shown here';
+            return;
+        }
+        
+        // Simple preview (full calculation happens on button click)
+        str1Display.textContent = processedStr1 || '(empty)';
+        str2Display.textContent = processedStr2 || '(empty)';
+        opsDisplay.textContent = 'Click "Calculate Edit Distance" for detailed analysis';
+        
+        currentStrings = { str1: processedStr1, str2: processedStr2 };
+    }
+
+    // Load example data
+    function loadExample(type) {
+        const examples = {
+            words: {
+                str1: 'kitten',
+                str2: 'sitting'
+            },
+            dna: {
+                str1: 'ATCGATCG',
+                str2: 'AGTCGATCG'
+            },
+            typos: {
+                str1: 'recieve',
+                str2: 'receive'
+            },
+            programming: {
+                str1: 'function hello() {',
+                str2: 'function helloWorld() {'
+            }
+        };
+        
+        if (examples[type]) {
+            document.getElementById('string1').value = examples[type].str1;
+            document.getElementById('string2').value = examples[type].str2;
+            
+            // Trigger updates
+            document.getElementById('string1').dispatchEvent(new Event('input'));
+            document.getElementById('string2').dispatchEvent(new Event('input'));
+        }
+    }
+
+    // Calculate Levenshtein distance using dynamic programming
+    function calculateLevenshteinDP(str1, str2, costs = { insert: 1, delete: 1, substitute: 1 }) {
+        const m = str1.length;
+        const n = str2.length;
+        
+        // Initialize DP matrix
+        const dp = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
+        
+        // Initialize first row and column
+        for (let i = 0; i <= m; i++) {
+            dp[i][0] = i * costs.delete;
+        }
+        for (let j = 0; j <= n; j++) {
+            dp[0][j] = j * costs.insert;
+        }
+        
+        // Fill the DP matrix
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                if (str1[i - 1] === str2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1]; // Match
+                } else {
+                    dp[i][j] = Math.min(
+                        dp[i - 1][j] + costs.delete,      // Deletion
+                        dp[i][j - 1] + costs.insert,      // Insertion
+                        dp[i - 1][j - 1] + costs.substitute // Substitution
+                    );
+                }
+            }
+        }
+        
+        return { distance: dp[m][n], matrix: dp };
+    }
+
+    // Backtrack to find the optimal alignment
+    function backtrackAlignment(str1, str2, dp, costs = { insert: 1, delete: 1, substitute: 1 }) {
+        const alignment = [];
+        let i = str1.length;
+        let j = str2.length;
+        
+        while (i > 0 || j > 0) {
+            if (i > 0 && j > 0 && str1[i - 1] === str2[j - 1]) {
+                // Match
+                alignment.unshift({
+                    operation: 'match',
+                    char1: str1[i - 1],
+                    char2: str2[j - 1],
+                    pos1: i - 1,
+                    pos2: j - 1
+                });
+                i--;
+                j--;
+            } else if (i > 0 && j > 0 && 
+                       dp[i][j] === dp[i - 1][j - 1] + costs.substitute) {
+                // Substitution
+                alignment.unshift({
+                    operation: 'substitute',
+                    char1: str1[i - 1],
+                    char2: str2[j - 1],
+                    pos1: i - 1,
+                    pos2: j - 1
+                });
+                i--;
+                j--;
+            } else if (i > 0 && dp[i][j] === dp[i - 1][j] + costs.delete) {
+                // Deletion
+                alignment.unshift({
+                    operation: 'delete',
+                    char1: str1[i - 1],
+                    char2: '-',
+                    pos1: i - 1,
+                    pos2: -1
+                });
+                i--;
+            } else if (j > 0 && dp[i][j] === dp[i][j - 1] + costs.insert) {
+                // Insertion
+                alignment.unshift({
+                    operation: 'insert',
+                    char1: '-',
+                    char2: str2[j - 1],
+                    pos1: -1,
+                    pos2: j - 1
+                });
+                j--;
+            }
+        }
+        
+        return alignment;
+    }
+
+    // Calculate Levenshtein distance
+    function calculateLevenshteinDistance() {
+        const str1 = currentStrings.str1;
+        const str2 = currentStrings.str2;
+        
+        if (str1 === undefined || str2 === undefined) {
+            alert('Please enter both strings');
+            return;
+        }
+        
+        // Get costs
+        const algorithmType = document.getElementById('algorithm-type').value;
+        let costs = { insert: 1, delete: 1, substitute: 1 };
+        
+        if (algorithmType === 'weighted') {
+            costs = {
+                insert: parseFloat(document.getElementById('insert-cost').value),
+                delete: parseFloat(document.getElementById('delete-cost').value),
+                substitute: parseFloat(document.getElementById('substitute-cost').value)
+            };
+        }
+        
+        // Calculate distance and get matrix
+        const result = calculateLevenshteinDP(str1, str2, costs);
+        const distance = result.distance;
+        dpMatrix = result.matrix;
+        
+        // Get alignment
+        alignment = backtrackAlignment(str1, str2, dpMatrix, costs);
+        
+        // Calculate metrics
+        const maxLength = Math.max(str1.length, str2.length);
+        const similarity = maxLength === 0 ? 100 : ((maxLength - distance) / maxLength * 100);
+        
+        // Count operations
+        const operations = {
+            matches: 0,
+            substitutions: 0,
+            insertions: 0,
+            deletions: 0
+        };
+        
+        alignment.forEach(op => {
+            switch (op.operation) {
+                case 'match': operations.matches++; break;
+                case 'substitute': operations.substitutions++; break;
+                case 'insert': operations.insertions++; break;
+                case 'delete': operations.deletions++; break;
+            }
+        });
+        
+        const totalOps = operations.substitutions + operations.insertions + operations.deletions;
+        const efficiency = totalOps === 0 ? 100 : ((operations.matches / (operations.matches + totalOps)) * 100);
+        
+        // Display results
+        document.getElementById('edit-distance').textContent = distance.toFixed(1);
+        document.getElementById('similarity-percent').textContent = similarity.toFixed(1) + '%';
+        document.getElementById('total-operations').textContent = totalOps;
+        document.getElementById('efficiency-score').textContent = efficiency.toFixed(1) + '%';
+        
+        document.getElementById('matches-count').textContent = operations.matches;
+        document.getElementById('substitutions-count').textContent = operations.substitutions;
+        document.getElementById('insertions-count').textContent = operations.insertions;
+        document.getElementById('deletions-count').textContent = operations.deletions;
+        
+        // Display alignment
+        displayAlignment(str1, str2, alignment);
+        
+        // Display transformation steps
+        displayTransformationSteps(alignment);
+        
+        // Create visualization
+        drawVisualization(distance, maxLength, operations);
+        
+        // Generate analysis
+        generateAnalysis(str1, str2, distance, similarity, operations);
+        
+        document.getElementById('result-container').classList.remove('hidden');
+        
+        // Scroll to results
+        setTimeout(() => {
+            document.getElementById('result-container').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+    }
+
+    // Display alignment
+    function displayAlignment(str1, str2, alignment) {
+        const str1Display = document.getElementById('string1-display');
+        const str2Display = document.getElementById('string2-display');
+        const opsDisplay = document.getElementById('operations-display');
+        
+        let str1Html = '';
+        let str2Html = '';
+        let opsHtml = '';
+        
+        alignment.forEach(op => {
+            const opClass = `${op.operation}-op operation-highlight`;
+            
+            str1Html += `<span class="${opClass}">${op.char1}</span>`;
+            str2Html += `<span class="${opClass}">${op.char2}</span>`;
+            
+            let opSymbol = '';
+            switch (op.operation) {
+                case 'match': opSymbol = '='; break;
+                case 'substitute': opSymbol = '≠'; break;
+                case 'insert': opSymbol = '+'; break;
+                case 'delete': opSymbol = '-'; break;
+            }
+            opsHtml += `<span class="${opClass}">${opSymbol}</span>`;
+        });
+        
+        str1Display.innerHTML = str1Html;
+        str2Display.innerHTML = str2Html;
+        opsDisplay.innerHTML = opsHtml;
+    }
+
+    // Display transformation steps
+    function displayTransformationSteps(alignment) {
+        const stepsContainer = document.getElementById('transformation-steps');
+        stepsContainer.innerHTML = '';
+        
+        let currentStr = currentStrings.str1;
+        let stepNum = 1;
+        
+        alignment.forEach(op => {
+            if (op.operation !== 'match') {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700';
+                
+                let description = '';
+                let newStr = currentStr;
+                
+                switch (op.operation) {
+                    case 'substitute':
+                        description = `Step ${stepNum}: Substitute '${op.char1}' with '${op.char2}' at position ${op.pos1 + 1}`;
+                        newStr = currentStr.substring(0, op.pos1) + op.char2 + currentStr.substring(op.pos1 + 1);
+                        break;
+                    case 'insert':
+                        description = `Step ${stepNum}: Insert '${op.char2}' at position ${op.pos2 + 1}`;
+                        newStr = currentStr.substring(0, op.pos2) + op.char2 + currentStr.substring(op.pos2);
+                        break;
+                    case 'delete':
+                        description = `Step ${stepNum}: Delete '${op.char1}' at position ${op.pos1 + 1}`;
+                        newStr = currentStr.substring(0, op.pos1) + currentStr.substring(op.pos1 + 1);
+                        break;
+                }
+                
+                stepDiv.innerHTML = `
+                    <div class="font-medium text-gray-900 dark:text-white">${description}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        "${currentStr}" → "${newStr}"
+                    </div>
+                `;
+                
+                stepsContainer.appendChild(stepDiv);
+                currentStr = newStr;
+                stepNum++;
+            }
+        });
+        
+        if (stepNum === 1) {
+            stepsContainer.innerHTML = '<div class="text-gray-600 dark:text-gray-400">No transformations needed - strings are identical!</div>';
+        }
+    }
+
+    // Show/hide matrix
+    document.getElementById('show-matrix').addEventListener('change', function() {
+        const matrixContainer = document.getElementById('matrix-container');
+        
+        if (this.checked && dpMatrix.length > 0) {
+            displayMatrix();
+            matrixContainer.classList.remove('hidden');
+        } else {
+            matrixContainer.classList.add('hidden');
+        }
+    });
+
+    // Display DP matrix
+    function displayMatrix() {
+        const matrixDiv = document.getElementById('dp-matrix');
+        const str1 = currentStrings.str1;
+        const str2 = currentStrings.str2;
+        
+        if (!dpMatrix.length) return;
+        
+        let html = '<table class="border-collapse">';
+        
+        // Header row
+        html += '<tr>';
+        html += '<td class="matrix-cell matrix-header"></td>';
+        html += '<td class="matrix-cell matrix-header">ε</td>';
+        for (let j = 0; j < str2.length; j++) {
+            html += `<td class="matrix-cell matrix-header">${str2[j]}</td>`;
+        }
+        html += '</tr>';
+        
+        // Matrix rows
+        for (let i = 0; i <= str1.length; i++) {
+            html += '<tr>';
+            
+            // Row header
+            if (i === 0) {
+                html += '<td class="matrix-cell matrix-header">ε</td>';
+            } else {
+                html += `<td class="matrix-cell matrix-header">${str1[i - 1]}</td>`;
+            }
+            
+            // Matrix cells
+            for (let j = 0; j <= str2.length; j++) {
+                const isPath = isInOptimalPath(i, j);
+                const cellClass = isPath ? 'matrix-cell matrix-path' : 'matrix-cell';
+                html += `<td class="${cellClass}">${dpMatrix[i][j]}</td>`;
+            }
+            
+            html += '</tr>';
+        }
+        
+        html += '</table>';
+        matrixDiv.innerHTML = html;
+    }
+
+    // Check if cell is in optimal path
+    function isInOptimalPath(i, j) {
+        // This is a simplified check - in practice, you'd track the actual path
+        return false; // For now, don't highlight path
+    }
+
+    // Draw visualization
+    function drawVisualization(distance, maxLength, operations) {
+        clearCanvas();
+        
+        const isDark = document.documentElement.classList.contains('dark');
+        
+        // Draw title
+        ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Edit Distance Visualization', canvas.width / 2, 30);
+        
+        // Draw distance bar
+        const barWidth = 300;
+        const barHeight = 30;
+        const barX = (canvas.width - barWidth) / 2;
+        const barY = 60;
+        
+        // Background bar
+        ctx.fillStyle = isDark ? '#374151' : '#e5e7eb';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+        
+        // Distance bar
+        const distanceRatio = maxLength === 0 ? 0 : distance / maxLength;
+        const distanceWidth = distanceRatio * barWidth;
+        ctx.fillStyle = distance === 0 ? '#10b981' : distanceRatio < 0.3 ? '#f59e0b' : '#ef4444';
+        ctx.fillRect(barX, barY, distanceWidth, barHeight);
+        
+        // Labels
+        ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('0', barX - 10, barY + barHeight + 15);
+        ctx.textAlign = 'right';
+        ctx.fillText(maxLength.toString(), barX + barWidth + 10, barY + barHeight + 15);
+        ctx.textAlign = 'center';
+        ctx.fillText(`Distance: ${distance}`, canvas.width / 2, barY + barHeight + 30);
+        
+        // Operations breakdown
+        const totalOps = operations.substitutions + operations.insertions + operations.deletions;
+        if (totalOps > 0) {
+            const pieY = 140;
+            const pieRadius = 40;
+            const pieX = canvas.width / 2;
+            
+            let startAngle = 0;
+            const colors = ['#ef4444', '#3b82f6', '#eab308']; // red, blue, yellow
+            const opCounts = [operations.substitutions, operations.insertions, operations.deletions];
+            const opLabels = ['Substitutions', 'Insertions', 'Deletions'];
+            
+            opCounts.forEach((count, index) => {
+                if (count > 0) {
+                    const sliceAngle = (count / totalOps) * 2 * Math.PI;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(pieX, pieY);
+                    ctx.arc(pieX, pieY, pieRadius, startAngle, startAngle + sliceAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = colors[index];
+                    ctx.fill();
+                    
+                    startAngle += sliceAngle;
+                }
+            });
+            
+            // Legend
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'left';
+            let legendY = pieY + pieRadius + 20;
+            
+            opCounts.forEach((count, index) => {
+                if (count > 0) {
+                    ctx.fillStyle = colors[index];
+                    ctx.fillRect(pieX - 100, legendY, 15, 15);
+                    ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+                    ctx.fillText(`${opLabels[index]}: ${count}`, pieX - 80, legendY + 12);
+                    legendY += 20;
+                }
+            });
+        }
+    }
+
+    // Generate analysis
+    function generateAnalysis(str1, str2, distance, similarity, operations) {
+        const totalOps = operations.substitutions + operations.insertions + operations.deletions;
+        
+        let analysis = `Edit Distance Analysis:
+• Strings: "${str1}" → "${str2}"
+• Edit Distance: ${distance}
+• Similarity: ${similarity.toFixed(1)}%
+• Total Operations: ${totalOps}
+• Breakdown: ${operations.matches} matches, ${operations.substitutions} substitutions, ${operations.insertions} insertions, ${operations.deletions} deletions`;
+
+        if (distance === 0) {
+            analysis += '\n• Result: Strings are identical';
+        } else if (similarity >= 80) {
+            analysis += '\n• Result: Strings are very similar';
+        } else if (similarity >= 60) {
+            analysis += '\n• Result: Strings are moderately similar';
+        } else {
+            analysis += '\n• Result: Strings are quite different';
+        }
+        
+        document.getElementById('detailed-analysis').textContent = analysis;
+    }
+
+    // Export results
+    function exportResults() {
+        const str1 = currentStrings.str1;
+        const str2 = currentStrings.str2;
+        const distance = parseFloat(document.getElementById('edit-distance').textContent);
+        const similarity = document.getElementById('similarity-percent').textContent;
+        
+        const results = `Levenshtein Distance Analysis Results
+Generated: ${new Date().toLocaleString()}
+
+Input Strings:
+String 1: "${str1}"
+String 2: "${str2}"
+
+Results:
+Edit Distance: ${distance}
+Similarity: ${similarity}
+Algorithm: ${document.getElementById('algorithm-type').value}
+
+Operation Breakdown:
+Matches: ${document.getElementById('matches-count').textContent}
+Substitutions: ${document.getElementById('substitutions-count').textContent}
+Insertions: ${document.getElementById('insertions-count').textContent}
+Deletions: ${document.getElementById('deletions-count').textContent}
+
+Transformation Steps:
+${alignment.filter(op => op.operation !== 'match').map((op, i) => {
+    switch (op.operation) {
+        case 'substitute':
+            return `${i + 1}. Substitute '${op.char1}' → '${op.char2}' at position ${op.pos1 + 1}`;
+        case 'insert':
+            return `${i + 1}. Insert '${op.char2}' at position ${op.pos2 + 1}`;
+        case 'delete':
+            return `${i + 1}. Delete '${op.char1}' at position ${op.pos1 + 1}`;
+    }
+}).join('\n')}
+`;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'levenshtein-distance-results.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // Export visualization
+    function exportVisualization() {
+        const link = document.createElement('a');
+        link.download = 'levenshtein-distance-visualization.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+
+    // Export matrix
+    function exportMatrix() {
+        if (!dpMatrix.length) {
+            alert('No matrix to export. Please calculate the distance first.');
+            return;
+        }
+        
+        const str1 = currentStrings.str1;
+        const str2 = currentStrings.str2;
+        
+        let csv = 'Dynamic Programming Matrix\n';
+        csv += ',ε,' + str2.split('').join(',') + '\n';
+        
+        for (let i = 0; i <= str1.length; i++) {
+            const rowLabel = i === 0 ? 'ε' : str1[i - 1];
+            csv += rowLabel + ',' + dpMatrix[i].join(',') + '\n';
+        }
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'levenshtein-matrix.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // Clear calculator
+    function clearCalculator() {
+        // Reset inputs
+        document.getElementById('algorithm-type').value = 'standard';
+        document.getElementById('case-sensitivity').value = 'sensitive';
+        document.getElementById('string1').value = '';
+        document.getElementById('string2').value = '';
+        document.getElementById('insert-cost').value = '1';
+        document.getElementById('delete-cost').value = '1';
+        document.getElementById('substitute-cost').value = '1';
+        document.getElementById('show-matrix').checked = false;
+        
+        // Reset displays
+        document.getElementById('length1').textContent = '0';
+        document.getElementById('length2').textContent = '0';
+        document.getElementById('string1-display').textContent = 'Enter strings to see alignment';
+        document.getElementById('string2-display').textContent = 'Enter strings to see alignment';
+        document.getElementById('operations-display').textContent = 'Operations will be shown here';
+        
+        // Hide results
+        document.getElementById('result-container').classList.add('hidden');
+        document.getElementById('cost-configuration').classList.add('hidden');
+        document.getElementById('matrix-container').classList.add('hidden');
+        
+        clearCanvas();
+        currentStrings = { str1: '', str2: '' };
+        dpMatrix = [];
+        alignment = [];
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initCanvas();
+        addStringListeners();
+        lucide.createIcons();
+    });
+</script>
+{% endblock %}

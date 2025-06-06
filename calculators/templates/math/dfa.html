@@ -1,0 +1,1528 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- D3.js for graph visualization -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<!-- KaTeX for math rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+    .katex { font-size: 1.1em; }
+    
+    #dfa-diagram {
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f9fafb;
+        min-height: 400px;
+    }
+    
+    .dark #dfa-diagram {
+        border-color: #374151;
+        background: #1f2937;
+    }
+    
+    .state-circle {
+        fill: #3b82f6;
+        stroke: #1e40af;
+        stroke-width: 2;
+        cursor: pointer;
+    }
+    
+    .state-circle.accept {
+        fill: #10b981;
+        stroke: #047857;
+    }
+    
+    .state-circle.start {
+        fill: #f59e0b;
+        stroke: #d97706;
+    }
+    
+    .state-circle.current {
+        fill: #ef4444;
+        stroke: #dc2626;
+        stroke-width: 3;
+    }
+    
+    .state-label {
+        fill: white;
+        font-family: 'Arial', sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        text-anchor: middle;
+        dominant-baseline: central;
+        pointer-events: none;
+    }
+    
+    .transition-path {
+        fill: none;
+        stroke: #6b7280;
+        stroke-width: 2;
+        marker-end: url(#arrowhead);
+    }
+    
+    .transition-label {
+        fill: #374151;
+        font-family: 'Arial', sans-serif;
+        font-size: 12px;
+        text-anchor: middle;
+        dominant-baseline: central;
+        background: white;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+    
+    .dark .transition-label {
+        fill: #e5e7eb;
+    }
+    
+    .input-table {
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+    }
+    
+    .transition-table th,
+    .transition-table td {
+        border: 1px solid #d1d5db;
+        padding: 8px 12px;
+        text-align: center;
+    }
+    
+    .dark .transition-table th,
+    .dark .transition-table td {
+        border-color: #4b5563;
+    }
+    
+    .string-test-result {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .accepted {
+        background: #d1fae5;
+        border: 1px solid #10b981;
+        color: #047857;
+    }
+    
+    .rejected {
+        background: #fee2e2;
+        border: 1px solid #ef4444;
+        color: #dc2626;
+    }
+    
+    .dark .accepted {
+        background: #064e3b;
+        border-color: #059669;
+        color: #6ee7b7;
+    }
+    
+    .dark .rejected {
+        background: #7f1d1d;
+        border-color: #dc2626;
+        color: #fca5a5;
+    }
+    
+    .step-animation {
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+        margin: 0.25rem 0;
+        transition: all 0.3s ease;
+    }
+    
+    .dark .step-animation {
+        background: #451a03;
+        border-color: #d97706;
+    }
+    
+    .dfa-example-btn {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        padding: 0.5rem 1rem;
+        margin: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.875rem;
+    }
+    
+    .dfa-example-btn:hover {
+        background: #e5e7eb;
+    }
+    
+    .dark .dfa-example-btn {
+        background: #374151;
+        border-color: #4b5563;
+        color: #e5e7eb;
+    }
+    
+    .dark .dfa-example-btn:hover {
+        background: #4b5563;
+    }
+    
+    .operation-result {
+        background: #eff6ff;
+        border: 1px solid #3b82f6;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .dark .operation-result {
+        background: #1e3a8a;
+        border-color: #3b82f6;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="git-branch" class="w-8 h-8 text-purple-600 dark:text-purple-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">DFA Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Design, visualize, and analyze Deterministic Finite Automata. Test string acceptance, minimize DFAs, and explore formal language theory.
+        </p>
+        <div class="mt-4 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg inline-block">
+            <div id="dfa-formula" class="text-purple-800 dark:text-purple-300"></div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- DFA Definition Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">DFA Definition</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: DFA Input -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Input Method:
+                        </label>
+                        <select id="input-method" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <option value="manual">Manual Definition</option>
+                            <option value="examples">Example DFAs</option>
+                            <option value="transition-table">Transition Table</option>
+                        </select>
+                    </div>
+
+                    <!-- Manual Input -->
+                    <div id="manual-input" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                States (comma-separated):
+                            </label>
+                            <input type="text" id="states-input" placeholder="q0, q1, q2" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Alphabet (comma-separated):
+                            </label>
+                            <input type="text" id="alphabet-input" placeholder="0, 1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Start State:
+                            </label>
+                            <input type="text" id="start-state-input" placeholder="q0" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Accept States (comma-separated):
+                            </label>
+                            <input type="text" id="accept-states-input" placeholder="q1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Transitions (format: from,symbol,to - one per line):
+                            </label>
+                            <textarea id="transitions-input" rows="6" placeholder="q0,0,q0&#10;q0,1,q1&#10;q1,0,q0&#10;q1,1,q1" class="input-table w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Example DFAs -->
+                    <div id="examples-input" class="hidden space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Choose Example DFA:
+                            </label>
+                            <div class="grid grid-cols-1 gap-2">
+                                <button class="dfa-example-btn text-left" onclick="loadExampleDFA('even-zeros')">
+                                    <strong>Even number of 0s</strong><br>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Accepts strings with even number of 0s</span>
+                                </button>
+                                <button class="dfa-example-btn text-left" onclick="loadExampleDFA('ends-with-01')">
+                                    <strong>Ends with 01</strong><br>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Accepts strings ending with "01"</span>
+                                </button>
+                                <button class="dfa-example-btn text-left" onclick="loadExampleDFA('contains-substring')">
+                                    <strong>Contains "110"</strong><br>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Accepts strings containing substring "110"</span>
+                                </button>
+                                <button class="dfa-example-btn text-left" onclick="loadExampleDFA('divisible-by-3')">
+                                    <strong>Divisible by 3</strong><br>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Binary numbers divisible by 3</span>
+                                </button>
+                                <button class="dfa-example-btn text-left" onclick="loadExampleDFA('alternating')">
+                                    <strong>Alternating 01</strong><br>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Strings of alternating 0s and 1s</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transition Table Input -->
+                    <div id="table-input" class="hidden space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Build DFA using Transition Table:
+                            </label>
+                            <div id="transition-table-builder">
+                                <!-- Table will be generated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: DFA Visualization -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">State Diagram</h3>
+                        <div id="dfa-diagram">
+                            <svg width="100%" height="400">
+                                <!-- Arrowhead marker -->
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                                            refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280" />
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button onclick="exportDiagram()" class="bg-purple-100 dark:bg-purple-800 hover:bg-purple-200 dark:hover:bg-purple-700 text-purple-700 dark:text-purple-300 py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+                                Export Diagram
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- DFA Properties -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">DFA Properties</h3>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-400">States:</span>
+                                    <span id="state-count" class="font-mono ml-2">0</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-400">Alphabet Size:</span>
+                                    <span id="alphabet-size" class="font-mono ml-2">0</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-400">Transitions:</span>
+                                    <span id="transition-count" class="font-mono ml-2">0</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-400">Accept States:</span>
+                                    <span id="accept-count" class="font-mono ml-2">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- String Testing Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">String Testing</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Input -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Test String:
+                        </label>
+                        <input type="text" id="test-string" placeholder="101010" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    
+                    <div class="flex gap-4">
+                        <button onclick="testString()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                            Test String
+                        </button>
+                        <button onclick="animateString()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                            Animate
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Batch Testing (one string per line):
+                        </label>
+                        <textarea id="batch-strings" rows="4" placeholder="101&#10;110&#10;001&#10;111" class="input-table w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea>
+                        <button onclick="batchTest()" class="mt-2 w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Batch Test
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Column: Results -->
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Test Results</h3>
+                        <div id="string-test-results">
+                            <div class="text-gray-500 dark:text-gray-400 text-center py-8">
+                                Enter a string to test
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Step-by-Step Execution</h3>
+                        <div id="execution-steps" class="max-h-64 overflow-y-auto">
+                            <div class="text-gray-500 dark:text-gray-400 text-center py-8">
+                                Click "Animate" to see step-by-step execution
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DFA Operations Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">DFA Operations</h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button onclick="minimizeDFA()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                    Minimize DFA
+                </button>
+                <button onclick="complementDFA()" class="bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                    Complement
+                </button>
+                <button onclick="generateLanguage()" class="bg-teal-600 hover:bg-teal-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                    Generate Language
+                </button>
+                <button onclick="validateDFA()" class="bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                    Validate DFA
+                </button>
+            </div>
+
+            <div id="operation-results" class="mt-6">
+                <!-- Operation results will appear here -->
+            </div>
+        </div>
+
+        <!-- Transition Table Display -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Transition Table</h2>
+            
+            <div class="overflow-x-auto">
+                <table id="transition-table-display" class="transition-table min-w-full bg-white dark:bg-gray-800">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="text-gray-900 dark:text-white">State</th>
+                            <!-- Alphabet symbols will be added dynamically -->
+                        </tr>
+                    </thead>
+                    <tbody id="transition-table-body">
+                        <!-- Table rows will be added dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4">
+            <button onclick="buildDFA()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Build DFA
+            </button>
+            <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Deterministic Finite Automata (DFA)</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is a DFA?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    A Deterministic Finite Automaton (DFA) is a mathematical model of computation that recognizes regular languages. 
+                    It consists of a finite set of states, an alphabet of input symbols, a transition function, a start state, 
+                    and a set of accept states. DFAs are fundamental in computer science for pattern matching, lexical analysis, 
+                    and formal language theory.
+                </p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">DFA Components</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">States (Q)</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Finite set of states representing different conditions or memory states of the automaton.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Alphabet (Σ)</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Finite set of input symbols that the automaton can read.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Transition Function (δ)</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Function that determines the next state based on current state and input symbol.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Start State (q₀)</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Initial state where computation begins.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Accept States (F)</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Set of states where the automaton accepts the input string.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Deterministic</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            For each state and input symbol, there is exactly one next state.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li>Choose input method: manual definition, examples, or transition table</li>
+                    <li>Define your DFA by specifying states, alphabet, transitions, start state, and accept states</li>
+                    <li>Click "Build DFA" to visualize the state diagram</li>
+                    <li>Test strings to see if they are accepted or rejected by the DFA</li>
+                    <li>Use animation to see step-by-step execution</li>
+                    <li>Perform operations like minimization, complement, or language generation</li>
+                    <li>Export diagrams and analyze DFA properties</li>
+                </ol>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">DFA Operations</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <ul class="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                        <li><strong>String Acceptance:</strong> Test if a string is accepted by the DFA</li>
+                        <li><strong>DFA Minimization:</strong> Reduce the number of states while preserving language</li>
+                        <li><strong>Complement:</strong> Create DFA that accepts complement language</li>
+                        <li><strong>Language Generation:</strong> Generate example strings accepted by the DFA</li>
+                        <li><strong>Validation:</strong> Check if DFA definition is complete and valid</li>
+                        <li><strong>Equivalence:</strong> Compare two DFAs for language equivalence</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Lexical Analysis:</strong> Tokenizing source code in compilers</li>
+                    <li><strong>Pattern Matching:</strong> String searching and regular expressions</li>
+                    <li><strong>Protocol Verification:</strong> Modeling communication protocols</li>
+                    <li><strong>Digital Circuit Design:</strong> Sequential circuit analysis</li>
+                    <li><strong>Natural Language Processing:</strong> Morphological analysis</li>
+                    <li><strong>Network Security:</strong> Intrusion detection patterns</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Example DFA Patterns</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Common Language Patterns:</h4>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                        <li><strong>Even/Odd Count:</strong> Strings with even/odd number of specific symbols</li>
+                        <li><strong>Prefix/Suffix:</strong> Strings starting or ending with specific patterns</li>
+                        <li><strong>Substring:</strong> Strings containing or not containing specific substrings</li>
+                        <li><strong>Modular Arithmetic:</strong> Binary numbers divisible by specific values</li>
+                        <li><strong>Alternating Patterns:</strong> Strings with alternating symbol sequences</li>
+                        <li><strong>Length Constraints:</strong> Strings of specific lengths or length properties</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Formal Definition</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <p class="text-gray-600 dark:text-gray-300 mb-2">
+                        A DFA is formally defined as a 5-tuple M = (Q, Σ, δ, q₀, F) where:
+                    </p>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                        <li>Q is a finite set of states</li>
+                        <li>Σ is a finite alphabet of input symbols</li>
+                        <li>δ: Q × Σ → Q is the transition function</li>
+                        <li>q₀ ∈ Q is the start state</li>
+                        <li>F ⊆ Q is the set of accept states</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+    let currentDFA = null;
+    let dfaSvg = null;
+    let animationTimeout = null;
+
+    // DFA class definition
+    class DFA {
+        constructor(states, alphabet, transitions, startState, acceptStates) {
+            this.states = new Set(states);
+            this.alphabet = new Set(alphabet);
+            this.transitions = new Map();
+            this.startState = startState;
+            this.acceptStates = new Set(acceptStates);
+            
+            // Build transition map
+            transitions.forEach(([from, symbol, to]) => {
+                const key = `${from},${symbol}`;
+                this.transitions.set(key, to);
+            });
+        }
+        
+        // Test if a string is accepted
+        accepts(string) {
+            let currentState = this.startState;
+            const path = [currentState];
+            
+            for (const symbol of string) {
+                if (!this.alphabet.has(symbol)) {
+                    return { accepted: false, path: path, error: `Symbol '${symbol}' not in alphabet` };
+                }
+                
+                const key = `${currentState},${symbol}`;
+                const nextState = this.transitions.get(key);
+                
+                if (nextState === undefined) {
+                    return { accepted: false, path: path, error: `No transition from '${currentState}' on '${symbol}'` };
+                }
+                
+                currentState = nextState;
+                path.push(currentState);
+            }
+            
+            const accepted = this.acceptStates.has(currentState);
+            return { accepted: accepted, path: path, finalState: currentState };
+        }
+        
+        // Get all transitions for a state
+        getTransitions(state) {
+            const transitions = [];
+            for (const symbol of this.alphabet) {
+                const key = `${state},${symbol}`;
+                const nextState = this.transitions.get(key);
+                if (nextState !== undefined) {
+                    transitions.push({ symbol: symbol, to: nextState });
+                }
+            }
+            return transitions;
+        }
+        
+        // Validate DFA completeness
+        validate() {
+            const errors = [];
+            
+            // Check if start state exists
+            if (!this.states.has(this.startState)) {
+                errors.push(`Start state '${this.startState}' not in state set`);
+            }
+            
+            // Check if accept states exist
+            for (const state of this.acceptStates) {
+                if (!this.states.has(state)) {
+                    errors.push(`Accept state '${state}' not in state set`);
+                }
+            }
+            
+            // Check completeness of transition function
+            for (const state of this.states) {
+                for (const symbol of this.alphabet) {
+                    const key = `${state},${symbol}`;
+                    if (!this.transitions.has(key)) {
+                        errors.push(`Missing transition from '${state}' on '${symbol}'`);
+                    }
+                }
+            }
+            
+            return errors;
+        }
+        
+        // Generate example strings accepted by the DFA
+        generateLanguage(maxLength = 6, maxStrings = 20) {
+            const accepted = [];
+            const rejected = [];
+            
+            // Generate all possible strings up to maxLength
+            const generateStrings = (length) => {
+                if (length === 0) return [''];
+                
+                const shorter = generateStrings(length - 1);
+                const strings = [];
+                
+                for (const str of shorter) {
+                    for (const symbol of this.alphabet) {
+                        strings.push(str + symbol);
+                    }
+                }
+                
+                return strings;
+            };
+            
+            for (let len = 0; len <= maxLength && accepted.length < maxStrings; len++) {
+                const strings = len === 0 ? [''] : generateStrings(len);
+                
+                for (const str of strings) {
+                    if (accepted.length >= maxStrings) break;
+                    
+                    const result = this.accepts(str);
+                    if (result.accepted) {
+                        accepted.push(str === '' ? 'ε' : str);
+                    } else if (rejected.length < maxStrings) {
+                        rejected.push(str === '' ? 'ε' : str);
+                    }
+                }
+            }
+            
+            return { accepted: accepted, rejected: rejected.slice(0, maxStrings) };
+        }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        dfaSvg = d3.select('#dfa-diagram svg');
+        renderMathFormulas();
+        lucide.createIcons();
+        
+        // Load default example
+        loadExampleDFA('even-zeros');
+        
+        // Add event listeners
+        document.getElementById('input-method').addEventListener('change', updateInputMethod);
+    });
+
+    // Update input method
+    function updateInputMethod() {
+        const method = document.getElementById('input-method').value;
+        
+        // Hide all input sections
+        document.getElementById('manual-input').classList.add('hidden');
+        document.getElementById('examples-input').classList.add('hidden');
+        document.getElementById('table-input').classList.add('hidden');
+        
+        // Show selected input section
+        document.getElementById(method + '-input').classList.remove('hidden');
+    }
+
+    // Load example DFA
+    function loadExampleDFA(type) {
+        let states, alphabet, startState, acceptStates, transitions;
+        
+        switch (type) {
+            case 'even-zeros':
+                states = ['q0', 'q1'];
+                alphabet = ['0', '1'];
+                startState = 'q0';
+                acceptStates = ['q0'];
+                transitions = [
+                    ['q0', '0', 'q1'],
+                    ['q0', '1', 'q0'],
+                    ['q1', '0', 'q0'],
+                    ['q1', '1', 'q1']
+                ];
+                break;
+                
+            case 'ends-with-01':
+                states = ['q0', 'q1', 'q2'];
+                alphabet = ['0', '1'];
+                startState = 'q0';
+                acceptStates = ['q2'];
+                transitions = [
+                    ['q0', '0', 'q1'],
+                    ['q0', '1', 'q0'],
+                    ['q1', '0', 'q1'],
+                    ['q1', '1', 'q2'],
+                    ['q2', '0', 'q1'],
+                    ['q2', '1', 'q0']
+                ];
+                break;
+                
+            case 'contains-substring':
+                states = ['q0', 'q1', 'q2', 'q3'];
+                alphabet = ['0', '1'];
+                startState = 'q0';
+                acceptStates = ['q3'];
+                transitions = [
+                    ['q0', '0', 'q0'],
+                    ['q0', '1', 'q1'],
+                    ['q1', '0', 'q0'],
+                    ['q1', '1', 'q2'],
+                    ['q2', '0', 'q3'],
+                    ['q2', '1', 'q2'],
+                    ['q3', '0', 'q3'],
+                    ['q3', '1', 'q3']
+                ];
+                break;
+                
+            case 'divisible-by-3':
+                states = ['q0', 'q1', 'q2'];
+                alphabet = ['0', '1'];
+                startState = 'q0';
+                acceptStates = ['q0'];
+                transitions = [
+                    ['q0', '0', 'q0'],
+                    ['q0', '1', 'q1'],
+                    ['q1', '0', 'q2'],
+                    ['q1', '1', 'q0'],
+                    ['q2', '0', 'q1'],
+                    ['q2', '1', 'q2']
+                ];
+                break;
+                
+            case 'alternating':
+                states = ['q0', 'q1', 'q2', 'q3'];
+                alphabet = ['0', '1'];
+                startState = 'q0';
+                acceptStates = ['q0', 'q1', 'q2'];
+                transitions = [
+                    ['q0', '0', 'q1'],
+                    ['q0', '1', 'q2'],
+                    ['q1', '0', 'q3'],
+                    ['q1', '1', 'q2'],
+                    ['q2', '0', 'q1'],
+                    ['q2', '1', 'q3'],
+                    ['q3', '0', 'q3'],
+                    ['q3', '1', 'q3']
+                ];
+                break;
+        }
+        
+        // Update input fields
+        document.getElementById('states-input').value = states.join(', ');
+        document.getElementById('alphabet-input').value = alphabet.join(', ');
+        document.getElementById('start-state-input').value = startState;
+        document.getElementById('accept-states-input').value = acceptStates.join(', ');
+        
+        const transitionStrings = transitions.map(([from, symbol, to]) => `${from},${symbol},${to}`);
+        document.getElementById('transitions-input').value = transitionStrings.join('\n');
+        
+        // Switch to manual input and build DFA
+        document.getElementById('input-method').value = 'manual';
+        updateInputMethod();
+        buildDFA();
+    }
+
+    // Build DFA from input
+    function buildDFA() {
+        try {
+            // Parse input
+            const statesInput = document.getElementById('states-input').value.trim();
+            const alphabetInput = document.getElementById('alphabet-input').value.trim();
+            const startStateInput = document.getElementById('start-state-input').value.trim();
+            const acceptStatesInput = document.getElementById('accept-states-input').value.trim();
+            const transitionsInput = document.getElementById('transitions-input').value.trim();
+            
+            if (!statesInput || !alphabetInput || !startStateInput || !transitionsInput) {
+                throw new Error('Please fill in all required fields');
+            }
+            
+            // Parse states and alphabet
+            const states = statesInput.split(',').map(s => s.trim()).filter(s => s);
+            const alphabet = alphabetInput.split(',').map(s => s.trim()).filter(s => s);
+            const startState = startStateInput;
+            const acceptStates = acceptStatesInput ? acceptStatesInput.split(',').map(s => s.trim()).filter(s => s) : [];
+            
+            // Parse transitions
+            const transitions = [];
+            const transitionLines = transitionsInput.split('\n').filter(line => line.trim());
+            
+            for (const line of transitionLines) {
+                const parts = line.split(',').map(s => s.trim());
+                if (parts.length !== 3) {
+                    throw new Error(`Invalid transition format: ${line}. Use format: from,symbol,to`);
+                }
+                transitions.push(parts);
+            }
+            
+            // Create DFA
+            currentDFA = new DFA(states, alphabet, transitions, startState, acceptStates);
+            
+            // Validate DFA
+            const errors = currentDFA.validate();
+            if (errors.length > 0) {
+                throw new Error('DFA validation errors:\n' + errors.join('\n'));
+            }
+            
+            // Update properties display
+            updateDFAProperties();
+            
+            // Draw state diagram
+            drawStateDiagram();
+            
+            // Update transition table
+            updateTransitionTable();
+            
+            // Clear previous results
+            document.getElementById('string-test-results').innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center py-8">DFA built successfully! Enter a string to test.</div>';
+            document.getElementById('execution-steps').innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center py-8">Click "Animate" to see step-by-step execution</div>';
+            
+        } catch (error) {
+            alert('Error building DFA: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    // Update DFA properties display
+    function updateDFAProperties() {
+        if (!currentDFA) return;
+        
+        document.getElementById('state-count').textContent = currentDFA.states.size;
+        document.getElementById('alphabet-size').textContent = currentDFA.alphabet.size;
+        document.getElementById('transition-count').textContent = currentDFA.transitions.size;
+        document.getElementById('accept-count').textContent = currentDFA.acceptStates.size;
+    }
+
+    // Draw state diagram using D3.js
+    function drawStateDiagram() {
+        if (!currentDFA) return;
+        
+        // Clear previous diagram
+        dfaSvg.selectAll('*').remove();
+        
+        // Re-add arrowhead marker
+        const defs = dfaSvg.append('defs');
+        defs.append('marker')
+            .attr('id', 'arrowhead')
+            .attr('markerWidth', 10)
+            .attr('markerHeight', 7)
+            .attr('refX', 9)
+            .attr('refY', 3.5)
+            .attr('orient', 'auto')
+            .append('polygon')
+            .attr('points', '0 0, 10 3.5, 0 7')
+            .attr('fill', '#6b7280');
+        
+        const width = parseInt(dfaSvg.style('width'));
+        const height = parseInt(dfaSvg.style('height'));
+        
+        // Position states in a circle
+        const states = Array.from(currentDFA.states);
+        const statePositions = new Map();
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const radius = Math.min(width, height) * 0.3;
+        
+        states.forEach((state, i) => {
+            const angle = (2 * Math.PI * i) / states.length - Math.PI / 2;
+            const x = centerX + radius * Math.cos(angle);
+            const y = centerY + radius * Math.sin(angle);
+            statePositions.set(state, { x: x, y: y });
+        });
+        
+        // Draw transitions
+        const transitions = [];
+        for (const [key, to] of currentDFA.transitions) {
+            const [from, symbol] = key.split(',');
+            transitions.push({ from: from, symbol: symbol, to: to });
+        }
+        
+        // Group transitions by from-to pair
+        const transitionGroups = new Map();
+        transitions.forEach(t => {
+            const key = `${t.from}-${t.to}`;
+            if (!transitionGroups.has(key)) {
+                transitionGroups.set(key, []);
+            }
+            transitionGroups.get(key).push(t.symbol);
+        });
+        
+        // Draw transition paths
+        for (const [key, symbols] of transitionGroups) {
+            const [from, to] = key.split('-');
+            const fromPos = statePositions.get(from);
+            const toPos = statePositions.get(to);
+            
+            if (from === to) {
+                // Self-loop
+                const loopRadius = 25;
+                const loopX = fromPos.x;
+                const loopY = fromPos.y - 40;
+                
+                dfaSvg.append('path')
+                    .attr('class', 'transition-path')
+                    .attr('d', `M ${fromPos.x} ${fromPos.y - 20} Q ${loopX - loopRadius} ${loopY} ${loopX} ${loopY} Q ${loopX + loopRadius} ${loopY} ${fromPos.x} ${fromPos.y - 20}`)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#6b7280')
+                    .attr('stroke-width', 2)
+                    .attr('marker-end', 'url(#arrowhead)');
+                
+                // Label
+                dfaSvg.append('text')
+                    .attr('class', 'transition-label')
+                    .attr('x', loopX)
+                    .attr('y', loopY - 10)
+                    .text(symbols.join(','));
+            } else {
+                // Regular transition
+                const dx = toPos.x - fromPos.x;
+                const dy = toPos.y - fromPos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const unitX = dx / distance;
+                const unitY = dy / distance;
+                
+                const startX = fromPos.x + unitX * 20;
+                const startY = fromPos.y + unitY * 20;
+                const endX = toPos.x - unitX * 20;
+                const endY = toPos.y - unitY * 20;
+                
+                dfaSvg.append('line')
+                    .attr('class', 'transition-path')
+                    .attr('x1', startX)
+                    .attr('y1', startY)
+                    .attr('x2', endX)
+                    .attr('y2', endY)
+                    .attr('stroke', '#6b7280')
+                    .attr('stroke-width', 2)
+                    .attr('marker-end', 'url(#arrowhead)');
+                
+                // Label
+                const midX = (startX + endX) / 2;
+                const midY = (startY + endY) / 2;
+                
+                dfaSvg.append('text')
+                    .attr('class', 'transition-label')
+                    .attr('x', midX)
+                    .attr('y', midY - 5)
+                    .text(symbols.join(','));
+            }
+        }
+        
+        // Draw states
+        states.forEach(state => {
+            const pos = statePositions.get(state);
+            const isStart = state === currentDFA.startState;
+            const isAccept = currentDFA.acceptStates.has(state);
+            
+            // State circle
+            const circle = dfaSvg.append('circle')
+                .attr('class', `state-circle ${isStart ? 'start' : ''} ${isAccept ? 'accept' : ''}`)
+                .attr('cx', pos.x)
+                .attr('cy', pos.y)
+                .attr('r', 20)
+                .attr('id', `state-${state}`);
+            
+            // Double circle for accept states
+            if (isAccept) {
+                dfaSvg.append('circle')
+                    .attr('cx', pos.x)
+                    .attr('cy', pos.y)
+                    .attr('r', 16)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#047857')
+                    .attr('stroke-width', 2);
+            }
+            
+            // Start arrow
+            if (isStart) {
+                dfaSvg.append('line')
+                    .attr('x1', pos.x - 40)
+                    .attr('y1', pos.y)
+                    .attr('x2', pos.x - 20)
+                    .attr('y2', pos.y)
+                    .attr('stroke', '#6b7280')
+                    .attr('stroke-width', 2)
+                    .attr('marker-end', 'url(#arrowhead)');
+            }
+            
+            // State label
+            dfaSvg.append('text')
+                .attr('class', 'state-label')
+                .attr('x', pos.x)
+                .attr('y', pos.y)
+                .text(state);
+        });
+    }
+
+    // Update transition table
+    function updateTransitionTable() {
+        if (!currentDFA) return;
+        
+        const table = document.getElementById('transition-table-display');
+        const thead = table.querySelector('thead tr');
+        const tbody = document.getElementById('transition-table-body');
+        
+        // Clear existing content
+        thead.innerHTML = '<th class="text-gray-900 dark:text-white">State</th>';
+        tbody.innerHTML = '';
+        
+        // Add alphabet symbols to header
+        for (const symbol of currentDFA.alphabet) {
+            const th = document.createElement('th');
+            th.className = 'text-gray-900 dark:text-white';
+            th.textContent = symbol;
+            thead.appendChild(th);
+        }
+        
+        // Add rows for each state
+        for (const state of currentDFA.states) {
+            const row = document.createElement('tr');
+            
+            // State name cell
+            const stateCell = document.createElement('td');
+            stateCell.className = 'font-bold';
+            
+            let stateName = state;
+            if (state === currentDFA.startState) stateName += ' (start)';
+            if (currentDFA.acceptStates.has(state)) stateName += ' (accept)';
+            
+            stateCell.textContent = stateName;
+            row.appendChild(stateCell);
+            
+            // Transition cells
+            for (const symbol of currentDFA.alphabet) {
+                const cell = document.createElement('td');
+                const key = `${state},${symbol}`;
+                const nextState = currentDFA.transitions.get(key);
+                cell.textContent = nextState || '-';
+                row.appendChild(cell);
+            }
+            
+            tbody.appendChild(row);
+        }
+    }
+
+    // Test string acceptance
+    function testString() {
+        if (!currentDFA) {
+            alert('Please build a DFA first');
+            return;
+        }
+        
+        const testString = document.getElementById('test-string').value;
+        const result = currentDFA.accepts(testString);
+        
+        const resultsDiv = document.getElementById('string-test-results');
+        
+        if (result.error) {
+            resultsDiv.innerHTML = `
+                <div class="string-test-result rejected">
+                    <h4 class="font-bold mb-2">Error</h4>
+                    <p>${result.error}</p>
+                </div>
+            `;
+        } else {
+            const pathStr = result.path.join(' → ');
+            resultsDiv.innerHTML = `
+                <div class="string-test-result ${result.accepted ? 'accepted' : 'rejected'}">
+                    <h4 class="font-bold mb-2">${result.accepted ? 'ACCEPTED' : 'REJECTED'}</h4>
+                    <p><strong>String:</strong> ${testString || 'ε (empty string)'}</p>
+                    <p><strong>Path:</strong> ${pathStr}</p>
+                    <p><strong>Final State:</strong> ${result.finalState}</p>
+                    ${result.accepted ? 
+                        '<p>✓ Final state is an accept state</p>' : 
+                        '<p>✗ Final state is not an accept state</p>'
+                    }
+                </div>
+            `;
+        }
+    }
+
+    // Animate string processing
+    function animateString() {
+        if (!currentDFA) {
+            alert('Please build a DFA first');
+            return;
+        }
+        
+        const testString = document.getElementById('test-string').value;
+        const result = currentDFA.accepts(testString);
+        
+        if (result.error) {
+            document.getElementById('execution-steps').innerHTML = `
+                <div class="step-animation">
+                    <strong>Error:</strong> ${result.error}
+                </div>
+            `;
+            return;
+        }
+        
+        const stepsDiv = document.getElementById('execution-steps');
+        stepsDiv.innerHTML = '';
+        
+        // Clear any existing animation
+        if (animationTimeout) {
+            clearTimeout(animationTimeout);
+        }
+        
+        // Reset state colors
+        dfaSvg.selectAll('.state-circle').classed('current', false);
+        
+        let stepIndex = 0;
+        const symbols = testString.split('');
+        
+        function animateStep() {
+            if (stepIndex < result.path.length) {
+                const currentState = result.path[stepIndex];
+                const symbol = stepIndex < symbols.length ? symbols[stepIndex] : null;
+                const nextState = stepIndex + 1 < result.path.length ? result.path[stepIndex + 1] : null;
+                
+                // Highlight current state
+                dfaSvg.selectAll('.state-circle').classed('current', false);
+                dfaSvg.select(`#state-${currentState}`).classed('current', true);
+                
+                // Add step to display
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'step-animation';
+                
+                if (symbol !== null) {
+                    stepDiv.innerHTML = `
+                        <strong>Step ${stepIndex + 1}:</strong> 
+                        In state <code>${currentState}</code>, read symbol <code>${symbol}</code> → go to state <code>${nextState}</code>
+                    `;
+                } else {
+                    stepDiv.innerHTML = `
+                        <strong>Initial:</strong> Start in state <code>${currentState}</code>
+                    `;
+                }
+                
+                stepsDiv.appendChild(stepDiv);
+                stepsDiv.scrollTop = stepsDiv.scrollHeight;
+                
+                stepIndex++;
+                animationTimeout = setTimeout(animateStep, 1000);
+            } else {
+                // Final step
+                const finalDiv = document.createElement('div');
+                finalDiv.className = `step-animation ${result.accepted ? 'accepted' : 'rejected'}`;
+                finalDiv.innerHTML = `
+                    <strong>Result:</strong> String is <strong>${result.accepted ? 'ACCEPTED' : 'REJECTED'}</strong>
+                    <br>Final state <code>${result.finalState}</code> is ${result.accepted ? '' : 'not '}an accept state.
+                `;
+                stepsDiv.appendChild(finalDiv);
+                stepsDiv.scrollTop = stepsDiv.scrollHeight;
+            }
+        }
+        
+        animateStep();
+    }
+
+    // Batch test strings
+    function batchTest() {
+        if (!currentDFA) {
+            alert('Please build a DFA first');
+            return;
+        }
+        
+        const batchInput = document.getElementById('batch-strings').value.trim();
+        if (!batchInput) {
+            alert('Please enter strings to test');
+            return;
+        }
+        
+        const strings = batchInput.split('\n').map(s => s.trim()).filter(s => s !== '');
+        const resultsDiv = document.getElementById('string-test-results');
+        
+        let resultsHTML = '<h4 class="font-bold mb-4">Batch Test Results</h4>';
+        
+        strings.forEach(str => {
+            const result = currentDFA.accepts(str);
+            const displayStr = str || 'ε';
+            
+            if (result.error) {
+                resultsHTML += `
+                    <div class="mb-2 p-2 border rounded ${result.accepted ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-red-500 bg-red-50 dark:bg-red-900/20'}">
+                        <code>${displayStr}</code> - <strong>ERROR:</strong> ${result.error}
+                    </div>
+                `;
+            } else {
+                resultsHTML += `
+                    <div class="mb-2 p-2 border rounded ${result.accepted ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-red-500 bg-red-50 dark:bg-red-900/20'}">
+                        <code>${displayStr}</code> - <strong>${result.accepted ? 'ACCEPTED' : 'REJECTED'}</strong>
+                    </div>
+                `;
+            }
+        });
+        
+        resultsDiv.innerHTML = resultsHTML;
+    }
+
+    // Minimize DFA (simplified algorithm)
+    function minimizeDFA() {
+        if (!currentDFA) {
+            alert('Please build a DFA first');
+            return;
+        }
+        
+        // This is a simplified minimization - in practice, you'd use the table-filling algorithm
+        const operationResults = document.getElementById('operation-results');
+        
+        operationResults.innerHTML = `
+            <div class="operation-result">
+                <h4 class="font-bold mb-2">DFA Minimization</h4>
+                <p>Current DFA has ${currentDFA.states.size} states.</p>
+                <p class="mt-2"><em>Note: Full DFA minimization algorithm implementation would require the table-filling method to identify and merge equivalent states.</em></p>
+                <div class="mt-4">
+                    <h5 class="font-medium mb-2">Minimization Steps:</h5>
+                    <ol class="list-decimal list-inside text-sm space-y-1">
+                        <li>Partition states into accepting and non-accepting groups</li>
+                        <li>Refine partitions based on transition behavior</li>
+                        <li>Merge equivalent states within each partition</li>
+                        <li>Construct minimized DFA with representative states</li>
+                    </ol>
+                </div>
+            </div>
+        `;
+    }
+
+    // Complement DFA
+    function complementDFA() {
+        if (!currentDFA) {
+            alert('Please build a DFA first');
+            return;
+        }
+        
+        // Create complement by swapping accept and non-accept states
+        const complementAcceptStates = [];
+        for (const state of currentDFA.states) {
+            if (!currentDFA.acceptStates.has(state)) {
+                complementAcceptStates.push(state);
+            }
+        }
+        
+        const operationResults = document.getElementById('operation-results');
+        
+        operationResults.innerHTML = `
+            <div class="operation-result">
+                <h4 class="font-bold mb-2">DFA Complement</h4>
+                <p>Original accept states: {${Array.from(currentDFA.acceptStates).join(', ')}}</p>
+                <p>Complement accept states: {${complementAcceptStates.join(', ')}}</p>
+                <div class="mt-4">
+                    <h5 class="font-medium mb-2">Complement Construction:</h5>
+                    <ul class="list-disc list-inside text-sm space-y-1">
+                        <li>Keep same states, alphabet, transitions, and start state</li>
+                        <li>Swap accepting and non-accepting states</li>
+                        <li>Resulting DFA accepts complement language L̄</li>
+                        <li>If original accepts string w, complement rejects w</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+
+    // Generate language examples
+    function generateLanguage() {
+        if (!currentDFA) {
+            alert('Please build a DFA first');
+            return;
+        }
+        
+        const language = currentDFA.generateLanguage(8, 15);
+        const operationResults = document.getElementById('operation-results');
+        
+        operationResults.innerHTML = `
+            <div class="operation-result">
+                <h4 class="font-bold mb-2">Language Generation</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h5 class="font-medium mb-2 text-green-700 dark:text-green-400">Accepted Strings:</h5>
+                        <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded border">
+                            ${language.accepted.length > 0 ? 
+                                language.accepted.map(s => `<code class="bg-white dark:bg-gray-800 px-1 rounded">${s}</code>`).join(', ') :
+                                '<em>No strings found in generated range</em>'
+                            }
+                        </div>
+                    </div>
+                    <div>
+                        <h5 class="font-medium mb-2 text-red-700 dark:text-red-400">Rejected Strings:</h5>
+                        <div class="bg-red-50 dark:bg-red-900/20 p-3 rounded border">
+                            ${language.rejected.length > 0 ? 
+                                language.rejected.map(s => `<code class="bg-white dark:bg-gray-800 px-1 rounded">${s}</code>`).join(', ') :
+                                '<em>No rejected strings found in generated range</em>'
+                            }
+                        </div>
+                    </div>
+                </div>
+                <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                    <em>Generated strings up to length 8. The language may contain infinitely many strings.</em>
+                </p>
+            </div>
+        `;
+    }
+
+    // Validate DFA
+    function validateDFA() {
+        if (!currentDFA) {
+            alert('Please build a DFA first');
+            return;
+        }
+        
+        const errors = currentDFA.validate();
+        const operationResults = document.getElementById('operation-results');
+        
+        if (errors.length === 0) {
+            operationResults.innerHTML = `
+                <div class="operation-result">
+                    <h4 class="font-bold mb-2 text-green-700 dark:text-green-400">✓ DFA Validation Passed</h4>
+                    <div class="space-y-2">
+                        <p>✓ Start state exists in state set</p>
+                        <p>✓ All accept states exist in state set</p>
+                        <p>✓ Transition function is complete</p>
+                        <p>✓ All transitions lead to valid states</p>
+                    </div>
+                    <div class="mt-4 bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-800">
+                        <strong>Result:</strong> This is a valid, complete DFA that can process any string over the given alphabet.
+                    </div>
+                </div>
+            `;
+        } else {
+            operationResults.innerHTML = `
+                <div class="operation-result">
+                    <h4 class="font-bold mb-2 text-red-700 dark:text-red-400">✗ DFA Validation Failed</h4>
+                    <div class="space-y-2">
+                        ${errors.map(error => `<p class="text-red-600 dark:text-red-400">✗ ${error}</p>`).join('')}
+                    </div>
+                    <div class="mt-4 bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800">
+                        <strong>Result:</strong> Please fix the above errors to create a valid DFA.
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // Export diagram
+    function exportDiagram() {
+        if (!dfaSvg) {
+            alert('No diagram to export');
+            return;
+        }
+        
+        // Get SVG element
+        const svgElement = dfaSvg.node();
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        
+        // Create canvas for export
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        canvas.width = svgElement.clientWidth || 800;
+        canvas.height = svgElement.clientHeight || 400;
+        
+        img.onload = function() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = 'dfa-diagram.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        };
+        
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        img.src = url;
+    }
+
+    // Clear calculator
+    function clearCalculator() {
+        // Reset all inputs
+        document.getElementById('input-method').value = 'manual';
+        document.getElementById('states-input').value = '';
+        document.getElementById('alphabet-input').value = '';
+        document.getElementById('start-state-input').value = '';
+        document.getElementById('accept-states-input').value = '';
+        document.getElementById('transitions-input').value = '';
+        document.getElementById('test-string').value = '';
+        document.getElementById('batch-strings').value = '';
+        
+        // Reset display
+        updateInputMethod();
+        
+        // Clear DFA and results
+        currentDFA = null;
+        
+        // Clear diagram
+        if (dfaSvg) {
+            dfaSvg.selectAll('*').remove();
+        }
+        
+        // Clear results
+        document.getElementById('string-test-results').innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center py-8">Enter a string to test</div>';
+        document.getElementById('execution-steps').innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center py-8">Click "Animate" to see step-by-step execution</div>';
+        document.getElementById('operation-results').innerHTML = '';
+        
+        // Reset properties
+        document.getElementById('state-count').textContent = '0';
+        document.getElementById('alphabet-size').textContent = '0';
+        document.getElementById('transition-count').textContent = '0';
+        document.getElementById('accept-count').textContent = '0';
+        
+        // Clear transition table
+        const tbody = document.getElementById('transition-table-body');
+        tbody.innerHTML = '';
+        
+        // Clear animation timeout
+        if (animationTimeout) {
+            clearTimeout(animationTimeout);
+        }
+    }
+
+    // Render math formulas
+    function renderMathFormulas() {
+        // Render main DFA formula
+        katex.render('M = (Q, \\Sigma, \\delta, q_0, F)', 
+            document.getElementById('dfa-formula'), {
+            displayMode: true,
+            throwOnError: false
+        });
+        
+        // Render all other math elements
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,929 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.tree-type-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.tree-type-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+.tree-type-card.selected {
+    border-color: #3b82f6;
+    background-color: #dbeafe;
+}
+.dark .tree-type-card.selected {
+    background-color: #1e3a8a;
+}
+.service-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.service-card:hover {
+    transform: translateY(-1px);
+}
+.service-card.selected {
+    border-color: #f59e0b;
+    background-color: #fef3c7;
+}
+.dark .service-card.selected {
+    background-color: #92400e;
+}
+.cost-display {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+}
+#cost-canvas {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: #eff6ff;
+}
+.dark #cost-canvas {
+    border-color: #374151;
+    background: #1e3a8a;
+}
+.metric-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .metric-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+<!-- Back Button -->
+<div class="mb-6">
+    <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        <span>Back to Calculators</span>
+    </button>
+</div>
+
+<!-- Header -->
+<div class="text-center mb-12">
+    <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+        <i data-lucide="sprout" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Tree Planting Cost Calculator</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Estimate the cost of planting trees for your project, including trees, labor, and additional services for efficient planning.
+    </p>
+    <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+        <div class="text-blue-800 dark:text-blue-300 font-medium">
+            🌱 Cost Breakdown • 💰 Budget Planning • 📊 Economic Projections
+        </div>
+    </div>
+</div>
+
+<!-- Calculator -->
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+    <!-- Project Configuration -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Project Configuration</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: Basic Settings -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Project Area</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Length:</label>
+                            <div class="relative">
+                                <input type="number" id="project-length" value="100" min="10" max="1000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <select id="length-unit" class="absolute right-2 top-3 bg-transparent text-gray-500 dark:text-gray-400 text-sm focus:outline-none">
+                                    <option value="m">m</option>
+                                    <option value="ft">ft</option>
+                                    <option value="acres">acres</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Width:</label>
+                            <div class="relative">
+                                <input type="number" id="project-width" value="80" min="10" max="1000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <select id="width-unit" class="absolute right-2 top-3 bg-transparent text-gray-500 dark:text-gray-400 text-sm focus:outline-none">
+                                    <option value="m">m</option>
+                                    <option value="ft">ft</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        Total area: <span id="total-area">0.8 hectares</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Tree Type</h3>
+                    <div class="grid grid-cols-2 gap-3" id="tree-type-grid">
+                        <!-- Tree type cards will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Environmental Conditions</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Climate Zone:</label>
+                            <select id="climate-zone" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="temperate">Temperate (USDA 5-7)</option>
+                                <option value="cool">Cool (USDA 3-5)</option>
+                                <option value="warm">Warm (USDA 7-9)</option>
+                                <option value="continental">Continental</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Soil Quality:</label>
+                            <select id="soil-quality" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="excellent">Excellent</option>
+                                <option value="good" selected>Good</option>
+                                <option value="average">Average</option>
+                                <option value="poor">Poor</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Labor Settings</h3>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Number of Workers:</label>
+                        <input type="number" id="num-workers" value="5" min="1" max="100" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Additional Services -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Additional Services</h3>
+                    <div class="grid grid-cols-2 gap-3" id="service-grid">
+                        <!-- Service cards will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Planting Density</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Row Spacing (m):</label>
+                            <input type="number" id="row-spacing" placeholder="Auto" min="2" max="10" step="0.5" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tree Spacing (m):</label>
+                            <input type="number" id="tree-spacing" placeholder="Auto" min="1" max="8" step="0.5" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project Layout Visualization -->
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Planting Layout Preview</h3>
+                    <div class="flex justify-center">
+                        <canvas id="cost-canvas" width="350" height="280"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <button onclick="calculateCosts()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Calculate Planting Costs
+        </button>
+        <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Clear
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-container" class="hidden">
+        <!-- Cost Summary -->
+        <div class="cost-display text-white rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4">Planting Cost Results</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div id="total-cost" class="text-3xl font-bold mb-2">$0</div>
+                    <div class="text-sm opacity-90">Total Cost</div>
+                </div>
+                <div class="text-center">
+                    <div id="cost-per-tree" class="text-3xl font-bold mb-2">$0</div>
+                    <div class="text-sm opacity-90">Cost per Tree</div>
+                </div>
+                <div class="text-center">
+                    <div id="total-trees" class="text-3xl font-bold mb-2">0</div>
+                    <div class="text-sm opacity-90">Total Trees</div>
+                </div>
+                <div class="text-center">
+                    <div id="cost-per-hectare" class="text-3xl font-bold mb-2">$0</div>
+                    <div class="text-sm opacity-90">Cost per Hectare</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cost Breakdown -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Cost Breakdown</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Cost Components</h4>
+                    <div class="space-y-2 text-gray-800 dark:text-gray-200">
+                        <div class="flex justify-between">
+                            <span>Tree Type:</span>
+                            <span id="selected-tree-type" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Tree Cost:</span>
+                            <span id="tree-cost" class="font-medium">$0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Labor Cost:</span>
+                            <span id="labor-cost" class="font-medium">$0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Service Cost:</span>
+                            <span id="service-cost" class="font-medium">$0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Project Metrics</h4>
+                    <div class="space-y-2 text-gray-800 dark:text-gray-200">
+                        <div class="flex justify-between">
+                            <span>Planting Area:</span>
+                            <span id="planting-area" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Number of Rows:</span>
+                            <span id="number-of-rows" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Trees per Row:</span>
+                            <span id="trees-per-row" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Planting Density:</span>
+                            <span id="planting-density" class="font-medium">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Economic Projections -->
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4">Economic Projections</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="metric-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Initial Investment</h4>
+                    <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-1" id="initial-investment">$0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Total upfront cost</div>
+                </div>
+                
+                <div class="metric-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Maintenance Cost (Year 1)</h4>
+                    <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-1" id="maintenance-cost">$0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Annual upkeep</div>
+                </div>
+                
+                <div class="metric-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Break-even Period</h4>
+                    <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-1" id="break-even">0 years</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Time to recover costs</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Management Recommendations -->
+        <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Management Recommendations</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Planting Guidelines</h4>
+                    <ul id="planting-guidelines" class="list-disc list-inside space-y-1 text-gray-800 dark:text-gray-200">
+                        <!-- Guidelines will be populated by JavaScript -->
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Cost-Saving Tips</h4>
+                    <ul id="cost-saving-tips" class="list-disc list-inside space-y-1 text-gray-800 dark:text-gray-200">
+                        <!-- Tips will be populated by JavaScript -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cost Distribution Chart -->
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
+            <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4">Cost Distribution</h3>
+            <div class="h-64">
+                <canvas id="cost-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational Content -->
+<div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Tree Planting Cost Guide</h2>
+    
+    <div class="space-y-6">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Why Cost Planning Matters</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                Accurate cost estimation is critical for successful tree planting projects. Proper budgeting ensures you can cover tree costs, 
+                labor, and additional services while optimizing resource allocation and planning for long-term maintenance.
+            </p>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Tree Type Selection Guide</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">🌳 Fruit Trees</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">Apple, Pear, Citrus</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Higher cost, requires maintenance, potential revenue from fruit production.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">🌲 Ornamental Trees</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">Maple, Oak, Magnolia</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Moderate cost, aesthetic value, low maintenance.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">🌴 Fast-Growing Trees</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">Poplar, Willow, Eucalyptus</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Lower cost, rapid growth, ideal for reforestation.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Additional Services</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Soil Preparation</h4>
+                    <ul class="text-gray-600 dark:text-gray-300 text-sm space-y-1">
+                        <li>• Improves soil fertility</li>
+                        <li>• Enhances root development</li>
+                        <li>• Increases planting success</li>
+                    </ul>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Irrigation System</h4>
+                    <ul class="text-gray-600 dark:text-gray-300 text-sm space-y-1">
+                        <li>• Ensures consistent watering</li>
+                        <li>• Reduces manual labor</li>
+                        <li>• Optimizes water usage</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Factors Affecting Costs</h3>
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Tree Factors</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                            <li>Tree type and size</li>
+                            <li>Planting density</li>
+                            <li>Availability of saplings</li>
+                            <li>Maintenance requirements</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Environmental Factors</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                            <li>Soil quality and preparation</li>
+                            <li>Climate and irrigation needs</li>
+                            <li>Land accessibility</li>
+                            <li>Regional labor costs</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                <li>Enter your project area dimensions and select units</li>
+                <li>Choose your tree type and input costs</li>
+                <li>Select environmental conditions and additional services</li>
+                <li>Specify number of workers and planting density</li>
+                <li>Click "Calculate Planting Costs" for detailed results</li>
+                <li>Review cost breakdown and economic projections</li>
+                <li>Follow management recommendations for cost efficiency</li>
+            </ol>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Tree types with default spacing
+const treeTypes = [
+    { name: 'Fruit Trees', icon: '🍎', spacing: { row: 4.5, tree: 3.5 } },
+    { name: 'Ornamental Trees', icon: '🌳', spacing: { row: 5.0, tree: 4.0 } },
+    { name: 'Fast-Growing Trees', icon: '🌴', spacing: { row: 3.0, tree: 2.5 } }
+];
+
+// Additional services
+const services = [
+    { name: 'Soil Preparation', costPerHa: 1000 },
+    { name: 'Irrigation System', costPerHa: 2000 },
+    { name: 'Fertilization', costPerHa: 500 },
+    { name: 'Pest Control', costPerHa: 300 }
+];
+
+let selectedTreeType = treeTypes[0];
+let selectedServices = [];
+let canvas, ctx;
+let costChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    populateTreeTypeGrid();
+    populateServiceGrid();
+    initCanvas();
+    setupEventListeners();
+    updateArea();
+    drawPlantingLayout();
+}
+
+// Populate tree type grid
+function populateTreeTypeGrid() {
+    const grid = document.getElementById('tree-type-grid');
+    grid.innerHTML = '';
+
+    treeTypes.forEach((treeType, index) => {
+        const card = document.createElement('div');
+        card.className = `tree-type-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center ${index === 0 ? 'selected' : ''}`;
+        card.onclick = () => selectTreeType(treeType, card);
+        
+        card.innerHTML = `
+            <div class="text-lg mb-1">${treeType.icon}</div>
+            <div class="font-medium text-gray-900 dark:text-white text-sm">${treeType.name}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <label class="block text-xs">Cost/Tree ($):</label>
+                <input type="number" id="cost-${treeType.name.replace(/\s+/g, '-')}" value="25" min="1" max="1000" step="0.01" class="w-full mt-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <label class="block text-xs">Labor/Tree ($):</label>
+                <input type="number" id="labor-${treeType.name.replace(/\s+/g, '-')}" value="15" min="1" max="1000" step="0.01" class="w-full mt-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <label class="block text-xs">Maintenance/Tree ($):</label>
+                <input type="number" id="maintenance-${treeType.name.replace(/\s+/g, '-')}" value="10" min="1" max="1000" step="0.01" class="w-full mt-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
+
+// Populate service grid
+function populateServiceGrid() {
+    const grid = document.getElementById('service-grid');
+    grid.innerHTML = '';
+
+    services.forEach((service, index) => {
+        const card = document.createElement('div');
+        card.className = `service-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center`;
+        card.onclick = () => toggleService(service, card);
+        
+        card.innerHTML = `
+            <div class="font-medium text-gray-900 dark:text-white text-sm">${service.name}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <label class="block text-xs">Cost/ha ($):</label>
+                <input type="number" id="service-cost-${service.name.replace(/\s+/g, '-')}" value="${service.costPerHa}" min="0" max="10000" step="1" class="w-full mt-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
+
+// Select tree type
+function selectTreeType(treeType, cardElement) {
+    document.querySelectorAll('.tree-type-card').forEach(card => card.classList.remove('selected'));
+    cardElement.classList.add('selected');
+    selectedTreeType = treeType;
+    drawPlantingLayout();
+}
+
+// Toggle service selection
+function toggleService(service, cardElement) {
+    const index = selectedServices.findIndex(s => s.name === service.name);
+    if (index === -1) {
+        const costInput = document.getElementById(`service-cost-${service.name.replace(/\s+/g, '-')}`);
+        const costPerHa = parseFloat(costInput.value) || 0;
+        selectedServices.push({ ...service, costPerHa });
+        cardElement.classList.add('selected');
+    } else {
+        selectedServices.splice(index, 1);
+        cardElement.classList.remove('selected');
+    }
+    drawPlantingLayout();
+}
+
+// Initialize canvas
+function initCanvas() {
+    canvas = document.getElementById('cost-canvas');
+    ctx = canvas.getContext('2d');
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    const inputs = ['project-length', 'project-width', 'row-spacing', 'tree-spacing', 'num-workers'];
+    inputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', () => {
+                updateArea();
+                drawPlantingLayout();
+            });
+        }
+    });
+    
+    document.getElementById('length-unit').addEventListener('change', updateArea);
+    document.getElementById('width-unit').addEventListener('change', updateArea);
+    
+    // Add listeners for dynamic cost inputs
+    treeTypes.forEach(treeType => {
+        const costInput = document.getElementById(`cost-${treeType.name.replace(/\s+/g, '-')}`);
+        const laborInput = document.getElementById(`labor-${treeType.name.replace(/\s+/g, '-')}`);
+        const maintenanceInput = document.getElementById(`maintenance-${treeType.name.replace(/\s+/g, '-')}`);
+        [costInput, laborInput, maintenanceInput].forEach(input => {
+            if (input) {
+                input.addEventListener('input', () => {
+                    drawPlantingLayout();
+                });
+            }
+        });
+    });
+    
+    services.forEach(service => {
+        const costInput = document.getElementById(`service-cost-${service.name.replace(/\s+/g, '-')}`);
+        if (costInput) {
+            costInput.addEventListener('input', () => {
+                const index = selectedServices.findIndex(s => s.name === service.name);
+                if (index !== -1) {
+                    selectedServices[index].costPerHa = parseFloat(costInput.value) || 0;
+                }
+                drawPlantingLayout();
+            });
+        }
+    });
+}
+
+// Update area calculation
+function updateArea() {
+    const length = parseFloat(document.getElementById('project-length').value) || 0;
+    const width = parseFloat(document.getElementById('project-width').value) || 0;
+    const lengthUnit = document.getElementById('length-unit').value;
+    const widthUnit = document.getElementById('width-unit').value;
+    
+    let lengthM = length;
+    let widthM = width;
+    
+    if (lengthUnit === 'ft') lengthM = length * 0.3048;
+    if (lengthUnit === 'acres') {
+        lengthM = Math.sqrt(length * 4047);
+        widthM = lengthM;
+        document.getElementById('project-width').value = Math.round(widthM);
+    }
+    
+    if (widthUnit === 'ft') widthM = width * 0.3048;
+    
+    const areaHa = (lengthM * widthM) / 10000;
+    document.getElementById('total-area').textContent = `${areaHa.toFixed(2)} hectares`;
+}
+
+// Calculate planting density
+function calculatePlantingDensity() {
+    const customRowSpacing = parseFloat(document.getElementById('row-spacing').value);
+    const customTreeSpacing = parseFloat(document.getElementById('tree-spacing').value);
+    
+    let rowSpacing = customRowSpacing || selectedTreeType.spacing.row;
+    let treeSpacing = customTreeSpacing || selectedTreeType.spacing.tree;
+    
+    // Adjust based on environmental conditions
+    const climateZone = document.getElementById('climate-zone').value;
+    const soilQuality = document.getElementById('soil-quality').value;
+    
+    if (climateZone === 'warm') {
+        rowSpacing *= 1.1;
+        treeSpacing *= 1.1;
+    } else if (climateZone === 'cool') {
+        rowSpacing *= 0.9;
+        treeSpacing *= 0.9;
+    }
+    
+    if (soilQuality === 'poor') {
+        rowSpacing *= 1.2;
+        treeSpacing *= 1.2;
+    } else if (soilQuality === 'excellent') {
+        rowSpacing *= 0.8;
+        treeSpacing *= 0.8;
+    }
+    
+    return { rowSpacing, treeSpacing };
+}
+
+// Draw planting layout
+function drawPlantingLayout() {
+    if (!ctx) return;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const { rowSpacing, treeSpacing } = calculatePlantingDensity();
+    
+    const isDark = document.documentElement.classList.contains('dark');
+    const bgColor = isDark ? '#1e3a8a' : '#eff6ff';
+    const treeColor = '#3b82f6';
+    const borderColor = isDark ? '#1e3a8a' : '#3b82f6';
+    
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+    
+    const orchardWidth = canvas.width - 40;
+    const orchardHeight = canvas.height - 40;
+    const maxSpacing = Math.max(rowSpacing, treeSpacing);
+    const scale = Math.min(orchardWidth / (rowSpacing * 8), orchardHeight / (treeSpacing * 6));
+    
+    const startX = 30;
+    const startY = 30;
+    const rows = Math.floor(orchardHeight / (rowSpacing * scale));
+    const treesPerRow = Math.floor(orchardWidth / (treeSpacing * scale));
+    
+    ctx.fillStyle = treeColor;
+    
+    for (let row = 0; row < Math.min(rows, 8); row++) {
+        for (let tree = 0; tree < Math.min(treesPerRow, 10); tree++) {
+            const x = startX + (tree * treeSpacing * scale);
+            const y = startY + (row * rowSpacing * scale);
+            
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    }
+    
+    ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(`${rowSpacing.toFixed(1)}m rows`, 10, canvas.height - 5);
+    ctx.fillText(`${treeSpacing.toFixed(1)}m trees`, canvas.width - 60, canvas.height - 5);
+}
+
+// Calculate costs
+function calculateCosts() {
+    const length = parseFloat(document.getElementById('project-length').value) || 0;
+    const width = parseFloat(document.getElementById('project-width').value) || 0;
+    const lengthUnit = document.getElementById('length-unit').value;
+    const widthUnit = document.getElementById('width-unit').value;
+    const numWorkers = parseFloat(document.getElementById('num-workers').value) || 1;
+    
+    // Convert to meters
+    let lengthM = length;
+    let widthM = width;
+    
+    if (lengthUnit === 'ft') lengthM = length * 0.3048;
+    if (lengthUnit === 'acres') {
+        lengthM = Math.sqrt(length * 4047);
+        widthM = lengthM;
+    }
+    if (widthUnit === 'ft') widthM = width * 0.3048;
+    
+    const areaHa = (lengthM * widthM) / 10000;
+    const { rowSpacing, treeSpacing } = calculatePlantingDensity();
+    
+    // Calculate tree numbers
+    const treesPerHa = 10000 / (rowSpacing * treeSpacing);
+    const totalTrees = Math.floor(treesPerHa * areaHa);
+    const numberOfRows = Math.floor(widthM / rowSpacing);
+    const treesPerRow = Math.floor(lengthM / treeSpacing);
+    
+    // Get user-inputted costs
+    const costPerTree = parseFloat(document.getElementById(`cost-${selectedTreeType.name.replace(/\s+/g, '-')}`).value) || 0;
+    const laborCostPerTree = parseFloat(document.getElementById(`labor-${selectedTreeType.name.replace(/\s+/g, '-')}`).value) || 0;
+    const maintenancePerTree = parseFloat(document.getElementById(`maintenance-${selectedTreeType.name.replace(/\s+/g, '-')}`).value) || 0;
+    
+    // Calculate costs
+    const treeCost = totalTrees * costPerTree;
+    const laborCost = totalTrees * laborCostPerTree * (1 + 0.1 * (numWorkers > 0 ? 1 / numWorkers : 1)); // Adjust labor cost based on workers
+    const serviceCost = selectedServices.reduce((sum, service) => sum + (service.costPerHa * areaHa), 0);
+    const totalCost = treeCost + laborCost + serviceCost;
+    const costPerTreeTotal = totalTrees > 0 ? totalCost / totalTrees : 0;
+    const costPerHectare = areaHa > 0 ? totalCost / areaHa : 0;
+    
+    // Update main display
+    document.getElementById('total-cost').textContent = `$${totalCost.toLocaleString()}`;
+    document.getElementById('cost-per-tree').textContent = `$${costPerTreeTotal.toFixed(2)}`;
+    document.getElementById('total-trees').textContent = totalTrees;
+    document.getElementById('cost-per-hectare').textContent = `$${costPerHectare.toLocaleString()}`;
+    
+    // Update cost breakdown
+    document.getElementById('selected-tree-type').textContent = selectedTreeType.name;
+    document.getElementById('tree-cost').textContent = `$${treeCost.toLocaleString()}`;
+    document.getElementById('labor-cost').textContent = `$${laborCost.toLocaleString()}`;
+    document.getElementById('service-cost').textContent = `$${serviceCost.toLocaleString()}`;
+    document.getElementById('planting-area').textContent = `${areaHa.toFixed(2)} ha`;
+    document.getElementById('number-of-rows').textContent = numberOfRows;
+    document.getElementById('trees-per-row').textContent = treesPerRow;
+    document.getElementById('planting-density').textContent = `${Math.round(treesPerHa)} trees/ha`;
+    
+    // Economic projections
+    const maintenanceCost = totalTrees * maintenancePerTree;
+    const initialInvestment = totalCost;
+    const breakEvenYears = initialInvestment / (maintenanceCost || 1);
+    
+    document.getElementById('initial-investment').textContent = `$${initialInvestment.toLocaleString()}`;
+    document.getElementById('maintenance-cost').textContent = `$${maintenanceCost.toLocaleString()}`;
+    document.getElementById('break-even').textContent = `${breakEvenYears.toFixed(1)} years`;
+    
+    // Generate recommendations
+    generateRecommendations(rowSpacing, treeSpacing, selectedTreeType, selectedServices, numWorkers);
+    
+    // Create cost chart
+    createCostChart(treeCost, laborCost, serviceCost);
+    
+    // Show results
+    document.getElementById('result-container').classList.remove('hidden');
+    
+    // Scroll to results
+    setTimeout(() => {
+        document.getElementById('result-container').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
+}
+
+// Generate recommendations
+function generateRecommendations(rowSpacing, treeSpacing, treeType, services, numWorkers) {
+    const plantingGuidelines = [
+        'Plant in early spring or fall for optimal root establishment',
+        'Ensure holes are 2x wider than root ball',
+        'Check soil drainage to prevent waterlogging',
+        'Use mulch to retain moisture and reduce weeds'
+    ];
+    
+    const costSavingTips = [
+        'Buy trees in bulk to reduce per-unit cost',
+        `Optimize labor by assigning tasks efficiently among ${numWorkers} workers`,
+        'Plan planting during off-peak seasons',
+        'Maintain regular monitoring to avoid costly issues'
+    ];
+    
+    if (treeType.name === 'Fruit Trees') {
+        plantingGuidelines.push('Consider pollination requirements');
+        costSavingTips.push('Select self-pollinating varieties to reduce costs');
+    }
+    
+    if (services.some(s => s.name === 'Irrigation System')) {
+        plantingGuidelines.push('Install irrigation system before planting');
+        costSavingTips.push('Use drip irrigation for water efficiency');
+    }
+    
+    if (rowSpacing > 4) {
+        costSavingTips.push('Consider intercropping to offset costs');
+    }
+    
+    if (treeSpacing < 3) {
+        plantingGuidelines.push('Ensure adequate pruning for tree health');
+    }
+    
+    if (numWorkers > 10) {
+        costSavingTips.push('Negotiate bulk labor contracts for large teams');
+    }
+    
+    // Update DOM
+    const guidelinesList = document.getElementById('planting-guidelines');
+    guidelinesList.innerHTML = plantingGuidelines.map(tip => `<li>${tip}</li>`).join('');
+    
+    const tipsList = document.getElementById('cost-saving-tips');
+    tipsList.innerHTML = costSavingTips.map(tip => `<li>${tip}</li>`).join('');
+}
+
+// Create cost distribution chart
+function createCostChart(treeCost, laborCost, serviceCost) {
+    const ctx = document.getElementById('cost-chart').getContext('2d');
+    
+    if (costChart) {
+        costChart.destroy();
+    }
+    
+    const costData = {
+        labels: ['Tree Cost', 'Labor Cost', 'Service Cost'],
+        datasets: [{
+            label: 'Cost Distribution',
+            data: [treeCost, laborCost, serviceCost],
+            backgroundColor: ['#3b82f6', '#f59e0b', '#10b981'],
+            borderColor: ['#1e3a8a', '#92400e', '#059669'],
+            borderWidth: 1
+        }]
+    };
+    
+    costChart = new Chart(ctx, {
+        type: 'pie',
+        data: costData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Cost Distribution Breakdown'
+                },
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+}
+
+// Clear calculator
+function clearCalculator() {
+    // Reset form values
+    document.getElementById('project-length').value = '100';
+    document.getElementById('project-width').value = '80';
+    document.getElementById('length-unit').value = 'm';
+    document.getElementById('width-unit').value = 'm';
+    document.getElementById('climate-zone').value = 'temperate';
+    document.getElementById('soil-quality').value = 'good';
+    document.getElementById('row-spacing').value = '';
+    document.getElementById('tree-spacing').value = '';
+    document.getElementById('num-workers').value = '5';
+    
+    // Reset tree and service costs
+    treeTypes.forEach(treeType => {
+        document.getElementById(`cost-${treeType.name.replace(/\s+/g, '-')}`).value = '25';
+        document.getElementById(`labor-${treeType.name.replace(/\s+/g, '-')}`).value = '15';
+        document.getElementById(`maintenance-${treeType.name.replace(/\s+/g, '-')}`).value = '10';
+    });
+    
+    services.forEach(service => {
+        document.getElementById(`service-cost-${service.name.replace(/\s+/g, '-')}`).value = service.costPerHa;
+    });
+    
+    // Reset selections
+    selectedTreeType = treeTypes[0];
+    selectedServices = [];
+    
+    // Reset UI
+    document.querySelectorAll('.tree-type-card').forEach((card, index) => {
+        card.classList.toggle('selected', index === 0);
+    });
+    document.querySelectorAll('.service-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Hide results
+    document.getElementById('result-container').classList.add('hidden');
+    
+    // Destroy chart
+    if (costChart) {
+        costChart.destroy();
+        costChart = null;
+    }
+    
+    // Update displays
+    updateArea();
+    drawPlantingLayout();
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initCalculator();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

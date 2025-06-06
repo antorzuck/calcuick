@@ -1,0 +1,818 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.tree-group-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.tree-group-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+.tree-group-card.selected {
+    border-color: #3b82f6;
+    background-color: #dbeafe;
+}
+.dark .tree-group-card.selected {
+    background-color: #1e3a8a;
+}
+.basal-display {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+}
+#basal-canvas {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: #eff6ff;
+}
+.dark #basal-canvas {
+    border-color: #374151;
+    background: #1e3a8a;
+}
+.metric-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .metric-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+<!-- Back Button -->
+<div class="mb-6">
+    <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        <span>Back to Calculators</span>
+    </button>
+</div>
+
+<!-- Header -->
+<div class="text-center mb-12">
+    <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+        <i data-lucide="tree-pine" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Basal Area Calculator</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Calculate the basal area of trees in your forest plot to assess stand density, growth, and management needs.
+    </p>
+    <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+        <div class="text-blue-800 dark:text-blue-300 font-medium">
+            🌲 Basal Area • 📏 Stand Density • 📊 Forest Metrics
+        </div>
+    </div>
+</div>
+
+<!-- Calculator -->
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+    <!-- Plot Configuration -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Plot Configuration</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: Basic Settings -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Plot Area</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Length:</label>
+                            <div class="relative">
+                                <input type="number" id="plot-length" value="50" min="1" max="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <select id="length-unit" class="absolute right-2 top-1 bg-transparent text-gray-500 dark:text-gray-400 text-sm focus:outline-none">
+                                    <option value="m">m</option>
+                                    <option value="ft">ft</option>
+                                    <option value="acres">acres</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">Width:</label>
+                            <div class="relative">
+                                <input type="number" id="plot-width" value="50" min="1" max="1000" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <select id="width-unit" class="w-full absolute right-2 top-2 bg-transparent text-gray-500 dark:text-gray-400 text-sm focus:outline-none">
+                                    <option value="m">m</option>
+                                    <option value="ft">ft</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        Total area: <span id="total-area">0.25 hectares</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Tree Group</h3>
+                    <div class="grid grid-cols-2 gap-3" id="tree-group-grid">
+                        <!-- Tree group cards will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Tree Measurements</h3>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-4">
+                            <input type="number" id="tree-diameter" placeholder="Diameter (cm)" min="1" max="1000" step="0.1" class="w-1/2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="number" id="tree-count" placeholder="Count" min="1" max="1000" class="w-1/4 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <button onclick="addTreeMeasurement()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm">Add</button>
+                        </div>
+                        <div id="measurement-list" class="text-sm text-gray-600 dark:text-gray-300">
+                            <!-- Measurements will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Visualization -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Plot Visualization</h3>
+                    <div class="flex justify-center">
+                        <canvas id="basal-canvas" width="350" height="280"></canvas>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Measurement Units</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Diameter Unit:</label>
+                            <select id="diameter-unit" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="cm">Centimeters</option>
+                                <option value="in">Inches</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Basal Area Unit:</label>
+                            <select id="basal-unit" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="m2">m²/ha</option>
+                                <option value="ft2">ft²/acre</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <button onclick="calculateBasalArea()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Calculate Basal Area
+        </button>
+        <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Clear
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-container" class="hidden">
+        <!-- Basal Area Summary -->
+        <div class="basal-display text-white rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4">Basal Area Results</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div id="total-basal-area" class="text-3xl font-bold mb-2">0 m²/ha</div>
+                    <div class="text-sm opacity-90">Total Basal Area</div>
+                </div>
+                <div class="text-center">
+                    <div id="avg-basal-area" class="text-3xl font-bold mb-2">0 m²</div>
+                    <div class="text-sm opacity-90">Avg. Basal Area/Tree</div>
+                </div>
+                <div class="text-center">
+                    <div id="total-trees" class="text-3xl font-bold mb-2">0</div>
+                    <div class="text-sm opacity-90">Total Trees</div>
+                </div>
+                <div class="text-center">
+                    <div id="tree-density" class="text-3xl font-bold mb-2">0 trees/ha</div>
+                    <div class="text-sm opacity-90">Tree Density</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Distribution Analysis -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Distribution Analysis</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Tree Group</h4>
+                    <div class="space-y-2 text-gray-800 dark:text-gray-200">
+                        <div class="flex justify-between">
+                            <span>Selected Group:</span>
+                            <span id="selected-tree-group" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Total Trees Measured:</span>
+                            <span id="measured-trees" class="font-medium">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Plot Metrics</h4>
+                    <div class="space-y-2 text-gray-800 dark:text-gray-200">
+                        <div class="flex justify-between">
+                            <span>Plot Area:</span>
+                            <span id="plot-area" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Average Diameter:</span>
+                            <span id="avg-diameter" class="font-medium">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forest Metrics -->
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4">Forest Metrics</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="metric-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Stand Density Index</h4>
+                    <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-1" id="stand-density">0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Relative density</div>
+                </div>
+                
+                <div class="metric-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Stocking Level</h4>
+                    <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-1" id="stocking-level">-</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Forest health</div>
+                </div>
+                
+                <div class="metric-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Growth Potential</h4>
+                    <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-1" id="growth-potential">-</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Future yield</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Management Recommendations -->
+        <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Management Recommendations</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Silvicultural Practices</h4>
+                    <ul id="silvicultural-practices" class="list-disc list-inside space-y-1 text-gray-800 dark:text-gray-200">
+                        <!-- Practices will be populated by JavaScript -->
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Monitoring Tips</h4>
+                    <ul id="monitoring-tips" class="list-disc list-inside space-y-1 text-gray-800 dark:text-gray-200">
+                        <!-- Tips will be populated by JavaScript -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diameter Distribution Chart -->
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
+            <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4">Diameter Distribution</h3>
+            <div class="h-64">
+                <canvas id="diameter-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational Content -->
+<div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Basal Area Guide</h2>
+    
+    <div class="space-y-6">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Basal Area?</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                Basal area is the cross-sectional area of tree stems at breast height (1.3m or 4.5ft), typically measured in m²/ha or ft²/acre. 
+                It’s a key indicator of forest density and health.
+            </p>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Tree Group Selection</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">🌲 Coniferous</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">Pine, Spruce, Fir</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Narrow crowns, high density, timber-focused.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">🌳 Deciduous</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">Oak, Maple, Birch</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Broad crowns, moderate density, mixed uses.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">🌴 Mixed</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">Coniferous + Deciduous</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Diverse structure, balanced management.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Why Basal Area Matters</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                Basal area helps foresters assess stand density, competition, and growth potential, guiding decisions on thinning, harvesting, 
+                and conservation.
+            </p>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                <li>Enter your plot area dimensions and select units</li>
+                <li>Choose a tree group</li>
+                <li>Input tree diameters and counts, then add measurements</li>
+                <li>Select measurement units for diameter and basal area</li>
+                <li>Click "Calculate Basal Area" for detailed results</li>
+                <li>Review basal area, distribution, and forest metrics</li>
+                <li>Follow management recommendations for forest health</li>
+            </ol>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Tree groups
+const treeGroups = [
+    { name: 'Coniferous', icon: '🌲' },
+    { name: 'Deciduous', icon: '🌳' },
+    { name: 'Mixed', icon: '🌴' }
+];
+
+let selectedTreeGroup = treeGroups[0];
+let measurements = [];
+let canvas, ctx;
+let diameterChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    populateTreeGroupGrid();
+    initCanvas();
+    setupEventListeners();
+    updateArea();
+    drawPlotLayout();
+}
+
+// Populate tree group grid
+function populateTreeGroupGrid() {
+    const grid = document.getElementById('tree-group-grid');
+    grid.innerHTML = '';
+
+    treeGroups.forEach((group, index) => {
+        const card = document.createElement('div');
+        card.className = `tree-group-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center ${index === 0 ? 'selected' : ''}`;
+        card.onclick = () => selectTreeGroup(group, card);
+        
+        card.innerHTML = `
+            <div class="text-lg mb-1">${group.icon}</div>
+            <div class="font-medium text-gray-900 dark:text-white text-sm">${group.name}</div>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
+
+// Select tree group
+function selectTreeGroup(group, cardElement) {
+    document.querySelectorAll('.tree-group-card').forEach(card => card.classList.remove('selected'));
+    cardElement.classList.add('selected');
+    selectedTreeGroup = group;
+    drawPlotLayout();
+}
+
+// Initialize canvas
+function initCanvas() {
+    canvas = document.getElementById('basal-canvas');
+    ctx = canvas.getContext('2d');
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    const inputs = ['plot-length', 'plot-width', 'tree-diameter', 'tree-count'];
+    inputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', () => {
+                updateArea();
+                drawPlotLayout();
+            });
+        }
+    });
+    
+    document.getElementById('length-unit').addEventListener('change', updateArea);
+    document.getElementById('width-unit').addEventListener('change', updateArea);
+    document.getElementById('diameter-unit').addEventListener('change', () => {
+        updateMeasurements();
+        drawPlotLayout();
+    });
+    document.getElementById('basal-unit').addEventListener('change', () => {
+        if (measurements.length > 0) calculateBasalArea();
+    });
+}
+
+// Update area calculation
+function updateArea() {
+    const length = parseFloat(document.getElementById('plot-length').value) || 0;
+    const width = parseFloat(document.getElementById('plot-width').value) || 0;
+    const lengthUnit = document.getElementById('length-unit').value;
+    const widthUnit = document.getElementById('width-unit').value;
+    
+    let lengthM = length;
+    let widthM = width;
+    
+    if (lengthUnit === 'ft') lengthM = length * 0.3048;
+    if (lengthUnit === 'acres') {
+        lengthM = Math.sqrt(length * 4046.86);
+        widthM = lengthM;
+        document.getElementById('plot-width').value = Math.round(widthM);
+    }
+    
+    if (widthUnit === 'ft') widthM = width * 0.3048;
+    
+    const areaHa = (lengthM * widthM) / 10000;
+    document.getElementById('total-area').textContent = `${areaHa.toFixed(2)} hectares`;
+}
+
+// Add tree measurement
+function addTreeMeasurement() {
+    const diameter = parseFloat(document.getElementById('tree-diameter').value);
+    const count = parseInt(document.getElementById('tree-count').value) || 1;
+    const diameterUnit = document.getElementById('diameter-unit').value;
+    
+    if (isNaN(diameter) || diameter <= 0) {
+        alert('Please enter a valid diameter.');
+        return;
+    }
+    
+    let diameterCm = diameter;
+    if (diameterUnit === 'in') diameterCm = diameter * 2.54;
+    
+    measurements.push({ diameter: diameterCm, count });
+    updateMeasurements();
+    document.getElementById('tree-diameter').value = '';
+    document.getElementById('tree-count').value = '';
+    drawPlotLayout();
+}
+
+// Update measurement list
+function updateMeasurements() {
+    const list = document.getElementById('measurement-list');
+    const diameterUnit = document.getElementById('diameter-unit').value;
+    
+    list.innerHTML = measurements.map((m, index) => {
+        let displayDiameter = m.diameter;
+        if (diameterUnit === 'in') displayDiameter = m.diameter / 2.54;
+        return `
+            <div class="flex justify-between items-center">
+                <span>${displayDiameter.toFixed(1)} ${diameterUnit} x ${m.count} trees</span>
+                <button onclick="removeMeasurement(${index})" class="text-red-600 dark:text-red-400 text-sm">Remove</button>
+            </div>
+        `;
+    }).join('');
+}
+
+// Remove measurement
+function removeMeasurement(index) {
+    measurements.splice(index, 1);
+    updateMeasurements();
+    drawPlotLayout();
+}
+
+// Draw plot layout
+function drawPlotLayout() {
+    if (!ctx) return;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const isDark = document.documentElement.classList.contains('dark');
+    const bgColor = isDark ? '#1e3a8a' : '#eff6ff';
+    const treeColor = '#3b82f6';
+    const borderColor = isDark ? '#1e3a8a' : '#3b82f6';
+    
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+    
+    if (measurements.length === 0) return;
+    
+    const totalTrees = measurements.reduce((sum, m) => sum + m.count, 0);
+    const maxTrees = Math.min(totalTrees, 50); // Limit for visualization
+    const treesToShow = Math.min(maxTrees, 10 * 8); // 10x8 grid max
+    
+    const startX = 30;
+    const startY = 30;
+    const spacingX = (canvas.width - 60) / 10;
+    const spacingY = (canvas.height - 60) / 8;
+    
+    let treeIndex = 0;
+    ctx.fillStyle = treeColor;
+    
+    for (let row = 0; row < 8 && treeIndex < treesToShow; row++) {
+        for (let col = 0; col < 10 && treeIndex < treesToShow; col++) {
+            const x = startX + col * spacingX;
+            const y = startY + row * spacingY;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            treeIndex++;
+        }
+    }
+    
+    ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(`${totalTrees} trees`, 10, canvas.height - 5);
+}
+
+// Calculate basal area
+function calculateBasalArea() {
+    try {
+        if (measurements.length === 0) {
+            alert('Please add at least one tree measurement.');
+            return;
+        }
+        
+        const length = parseFloat(document.getElementById('plot-length').value) || 0;
+        const width = parseFloat(document.getElementById('plot-width').value) || 0;
+        const lengthUnit = document.getElementById('length-unit').value;
+        const widthUnit = document.getElementById('width-unit').value;
+        const basalUnit = document.getElementById('basal-unit').value;
+        
+        let lengthM = length;
+        let widthM = width;
+        
+        if (lengthUnit === 'ft') lengthM = length * 0.3048;
+        if (lengthUnit === 'acres') {
+            lengthM = Math.sqrt(length * 4046.86);
+            widthM = lengthM;
+        }
+        if (widthUnit === 'ft') widthM = width * 0.3048;
+        
+        const areaHa = (lengthM * widthM) / 10000;
+        const areaAcres = areaHa * 2.471;
+        
+        if (areaHa <= 0) {
+            alert('Please enter a valid plot area.');
+            return;
+        }
+        
+        // Calculate basal area
+        let totalBasalAreaM2 = 0;
+        let totalTrees = 0;
+        
+        measurements.forEach(m => {
+            const radiusM = m.diameter / 200; // cm to m, diameter to radius
+            const basalAreaM2 = Math.PI * radiusM * radiusM * m.count;
+            totalBasalAreaM2 += basalAreaM2;
+            totalTrees += m.count;
+        });
+        
+        const avgBasalAreaM2 = totalTrees > 0 ? totalBasalAreaM2 / totalTrees : 0;
+        const basalAreaPerHa = areaHa > 0 ? totalBasalAreaM2 / areaHa : 0;
+        const treeDensity = areaHa > 0 ? totalTrees / areaHa : 0;
+        
+        let displayBasalArea = basalAreaPerHa;
+        let displayAvgBasalArea = avgBasalAreaM2;
+        let basalAreaLabel = 'm²/ha';
+        
+        if (basalUnit === 'ft2') {
+            displayBasalArea = basalAreaPerHa * 10.7639 / 2.471; // m²/ha to ft²/acre
+            displayAvgBasalArea = avgBasalAreaM2 * 10.7639; // m² to ft²
+            basalAreaLabel = 'ft²/acre';
+        }
+        
+        // Update main display
+        document.getElementById('total-basal-area').textContent = `${displayBasalArea.toFixed(2)} ${basalAreaLabel}`;
+        document.getElementById('avg-basal-area').textContent = `${displayAvgBasalArea.toFixed(4)} ${basalUnit === 'ft2' ? 'ft²' : 'm²'}`;
+        document.getElementById('total-trees').textContent = totalTrees;
+        document.getElementById('tree-density').textContent = `${Math.round(treeDensity)} trees/ha`;
+        
+        // Update distribution analysis
+        const avgDiameterCm = totalTrees > 0 ? measurements.reduce((sum, m) => sum + m.diameter * m.count, 0) / totalTrees : 0;
+        const diameterUnit = document.getElementById('diameter-unit').value;
+        const displayAvgDiameter = diameterUnit === 'in' ? avgDiameterCm / 2.54 : avgDiameterCm;
+        
+        document.getElementById('selected-tree-group').textContent = selectedTreeGroup.name;
+        document.getElementById('measured-trees').textContent = totalTrees;
+        document.getElementById('plot-area').textContent = `${areaHa.toFixed(2)} ha`;
+        document.getElementById('avg-diameter').textContent = `${displayAvgDiameter.toFixed(1)} ${diameterUnit}`;
+        
+        // Forest metrics (simplified)
+        const standDensityIndex = treeDensity * (avgDiameterCm / 25.4) ** 1.6 / 100; // Approximation
+        const stockingLevel = basalAreaPerHa < 20 ? 'Understocked' : basalAreaPerHa > 40 ? 'Overstocked' : 'Optimal';
+        const growthPotential = basalAreaPerHa < 30 ? 'High' : basalAreaPerHa > 50 ? 'Low' : 'Moderate';
+        
+        document.getElementById('stand-density').textContent = standDensityIndex.toFixed(1);
+        document.getElementById('stocking-level').textContent = stockingLevel;
+        document.getElementById('growth-potential').textContent = growthPotential;
+        
+        // Generate recommendations
+        generateRecommendations(basalAreaPerHa, treeDensity, selectedTreeGroup);
+        
+        // Create diameter chart
+        createDiameterChart();
+        
+        // Show results
+        document.getElementById('result-container').classList.remove('hidden');
+        
+        // Scroll to results
+        setTimeout(() => {
+            document.getElementById('result-container').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+        
+        console.log('Calculation completed successfully.');
+    } catch (error) {
+        console.error('Error in calculateBasalArea:', error);
+        alert('An error occurred during calculation. Please check your inputs and try again.');
+    }
+}
+
+// Generate recommendations
+function generateRecommendations(basalArea, treeDensity, treeGroup) {
+    const silviculturalPractices = [
+        'Monitor tree health annually',
+        'Ensure proper spacing during planting',
+        'Control invasive species'
+    ];
+    
+    const monitoringTips = [
+        'Measure diameters at breast height (1.3m)',
+        'Record data consistently across seasons',
+        'Use GPS for plot mapping'
+    ];
+    
+    if (basalArea > 40) {
+        silviculturalPractices.push('Consider selective thinning to reduce competition');
+        monitoringTips.push('Track growth rates post-thinning');
+    } else if (basalArea < 20) {
+        silviculturalPractices.push('Plant additional trees to increase density');
+        monitoringTips.push('Monitor sapling survival rates');
+    }
+    
+    if (treeDensity > 500) {
+        silviculturalPractices.push('Implement crown thinning for light access');
+    }
+    
+    if (treeGroup.name === 'Coniferous') {
+        silviculturalPractices.push('Prune lower branches to enhance timber quality');
+    } else if (treeGroup.name === 'Deciduous') {
+        silviculturalPractices.push('Promote natural regeneration for diversity');
+    }
+    
+    // Update DOM
+    const practicesList = document.getElementById('silvicultural-practices');
+    practicesList.innerHTML = silviculturalPractices.map(tip => `<li>${tip}</li>`).join('');
+    
+    const tipsList = document.getElementById('monitoring-tips');
+    tipsList.innerHTML = monitoringTips.map(tip => `<li>${tip}</li>`).join('');
+}
+
+// Create diameter distribution chart
+function createDiameterChart() {
+    try {
+        const ctx = document.getElementById('diameter-chart').getContext('2d');
+        
+        if (diameterChart) {
+            diameterChart.destroy();
+        }
+        
+        const diameterUnit = document.getElementById('diameter-unit').value;
+        const bins = [0, 10, 20, 30, 40, 50, 60, 70, 80];
+        const counts = bins.map(() => 0);
+        
+        measurements.forEach(m => {
+            let diameter = m.diameter;
+            if (diameterUnit === 'in') diameter /= 2.54;
+            for (let i = 0; i < bins.length - 1; i++) {
+                if (diameter >= bins[i] && diameter < bins[i + 1]) {
+                    counts[i] += m.count;
+                    break;
+                }
+            }
+        });
+        
+        const labels = bins.slice(0, -1).map((b, i) => `${b}-${bins[i + 1]}`);
+        
+        ```chartjs
+        {
+            "type": "bar",
+            "data": {
+                "labels": ["0-10", "10-20", "20-30", "30-40", "40-50", "50-60", "60-70", "70-80"],
+                "datasets": [{
+                    "label": "Tree Count",
+                    "data": [0, 0, 0, 0, 0, 0, 0, 0],
+                    "backgroundColor": "#3b82f6",
+                    "borderColor": "#1e3a8a",
+                    "borderWidth": 1
+                }]
+            },
+            "options": {
+                "responsive": true,
+                "maintainAspectRatio": false,
+                "plugins": {
+                    "title": {
+                        "display": true,
+                        "text": "Diameter Distribution"
+                    },
+                    "legend": {
+                        "display": false
+                    }
+                },
+                "scales": {
+                    "x": {
+                        "title": {
+                            "display": true,
+                            "text": "Diameter (cm)"
+                        }
+                    },
+                    "y": {
+                        "title": {
+                            "display": true,
+                            "text": "Number of Trees"
+                        },
+                        "beginAtZero": true
+                    }
+                }
+            }
+        }
+        ```
+
+        console.log('Chart created successfully.');
+    } catch (error) {
+        console.error('Error in createDiameterChart:', error);
+        console.log('Failed to create diameter distribution chart.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    // Reset form values
+    document.getElementById('plot-length').value = '50';
+    document.getElementById('plot-width').value = '50';
+    document.getElementById('length-unit').value = 'm';
+    document.getElementById('width-unit').value = 'm';
+    document.getElementById('diameter-unit').value = 'cm';
+    document.getElementById('basal-unit').value = 'm2';
+    document.getElementById('tree-diameter').value = '';
+    document.getElementById('tree-count').value = '';
+    
+    // Reset selections
+    selectedTreeGroup = treeGroups[0];
+    measurements = [];
+    
+    // Reset UI
+    document.querySelectorAll('.tree-group-card').forEach((card, index) => {
+        card.classList.toggle('selected', index === 0);
+    });
+    document.getElementById('measurement-list').innerHTML = '';
+    
+    // Hide results
+    document.getElementById('result-container').classList.add('hidden');
+    
+    // Destroy chart
+    if (diameterChart) {
+        diameterChart.destroy();
+        diameterChart = null;
+    }
+    
+    // Update displays
+    updateArea();
+    drawPlotLayout();
+    
+    console.log('Calculator cleared.');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initCalculator();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

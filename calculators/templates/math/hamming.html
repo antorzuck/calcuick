@@ -1,0 +1,894 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<style>
+.sequence-display {
+    font-family: 'Courier New', monospace;
+    background: #f3f4f6;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+}
+.dark .sequence-display {
+    background: #374151;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+.difference-highlight {
+    background: #fef2f2;
+    color: #dc2626;
+    padding: 0.2rem 0.3rem;
+    border-radius: 0.25rem;
+    font-weight: bold;
+}
+.dark .difference-highlight {
+    background: #7f1d1d;
+    color: #fca5a5;
+}
+.match-highlight {
+    background: #f0fdf4;
+    color: #16a34a;
+    padding: 0.2rem 0.3rem;
+    border-radius: 0.25rem;
+}
+.dark .match-highlight {
+    background: #14532d;
+    color: #86efac;
+}
+.metric-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+.dark .metric-card {
+    background: #1e293b;
+    border-color: #334155;
+}
+#hamming-canvas {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    max-width: 100%;
+    height: auto;
+}
+.dark #hamming-canvas {
+    border-color: #374151;
+    background: #1f2937;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+<!-- Back Button -->
+<div class="mb-6">
+    <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        <span>Back to Calculators</span>
+    </button>
+</div>
+
+<!-- Header -->
+<div class="text-center mb-12">
+    <div class="w-16 h-16 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+        <i data-lucide="binary" class="w-8 h-8 text-purple-600 dark:text-purple-400"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Hamming Distance Calculator</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Calculate the Hamming distance between two strings, visualize differences, and analyze sequence similarity for binary data, DNA sequences, and text.
+    </p>
+</div>
+
+<!-- Calculator -->
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+    <!-- Input Section -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Sequence Input</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: Input Configuration -->
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Data Type:
+                    </label>
+                    <select id="data-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <option value="binary">Binary (0, 1)</option>
+                        <option value="dna">DNA Sequence (A, T, G, C)</option>
+                        <option value="text">Text/ASCII</option>
+                        <option value="hex">Hexadecimal (0-9, A-F)</option>
+                        <option value="custom">Custom Alphabet</option>
+                    </select>
+                </div>
+
+                <div id="custom-alphabet-input" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Custom Alphabet:
+                    </label>
+                    <input type="text" id="custom-alphabet" placeholder="e.g., ABCD123" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter allowed characters for validation</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        First Sequence:
+                    </label>
+                    <textarea id="sequence1" rows="4" placeholder="Enter first sequence..." class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono"></textarea>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Length: <span id="length1">0</span></p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Second Sequence:
+                    </label>
+                    <textarea id="sequence2" rows="4" placeholder="Enter second sequence..." class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono"></textarea>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Length: <span id="length2">0</span></p>
+                </div>
+
+                <!-- Quick Examples -->
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Quick Examples:</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="loadExample('binary')" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded text-sm transition-colors">
+                            Binary Example
+                        </button>
+                        <button onclick="loadExample('dna')" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded text-sm transition-colors">
+                            DNA Example
+                        </button>
+                        <button onclick="loadExample('text')" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded text-sm transition-colors">
+                            Text Example
+                        </button>
+                        <button onclick="loadExample('hex')" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded text-sm transition-colors">
+                            Hex Example
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Visualization -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Sequence Comparison</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sequence 1:</label>
+                            <div id="sequence1-display" class="sequence-display min-h-[3rem] flex items-center">
+                                Enter sequences to see comparison
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sequence 2:</label>
+                            <div id="sequence2-display" class="sequence-display min-h-[3rem] flex items-center">
+                                Enter sequences to see comparison
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Differences:</label>
+                            <div id="differences-display" class="sequence-display min-h-[3rem] flex items-center">
+                                Differences will be highlighted here
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Distance Visualization -->
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Distance Visualization</h3>
+                    <div class="flex justify-center">
+                        <canvas id="hamming-canvas" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <button onclick="calculateHammingDistance()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Calculate Hamming Distance
+        </button>
+        <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Clear
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-container" class="hidden">
+        <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Hamming Distance Results</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="metric-card">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Hamming Distance:</h4>
+                    <div id="hamming-distance" class="text-3xl font-bold text-purple-600 dark:text-purple-400"></div>
+                </div>
+                
+                <div class="metric-card">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Sequence Length:</h4>
+                    <div id="sequence-length" class="text-3xl font-bold text-purple-600 dark:text-purple-400"></div>
+                </div>
+                
+                <div class="metric-card">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Similarity (%):</h4>
+                    <div id="similarity-percent" class="text-3xl font-bold text-purple-600 dark:text-purple-400"></div>
+                </div>
+                
+                <div class="metric-card">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Differences:</h4>
+                    <div id="differences-count" class="text-3xl font-bold text-purple-600 dark:text-purple-400"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Detailed Analysis</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Position Analysis:</h4>
+                    <div id="position-analysis" class="text-gray-800 dark:text-gray-200"></div>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Character Frequency:</h4>
+                    <div id="character-frequency" class="text-gray-800 dark:text-gray-200"></div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Interpretation:</h4>
+                <div id="interpretation" class="text-gray-800 dark:text-gray-200"></div>
+            </div>
+        </div>
+
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Position-by-Position Breakdown</h3>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Position</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Sequence 1</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Sequence 2</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Match</th>
+                        </tr>
+                    </thead>
+                    <tbody id="breakdown-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- Table rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
+            <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4">Export & Summary</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-medium text-orange-700 dark:text-orange-400 mb-2">Summary:</h4>
+                    <div id="calculation-summary" class="sequence-display"></div>
+                </div>
+                
+                <div class="flex gap-4">
+                    <button onclick="exportResults()" class="bg-orange-100 dark:bg-orange-900/50 hover:bg-orange-200 dark:hover:bg-orange-900/70 text-orange-700 dark:text-orange-300 py-2 px-4 rounded-lg font-medium transition-colors">
+                        Export Results
+                    </button>
+                    <button onclick="exportVisualization()" class="bg-orange-100 dark:bg-orange-900/50 hover:bg-orange-200 dark:hover:bg-orange-900/70 text-orange-700 dark:text-orange-300 py-2 px-4 rounded-lg font-medium transition-colors">
+                        Export Chart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How to Use -->
+<div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Hamming Distance</h2>
+    
+    <div class="space-y-6">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Hamming Distance?</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                The Hamming distance between two strings of equal length is the number of positions at which the 
+                corresponding symbols are different. It measures the minimum number of substitutions required to 
+                change one string into another, or the minimum number of errors that could have transformed one 
+                string into the other.
+            </p>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Error Detection</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Used in telecommunications and data storage to detect and correct transmission errors.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Bioinformatics</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Comparing DNA sequences, protein sequences, and measuring genetic similarity.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Cryptography</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Analyzing cipher strength and measuring randomness in cryptographic systems.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Machine Learning</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Feature comparison, similarity metrics, and clustering algorithms.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Quality Control</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Comparing expected vs actual outputs in manufacturing and testing.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Image Processing</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Comparing binary images and measuring pixel-level differences.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key Properties</h3>
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <ul class="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li><strong>Symmetry:</strong> d(x,y) = d(y,x)</li>
+                    <li><strong>Non-negativity:</strong> d(x,y) ≥ 0</li>
+                    <li><strong>Identity:</strong> d(x,x) = 0</li>
+                    <li><strong>Triangle Inequality:</strong> d(x,z) ≤ d(x,y) + d(y,z)</li>
+                    <li><strong>Range:</strong> 0 ≤ d(x,y) ≤ length of strings</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                <li>Select the appropriate data type for your sequences</li>
+                <li>Enter two sequences of equal length</li>
+                <li>Click "Calculate Hamming Distance" to analyze</li>
+                <li>Review the visual comparison and detailed breakdown</li>
+                <li>Examine position-by-position analysis</li>
+                <li>Export results for documentation or further analysis</li>
+            </ol>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Example Calculations</h3>
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div class="space-y-3">
+                    <div>
+                        <strong>Binary Example:</strong><br>
+                        Sequence 1: 1011101<br>
+                        Sequence 2: 1001001<br>
+                        Hamming Distance: 2 (positions 3 and 5 differ)
+                    </div>
+                    <div>
+                        <strong>DNA Example:</strong><br>
+                        Sequence 1: ATCGATCG<br>
+                        Sequence 2: ATGGATGG<br>
+                        Hamming Distance: 3 (positions 3, 6, and 8 differ)
+                    </div>
+                    <div>
+                        <strong>Text Example:</strong><br>
+                        Sequence 1: "karolin"<br>
+                        Sequence 2: "kathrin"<br>
+                        Hamming Distance: 3 (positions 2, 5, and 6 differ)
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Related Concepts</h3>
+            <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                <li><strong>Edit Distance (Levenshtein):</strong> Allows insertions and deletions, not just substitutions</li>
+                <li><strong>Jaccard Distance:</strong> Measures dissimilarity between sets</li>
+                <li><strong>Cosine Distance:</strong> Measures angle between vectors in high-dimensional space</li>
+                <li><strong>Manhattan Distance:</strong> Sum of absolute differences between coordinates</li>
+                <li><strong>Euclidean Distance:</strong> Straight-line distance in multidimensional space</li>
+            </ul>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script>
+let canvas, ctx;
+let currentSequences = { seq1: '', seq2: '' };
+
+// Initialize canvas
+function initCanvas() {
+    canvas = document.getElementById('hamming-canvas');
+    ctx = canvas.getContext('2d');
+    clearCanvas();
+}
+
+// Clear canvas
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Set background
+    const isDark = document.documentElement.classList.contains('dark');
+    ctx.fillStyle = isDark ? '#1f2937' : '#f9fafb';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// Update data type
+document.getElementById('data-type').addEventListener('change', function() {
+    const type = this.value;
+    const customInput = document.getElementById('custom-alphabet-input');
+    
+    if (type === 'custom') {
+        customInput.classList.remove('hidden');
+    } else {
+        customInput.classList.add('hidden');
+    }
+    
+    updateSequenceDisplay();
+});
+
+// Add event listeners for sequence inputs
+function addSequenceListeners() {
+    const seq1 = document.getElementById('sequence1');
+    const seq2 = document.getElementById('sequence2');
+    
+    seq1.addEventListener('input', function() {
+        document.getElementById('length1').textContent = this.value.length;
+        updateSequenceDisplay();
+    });
+    
+    seq2.addEventListener('input', function() {
+        document.getElementById('length2').textContent = this.value.length;
+        updateSequenceDisplay();
+    });
+}
+
+// Validate sequence based on data type
+function validateSequence(sequence, dataType, customAlphabet = '') {
+    const cleanSeq = sequence.replace(/\s/g, '').toUpperCase();
+    
+    switch (dataType) {
+        case 'binary':
+            return /^[01]*$/.test(cleanSeq);
+        case 'dna':
+            return /^[ATGC]*$/.test(cleanSeq);
+        case 'text':
+            return true; // Allow any text
+        case 'hex':
+            return /^[0-9A-F]*$/.test(cleanSeq);
+        case 'custom':
+            if (!customAlphabet) return true;
+            const regex = new RegExp(`^[${customAlphabet.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]*$`);
+            return regex.test(cleanSeq);
+        default:
+            return true;
+    }
+}
+
+// Clean sequence based on data type
+function cleanSequence(sequence, dataType) {
+    let cleaned = sequence.replace(/\s/g, '');
+    
+    if (dataType !== 'text') {
+        cleaned = cleaned.toUpperCase();
+    }
+    
+    return cleaned;
+}
+
+// Update sequence display
+function updateSequenceDisplay() {
+    const seq1 = document.getElementById('sequence1').value;
+    const seq2 = document.getElementById('sequence2').value;
+    const dataType = document.getElementById('data-type').value;
+    const customAlphabet = document.getElementById('custom-alphabet').value;
+    
+    const cleanSeq1 = cleanSequence(seq1, dataType);
+    const cleanSeq2 = cleanSequence(seq2, dataType);
+    
+    // Validate sequences
+    const valid1 = validateSequence(cleanSeq1, dataType, customAlphabet);
+    const valid2 = validateSequence(cleanSeq2, dataType, customAlphabet);
+    
+    // Update displays
+    const seq1Display = document.getElementById('sequence1-display');
+    const seq2Display = document.getElementById('sequence2-display');
+    const diffDisplay = document.getElementById('differences-display');
+    
+    if (!cleanSeq1 || !cleanSeq2) {
+        seq1Display.textContent = 'Enter sequences to see comparison';
+        seq2Display.textContent = 'Enter sequences to see comparison';
+        diffDisplay.textContent = 'Differences will be highlighted here';
+        return;
+    }
+    
+    if (!valid1 || !valid2) {
+        seq1Display.innerHTML = `<span class="text-red-600">Invalid sequence for ${dataType} type</span>`;
+        seq2Display.innerHTML = `<span class="text-red-600">Invalid sequence for ${dataType} type</span>`;
+        diffDisplay.textContent = 'Fix sequence errors to see comparison';
+        return;
+    }
+    
+    if (cleanSeq1.length !== cleanSeq2.length) {
+        seq1Display.innerHTML = `<span class="text-yellow-600">Length mismatch: ${cleanSeq1.length} characters</span>`;
+        seq2Display.innerHTML = `<span class="text-yellow-600">Length mismatch: ${cleanSeq2.length} characters</span>`;
+        diffDisplay.textContent = 'Sequences must be equal length for Hamming distance';
+        return;
+    }
+    
+    // Display sequences with highlighting
+    let seq1Html = '';
+    let seq2Html = '';
+    let diffHtml = '';
+    
+    for (let i = 0; i < cleanSeq1.length; i++) {
+        const char1 = cleanSeq1[i];
+        const char2 = cleanSeq2[i];
+        const match = char1 === char2;
+        
+        const highlightClass = match ? 'match-highlight' : 'difference-highlight';
+        
+        seq1Html += `<span class="${highlightClass}">${char1}</span>`;
+        seq2Html += `<span class="${highlightClass}">${char2}</span>`;
+        diffHtml += `<span class="${highlightClass}">${match ? '=' : 'X'}</span>`;
+    }
+    
+    seq1Display.innerHTML = seq1Html;
+    seq2Display.innerHTML = seq2Html;
+    diffDisplay.innerHTML = diffHtml;
+    
+    currentSequences = { seq1: cleanSeq1, seq2: cleanSeq2 };
+}
+
+// Load example data
+function loadExample(type) {
+    const examples = {
+        binary: {
+            seq1: '1011101',
+            seq2: '1001001'
+        },
+        dna: {
+            seq1: 'ATCGATCG',
+            seq2: 'ATGGATGG'
+        },
+        text: {
+            seq1: 'karolin',
+            seq2: 'kathrin'
+        },
+        hex: {
+            seq1: 'A1B2C3',
+            seq2: 'A1F2D3'
+        }
+    };
+    
+    if (examples[type]) {
+        document.getElementById('data-type').value = type;
+        document.getElementById('sequence1').value = examples[type].seq1;
+        document.getElementById('sequence2').value = examples[type].seq2;
+        
+        // Trigger updates
+        document.getElementById('data-type').dispatchEvent(new Event('change'));
+        document.getElementById('sequence1').dispatchEvent(new Event('input'));
+        document.getElementById('sequence2').dispatchEvent(new Event('input'));
+    }
+}
+
+// Calculate Hamming distance
+function calculateHammingDistance() {
+    const seq1 = currentSequences.seq1;
+    const seq2 = currentSequences.seq2;
+    
+    if (!seq1 || !seq2) {
+        alert('Please enter both sequences');
+        return;
+    }
+    
+    if (seq1.length !== seq2.length) {
+        alert('Sequences must be equal length for Hamming distance calculation');
+        return;
+    }
+    
+    // Calculate Hamming distance
+    let distance = 0;
+    const differences = [];
+    const matches = [];
+    
+    for (let i = 0; i < seq1.length; i++) {
+        if (seq1[i] !== seq2[i]) {
+            distance++;
+            differences.push({
+                position: i + 1,
+                char1: seq1[i],
+                char2: seq2[i]
+            });
+        } else {
+            matches.push({
+                position: i + 1,
+                char: seq1[i]
+            });
+        }
+    }
+    
+    const length = seq1.length;
+    const similarity = ((length - distance) / length * 100).toFixed(1);
+    
+    // Display results
+    document.getElementById('hamming-distance').textContent = distance;
+    document.getElementById('sequence-length').textContent = length;
+    document.getElementById('similarity-percent').textContent = similarity + '%';
+    document.getElementById('differences-count').textContent = distance;
+    
+    // Detailed analysis
+    analyzeSequences(seq1, seq2, differences, matches);
+    
+    // Generate breakdown table
+    generateBreakdownTable(seq1, seq2);
+    
+    // Create visualization
+    drawVisualization(distance, length);
+    
+    // Generate summary
+    generateSummary(seq1, seq2, distance, length, similarity);
+    
+    document.getElementById('result-container').classList.remove('hidden');
+    
+    // Scroll to results
+    setTimeout(() => {
+        document.getElementById('result-container').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
+}
+
+// Analyze sequences
+function analyzeSequences(seq1, seq2, differences, matches) {
+    // Position analysis
+    let positionText = '';
+    if (differences.length > 0) {
+        const positions = differences.map(d => d.position).join(', ');
+        positionText = `Differences found at positions: ${positions}`;
+    } else {
+        positionText = 'Sequences are identical - no differences found.';
+    }
+    
+    // Character frequency analysis
+    const freq1 = {};
+    const freq2 = {};
+    
+    for (const char of seq1) {
+        freq1[char] = (freq1[char] || 0) + 1;
+    }
+    
+    for (const char of seq2) {
+        freq2[char] = (freq2[char] || 0) + 1;
+    }
+    
+    const allChars = new Set([...Object.keys(freq1), ...Object.keys(freq2)]);
+    let freqText = '';
+    
+    for (const char of Array.from(allChars).sort()) {
+        const count1 = freq1[char] || 0;
+        const count2 = freq2[char] || 0;
+        freqText += `'${char}': ${count1} vs ${count2}; `;
+    }
+    
+    // Interpretation
+    let interpretation = '';
+    const similarityPercent = ((seq1.length - differences.length) / seq1.length * 100);
+    
+    if (similarityPercent === 100) {
+        interpretation = 'Perfect match: The sequences are identical.';
+    } else if (similarityPercent >= 90) {
+        interpretation = 'Very high similarity: Sequences are nearly identical with minimal differences.';
+    } else if (similarityPercent >= 75) {
+        interpretation = 'High similarity: Sequences are quite similar with some notable differences.';
+    } else if (similarityPercent >= 50) {
+        interpretation = 'Moderate similarity: Sequences share some common patterns but have significant differences.';
+    } else if (similarityPercent >= 25) {
+        interpretation = 'Low similarity: Sequences are quite different with few matching positions.';
+    } else {
+        interpretation = 'Very low similarity: Sequences are largely different with minimal matching positions.';
+    }
+    
+    document.getElementById('position-analysis').textContent = positionText;
+    document.getElementById('character-frequency').textContent = freqText || 'No characters found';
+    document.getElementById('interpretation').textContent = interpretation;
+}
+
+// Generate breakdown table
+function generateBreakdownTable(seq1, seq2) {
+    const tableBody = document.getElementById('breakdown-table-body');
+    tableBody.innerHTML = '';
+    
+    for (let i = 0; i < seq1.length; i++) {
+        const char1 = seq1[i];
+        const char2 = seq2[i];
+        const match = char1 === char2;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${i + 1}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono ${match ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${char1}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono ${match ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${char2}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${match ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">
+                    ${match ? 'Match' : 'Differ'}
+                </span>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    }
+}
+
+// Draw visualization
+function drawVisualization(distance, length) {
+    clearCanvas();
+    
+    const isDark = document.documentElement.classList.contains('dark');
+    
+    // Draw title
+    ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Hamming Distance Visualization', canvas.width / 2, 30);
+    
+    // Draw distance bar
+    const barWidth = 300;
+    const barHeight = 30;
+    const barX = (canvas.width - barWidth) / 2;
+    const barY = 60;
+    
+    // Background bar
+    ctx.fillStyle = isDark ? '#374151' : '#e5e7eb';
+    ctx.fillRect(barX, barY, barWidth, barHeight);
+    
+    // Distance bar
+    const distanceWidth = (distance / length) * barWidth;
+    ctx.fillStyle = distance === 0 ? '#10b981' : distance / length < 0.5 ? '#f59e0b' : '#ef4444';
+    ctx.fillRect(barX, barY, distanceWidth, barHeight);
+    
+    // Labels
+    ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('0', barX - 10, barY + barHeight + 15);
+    ctx.textAlign = 'right';
+    ctx.fillText(length.toString(), barX + barWidth + 10, barY + barHeight + 15);
+    ctx.textAlign = 'center';
+    ctx.fillText(`Distance: ${distance}`, canvas.width / 2, barY + barHeight + 30);
+    
+    // Similarity percentage
+    const similarity = ((length - distance) / length * 100).toFixed(1);
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(`Similarity: ${similarity}%`, canvas.width / 2, barY + barHeight + 50);
+    
+    // Legend
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(50, 150, 15, 15);
+    ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+    ctx.fillText('Perfect Match', 70, 162);
+    
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(50, 170, 15, 15);
+    ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+    ctx.fillText('Good Similarity', 70, 182);
+    
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(200, 150, 15, 15);
+    ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+    ctx.fillText('High Difference', 220, 162);
+}
+
+// Generate summary
+function generateSummary(seq1, seq2, distance, length, similarity) {
+    const summary = `
+Hamming Distance Analysis Summary:
+- Sequence 1: "${seq1}"
+- Sequence 2: "${seq2}"
+- Length: ${length} characters
+- Hamming Distance: ${distance}
+- Similarity: ${similarity}%
+- Differences: ${distance} positions
+- Matches: ${length - distance} positions
+    `.trim();
+    
+    document.getElementById('calculation-summary').textContent = summary;
+}
+
+// Export results
+function exportResults() {
+    const seq1 = currentSequences.seq1;
+    const seq2 = currentSequences.seq2;
+    const distance = parseInt(document.getElementById('hamming-distance').textContent);
+    const length = parseInt(document.getElementById('sequence-length').textContent);
+    const similarity = document.getElementById('similarity-percent').textContent;
+    
+    const results = `Hamming Distance Analysis Results
+Generated: ${new Date().toLocaleString()}
+
+Sequences:
+Sequence 1: ${seq1}
+Sequence 2: ${seq2}
+
+Results:
+Length: ${length}
+Hamming Distance: ${distance}
+Similarity: ${similarity}
+Differences: ${distance}
+Matches: ${length - distance}
+
+Position-by-Position Analysis:
+${seq1.split('').map((char, i) => 
+    `Position ${i + 1}: '${char}' vs '${seq2[i]}' - ${char === seq2[i] ? 'Match' : 'Differ'}`
+).join('\n')}
+`;
+    
+    const blob = new Blob([results], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'hamming-distance-results.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// Export visualization
+function exportVisualization() {
+    const link = document.createElement('a');
+    link.download = 'hamming-distance-visualization.png';
+    link.href = canvas.toDataURL();
+    link.click();
+}
+
+// Clear calculator
+function clearCalculator() {
+    // Reset inputs
+    document.getElementById('data-type').value = 'binary';
+    document.getElementById('sequence1').value = '';
+    document.getElementById('sequence2').value = '';
+    document.getElementById('custom-alphabet').value = '';
+    
+    // Reset displays
+    document.getElementById('length1').textContent = '0';
+    document.getElementById('length2').textContent = '0';
+    document.getElementById('sequence1-display').textContent = 'Enter sequences to see comparison';
+    document.getElementById('sequence2-display').textContent = 'Enter sequences to see comparison';
+    document.getElementById('differences-display').textContent = 'Differences will be highlighted here';
+    
+    // Hide results
+    document.getElementById('result-container').classList.add('hidden');
+    document.getElementById('custom-alphabet-input').classList.add('hidden');
+    
+    clearCanvas();
+    currentSequences = { seq1: '', seq2: '' };
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    initCanvas();
+    addSequenceListeners();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

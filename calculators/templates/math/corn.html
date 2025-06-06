@@ -1,0 +1,1206 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.variety-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.variety-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+.variety-card.selected {
+    border-color: #10b981;
+    background-color: #ecfdf5;
+}
+.dark .variety-card.selected {
+    background-color: #064e3b;
+}
+.maturity-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.maturity-card:hover {
+    transform: translateY(-1px);
+}
+.maturity-card.selected {
+    border-color: #f59e0b;
+    background-color: #fef3c7;
+}
+.dark .maturity-card.selected {
+    background-color: #92400e;
+}
+.stage-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.stage-card.selected {
+    border-color: #3b82f6;
+    background-color: #dbeafe;
+}
+.dark .stage-card.selected {
+    background-color: #1e3a8a;
+}
+.yield-display {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+#field-canvas {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f0fdf4;
+}
+.dark #field-canvas {
+    border-color: #374151;
+    background: #064e3b;
+}
+.metric-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .metric-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.moisture-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+    outline: none;
+}
+.moisture-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #10b981;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.moisture-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #10b981;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+<!-- Back Button -->
+<div class="mb-6">
+    <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        <span>Back to Calculators</span>
+    </button>
+</div>
+
+<!-- Header -->
+<div class="text-center mb-12">
+    <div class="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+        <i data-lucide="wheat" class="w-8 h-8 text-green-600 dark:text-green-400"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Corn Silage Yield Calculator</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Calculate corn silage yield potential, optimize harvest timing, and maximize feed quality for livestock operations.
+    </p>
+    <div class="mt-4 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg inline-block">
+        <div class="text-green-800 dark:text-green-300 font-medium">
+            🌽 High Yield • 🚜 Optimal Timing • 🐄 Quality Feed
+        </div>
+    </div>
+</div>
+
+<!-- Calculator -->
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+    <!-- Field Configuration -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Field Configuration</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: Basic Settings -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Field Dimensions</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Length:</label>
+                            <div class="relative">
+                                <input type="number" id="field-length" value="200" min="10" max="2000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <select id="length-unit" class="absolute right-2 top-3 bg-transparent text-gray-500 dark:text-gray-400 text-sm focus:outline-none">
+                                    <option value="m">m</option>
+                                    <option value="ft">ft</option>
+                                    <option value="acres">acres</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Width:</label>
+                            <div class="relative">
+                                <input type="number" id="field-width" value="150" min="10" max="2000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <select id="width-unit" class="absolute right-2 top-3 bg-transparent text-gray-500 dark:text-gray-400 text-sm focus:outline-none">
+                                    <option value="m">m</option>
+                                    <option value="ft">ft</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        Total area: <span id="total-area">3.0 hectares</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Corn Variety</h3>
+                    <div class="grid grid-cols-2 gap-3" id="variety-grid">
+                        <!-- Variety cards will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Maturity Group</h3>
+                    <div class="grid grid-cols-3 gap-3" id="maturity-grid">
+                        <!-- Maturity cards will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Planting Details</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Row Spacing (cm):</label>
+                            <select id="row-spacing" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="76">76 cm (30")</option>
+                                <option value="56">56 cm (22")</option>
+                                <option value="38">38 cm (15")</option>
+                                <option value="19">19 cm (7.5")</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Plant Population:</label>
+                            <div class="relative">
+                                <input type="number" id="plant-population" value="75000" min="50000" max="120000" step="1000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <span class="absolute right-3 top-3 text-gray-500 dark:text-gray-400 text-sm">plants/ha</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Environmental Conditions</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Climate Zone:</label>
+                            <select id="climate-zone" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="temperate">Temperate (Corn Belt)</option>
+                                <option value="cool">Cool Season</option>
+                                <option value="warm">Warm Season</option>
+                                <option value="arid">Arid/Semi-Arid</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Soil Type:</label>
+                            <select id="soil-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="loam" selected>Loam</option>
+                                <option value="clay-loam">Clay Loam</option>
+                                <option value="sandy-loam">Sandy Loam</option>
+                                <option value="clay">Clay</option>
+                                <option value="sand">Sand</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Advanced Settings -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Harvest Stage</h3>
+                    <div class="grid grid-cols-2 gap-3" id="stage-grid">
+                        <!-- Stage cards will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Moisture Content</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Plant Moisture: <span id="moisture-value">65</span>%
+                            </label>
+                            <input type="range" id="moisture-slider" min="55" max="80" value="65" class="w-full moisture-slider">
+                            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span>Too Dry (55%)</span>
+                                <span>Optimal (65%)</span>
+                                <span>Too Wet (80%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Management Practices</h3>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="irrigation" class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Irrigation System</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="fertilizer" checked class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Optimal Fertilization</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="pest-control" class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Pest Management</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="cover-crop" class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Cover Crop Previous Year</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Weather Conditions</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Growing Season Rainfall (mm):</label>
+                            <input type="number" id="rainfall" value="600" min="200" max="1200" step="50" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Average Temperature (°C):</label>
+                            <input type="number" id="temperature" value="22" min="15" max="35" step="1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Field Layout Visualization -->
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Field Layout Preview</h3>
+                    <div class="flex justify-center">
+                        <canvas id="field-canvas" width="350" height="280"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <button onclick="calculateYield()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Calculate Silage Yield
+        </button>
+        <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Clear
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-container" class="hidden">
+        <!-- Yield Summary -->
+        <div class="yield-display text-white rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4">Silage Yield Results</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div id="fresh-yield" class="text-3xl font-bold mb-2">0 t/ha</div>
+                    <div class="text-sm opacity-90">Fresh Weight</div>
+                </div>
+                
+                <div class="text-center">
+                    <div id="dry-matter-yield" class="text-3xl font-bold mb-2">0 t/ha</div>
+                    <div class="text-sm opacity-90">Dry Matter</div>
+                </div>
+                
+                <div class="text-center">
+                    <div id="total-fresh" class="text-3xl font-bold mb-2">0 tonnes</div>
+                    <div class="text-sm opacity-90">Total Fresh</div>
+                </div>
+                
+                <div class="text-center">
+                    <div id="total-dry" class="text-3xl font-bold mb-2">0 tonnes</div>
+                    <div class="text-sm opacity-90">Total Dry Matter</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Analysis -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Crop Analysis</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Yield Factors</h4>
+                    <div class="space-y-2 text-gray-800 dark:text-gray-200">
+                        <div class="flex justify-between">
+                            <span>Variety:</span>
+                            <span id="selected-variety" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Maturity:</span>
+                            <span id="selected-maturity" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Harvest Stage:</span>
+                            <span id="selected-stage" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Plant Population:</span>
+                            <span id="population-display" class="font-medium">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Field Metrics</h4>
+                    <div class="space-y-2 text-gray-800 dark:text-gray-200">
+                        <div class="flex justify-between">
+                            <span>Field Area:</span>
+                            <span id="field-area" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Row Spacing:</span>
+                            <span id="row-spacing-display" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Moisture Content:</span>
+                            <span id="moisture-display" class="font-medium">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Dry Matter %:</span>
+                            <span id="dry-matter-percent" class="font-medium">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quality Assessment -->
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4">Feed Quality Assessment</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="metric-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Energy Content</h4>
+                    <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-1" id="energy-content">0 MJ/kg</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Metabolizable Energy</div>
+                </div>
+                
+                <div class="metric-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Protein Content</h4>
+                    <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-1" id="protein-content">0%</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Crude Protein (DM basis)</div>
+                </div>
+                
+                <div class="metric-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Digestibility</h4>
+                    <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-1" id="digestibility">0%</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">In Vitro Digestibility</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Economic Analysis -->
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Economic Analysis</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-green-700 dark:text-green-400 mb-3">Production Costs</h4>
+                    <div class="space-y-2 text-gray-800 dark:text-gray-200">
+                        <div class="flex justify-between">
+                            <span>Seed Cost:</span>
+                            <span id="seed-cost" class="font-medium">$0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Fertilizer Cost:</span>
+                            <span id="fertilizer-cost" class="font-medium">$0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Harvest Cost:</span>
+                            <span id="harvest-cost" class="font-medium">$0</span>
+                        </div>
+                        <div class="flex justify-between border-t pt-2">
+                            <span class="font-medium">Total Cost:</span>
+                            <span id="total-cost" class="font-bold">$0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-green-700 dark:text-green-400 mb-3">Feed Value</h4>
+                    <div class="space-y-2 text-gray-800 dark:text-gray-200">
+                        <div class="flex justify-between">
+                            <span>Feed Value per Tonne:</span>
+                            <span id="feed-value-per-tonne" class="font-medium">$0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Total Feed Value:</span>
+                            <span id="total-feed-value" class="font-medium">$0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Cost per Tonne DM:</span>
+                            <span id="cost-per-tonne" class="font-medium">$0</span>
+                        </div>
+                        <div class="flex justify-between border-t pt-2">
+                            <span class="font-medium">Net Value:</span>
+                            <span id="net-value" class="font-bold">$0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Harvest Recommendations -->
+        <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Harvest Recommendations</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Timing Guidelines</h4>
+                    <ul id="timing-guidelines" class="list-disc list-inside space-y-1 text-gray-800 dark:text-gray-200">
+                        <!-- Guidelines will be populated by JavaScript -->
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Quality Tips</h4>
+                    <ul id="quality-tips" class="list-disc list-inside space-y-1 text-gray-800 dark:text-gray-200">
+                        <!-- Tips will be populated by JavaScript -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yield Progression Chart -->
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
+            <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4">Yield Progression Throughout Season</h3>
+            <div class="h-64">
+                <canvas id="yield-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational Content -->
+<div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Corn Silage Production Guide</h2>
+    
+    <div class="space-y-6">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Why Corn Silage Matters</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                Corn silage is a high-energy forage crop that provides excellent feed value for dairy and beef cattle. 
+                Proper timing of harvest and management practices can significantly impact both yield and quality, 
+                directly affecting livestock performance and farm profitability.
+            </p>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Optimal Harvest Timing</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">🌽 1/2 Milk Line</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">65-70% Moisture</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Optimal for most situations. Good balance of yield, quality, and ensiling characteristics.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">🌾 3/4 Milk Line</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">60-65% Moisture</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Higher starch content, good for high-producing dairy cows. May need moisture adjustment.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">🌱 Black Layer</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">55-60% Moisture</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Maximum starch, but lower digestibility. Risk of poor fermentation if too dry.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Variety Selection</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Leafy Varieties</h4>
+                    <ul class="text-gray-600 dark:text-gray-300 text-sm space-y-1">
+                        <li>• Higher fiber digestibility</li>
+                        <li>• More leaf area for photosynthesis</li>
+                        <li>• Better for dairy operations</li>
+                        <li>• Slightly lower starch content</li>
+                    </ul>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Conventional Varieties</h4>
+                    <ul class="text-gray-600 dark:text-gray-300 text-sm space-y-1">
+                        <li>• Higher grain-to-stover ratio</li>
+                        <li>• Maximum starch content</li>
+                        <li>• Good for beef operations</li>
+                        <li>• Traditional plant architecture</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Factors Affecting Yield</h3>
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Agronomic Factors</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                            <li>Plant population and spacing</li>
+                            <li>Soil fertility and pH</li>
+                            <li>Nitrogen availability</li>
+                            <li>Water management</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Environmental Factors</h4>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                            <li>Growing degree days</li>
+                            <li>Rainfall distribution</li>
+                            <li>Temperature stress</li>
+                            <li>Soil type and drainage</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Quality Factors</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Energy</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Starch content increases with maturity<br>
+                        Fiber digestibility decreases over time
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Protein</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        7-9% crude protein typical<br>
+                        Higher in leafy varieties
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Fiber</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        NDF 40-50% of dry matter<br>
+                        Digestibility key factor
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Ensiling Process</h3>
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <ul class="list-disc list-inside space-y-1 text-gray-800 dark:text-gray-200">
+                    <li>Chop length: 10-19mm for proper packing and processing</li>
+                    <li>Pack immediately to exclude oxygen</li>
+                    <li>Achieve proper density: 15-18 lbs DM/cubic foot</li>
+                    <li>Cover and seal within 24 hours</li>
+                    <li>Allow 21-day fermentation before feeding</li>
+                    <li>Monitor temperature during fermentation</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                <li>Enter your field dimensions and select appropriate units</li>
+                <li>Choose corn variety and maturity group for your region</li>
+                <li>Set planting details including row spacing and population</li>
+                <li>Select environmental conditions and soil type</li>
+                <li>Choose harvest stage and adjust moisture content</li>
+                <li>Indicate management practices used</li>
+                <li>Click "Calculate Silage Yield" for detailed projections</li>
+                <li>Review quality assessment and economic analysis</li>
+                <li>Follow harvest recommendations for optimal results</li>
+            </ol>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Corn varieties with characteristics
+const cornVarieties = [
+    { name: 'Leafy', type: 'leafy', icon: '🌿', yield: 1.1, protein: 8.5, digestibility: 75 },
+    { name: 'Conventional', type: 'conventional', icon: '🌽', yield: 1.0, protein: 7.5, digestibility: 72 },
+    { name: 'BMR', type: 'bmr', icon: '🌾', yield: 0.95, protein: 8.0, digestibility: 78 },
+    { name: 'High Starch', type: 'starch', icon: '🌽', yield: 1.05, protein: 7.0, digestibility: 70 }
+];
+
+// Maturity groups
+const maturityGroups = [
+    { name: 'Early', days: 95, yield: 0.9, quality: 1.1 },
+    { name: 'Medium', days: 110, yield: 1.0, quality: 1.0 },
+    { name: 'Late', days: 125, yield: 1.1, quality: 0.9 }
+];
+
+// Harvest stages
+const harvestStages = [
+    { name: 'Dough', moisture: 75, yield: 0.85, quality: 0.9, starch: 20 },
+    { name: '1/4 Milk', moisture: 70, yield: 0.95, quality: 1.0, starch: 25 },
+    { name: '1/2 Milk', moisture: 65, yield: 1.0, quality: 1.0, starch: 30 },
+    { name: '3/4 Milk', moisture: 60, yield: 1.05, quality: 0.95, starch: 35 },
+    { name: 'Black Layer', moisture: 55, yield: 1.1, quality: 0.85, starch: 40 }
+];
+
+let selectedVariety = cornVarieties[1];
+let selectedMaturity = maturityGroups[1];
+let selectedStage = harvestStages[2];
+let canvas, ctx;
+let yieldChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    populateVarietyGrid();
+    populateMaturityGrid();
+    populateStageGrid();
+    initCanvas();
+    setupEventListeners();
+    updateArea();
+    drawFieldLayout();
+}
+
+// Populate variety grid
+function populateVarietyGrid() {
+    const grid = document.getElementById('variety-grid');
+    grid.innerHTML = '';
+
+    cornVarieties.forEach((variety, index) => {
+        const card = document.createElement('div');
+        card.className = `variety-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center ${index === 1 ? 'selected' : ''}`;
+        card.onclick = () => selectVariety(variety, card);
+        
+        card.innerHTML = `
+            <div class="text-lg mb-1">${variety.icon}</div>
+            <div class="font-medium text-gray-900 dark:text-white text-sm">${variety.name}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">${variety.type}</div>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
+
+// Populate maturity grid
+function populateMaturityGrid() {
+    const grid = document.getElementById('maturity-grid');
+    grid.innerHTML = '';
+
+    maturityGroups.forEach((maturity, index) => {
+        const card = document.createElement('div');
+        card.className = `maturity-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center ${index === 1 ? 'selected' : ''}`;
+        card.onclick = () => selectMaturity(maturity, card);
+        
+        card.innerHTML = `
+            <div class="font-medium text-gray-900 dark:text-white text-sm">${maturity.name}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">${maturity.days} days</div>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
+
+// Populate stage grid
+function populateStageGrid() {
+    const grid = document.getElementById('stage-grid');
+    grid.innerHTML = '';
+
+    harvestStages.forEach((stage, index) => {
+        const card = document.createElement('div');
+        card.className = `stage-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center ${index === 2 ? 'selected' : ''}`;
+        card.onclick = () => selectStage(stage, card);
+        
+        card.innerHTML = `
+            <div class="font-medium text-gray-900 dark:text-white text-sm">${stage.name}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">${stage.moisture}% moisture</div>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
+
+// Select variety
+function selectVariety(variety, cardElement) {
+    document.querySelectorAll('.variety-card').forEach(card => card.classList.remove('selected'));
+    cardElement.classList.add('selected');
+    selectedVariety = variety;
+    drawFieldLayout();
+}
+
+// Select maturity
+function selectMaturity(maturity, cardElement) {
+    document.querySelectorAll('.maturity-card').forEach(card => card.classList.remove('selected'));
+    cardElement.classList.add('selected');
+    selectedMaturity = maturity;
+    drawFieldLayout();
+}
+
+// Select stage
+function selectStage(stage, cardElement) {
+    document.querySelectorAll('.stage-card').forEach(card => card.classList.remove('selected'));
+    cardElement.classList.add('selected');
+    selectedStage = stage;
+    
+    // Update moisture slider
+    document.getElementById('moisture-slider').value = stage.moisture;
+    document.getElementById('moisture-value').textContent = stage.moisture;
+    
+    drawFieldLayout();
+}
+
+// Initialize canvas
+function initCanvas() {
+    canvas = document.getElementById('field-canvas');
+    ctx = canvas.getContext('2d');
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    const inputs = ['field-length', 'field-width', 'plant-population', 'rainfall', 'temperature'];
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            updateArea();
+            drawFieldLayout();
+        });
+    });
+    
+    document.getElementById('length-unit').addEventListener('change', updateArea);
+    document.getElementById('width-unit').addEventListener('change', updateArea);
+    
+    // Moisture slider
+    document.getElementById('moisture-slider').addEventListener('input', function() {
+        document.getElementById('moisture-value').textContent = this.value;
+        drawFieldLayout();
+    });
+}
+
+// Update area calculation
+function updateArea() {
+    const length = parseFloat(document.getElementById('field-length').value) || 0;
+    const width = parseFloat(document.getElementById('field-width').value) || 0;
+    const lengthUnit = document.getElementById('length-unit').value;
+    const widthUnit = document.getElementById('width-unit').value;
+    
+    let lengthM = length;
+    let widthM = width;
+    
+    // Convert to meters
+    if (lengthUnit === 'ft') lengthM = length * 0.3048;
+    if (lengthUnit === 'acres') {
+        lengthM = Math.sqrt(length * 4047);
+        widthM = lengthM;
+        document.getElementById('field-width').value = Math.round(widthM);
+    }
+    
+    if (widthUnit === 'ft') widthM = width * 0.3048;
+    
+    const areaHa = (lengthM * widthM) / 10000;
+    document.getElementById('total-area').textContent = `${areaHa.toFixed(2)} hectares`;
+}
+
+// Draw field layout
+function drawFieldLayout() {
+    if (!ctx) return;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const isDark = document.documentElement.classList.contains('dark');
+    const bgColor = isDark ? '#064e3b' : '#f0fdf4';
+    const cornColor = '#10b981';
+    const borderColor = isDark ? '#059669' : '#10b981';
+    
+    // Background
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Border
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+    
+    // Draw corn rows
+    const rowSpacing = parseInt(document.getElementById('row-spacing').value) || 76;
+    const fieldWidth = canvas.width - 40;
+    const fieldHeight = canvas.height - 40;
+    const scale = fieldWidth / 300; // Scale factor
+    
+    const numRows = Math.floor(fieldWidth / (rowSpacing * scale * 0.1));
+    const startX = 30;
+    const startY = 30;
+    
+    ctx.strokeStyle = cornColor;
+    ctx.lineWidth = 2;
+    
+    for (let i = 0; i < Math.min(numRows, 15); i++) {
+        const x = startX + (i * rowSpacing * scale * 0.1);
+        ctx.beginPath();
+        ctx.moveTo(x, startY);
+        ctx.lineTo(x, startY + fieldHeight - 20);
+        ctx.stroke();
+        
+        // Draw corn plants
+        ctx.fillStyle = cornColor;
+        for (let j = 0; j < 8; j++) {
+            const y = startY + 20 + (j * 25);
+            ctx.beginPath();
+            ctx.arc(x, y, 2, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    }
+    
+    // Add labels
+    ctx.fillStyle = isDark ? '#e5e7eb' : '#374151';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(`${rowSpacing}cm rows`, 10, canvas.height - 5);
+    ctx.fillText(`${selectedVariety.name} variety`, canvas.width - 80, canvas.height - 5);
+}
+
+// Calculate yield
+function calculateYield() {
+    const length = parseFloat(document.getElementById('field-length').value) || 0;
+    const width = parseFloat(document.getElementById('field-width').value) || 0;
+    const lengthUnit = document.getElementById('length-unit').value;
+    const widthUnit = document.getElementById('width-unit').value;
+    
+    // Convert to meters
+    let lengthM = length;
+    let widthM = width;
+    
+    if (lengthUnit === 'ft') lengthM = length * 0.3048;
+    if (lengthUnit === 'acres') {
+        lengthM = Math.sqrt(length * 4047);
+        widthM = lengthM;
+    }
+    if (widthUnit === 'ft') widthM = width * 0.3048;
+    
+    const areaHa = (lengthM * widthM) / 10000;
+    
+    // Get input values
+    const plantPopulation = parseInt(document.getElementById('plant-population').value) || 75000;
+    const moisture = parseInt(document.getElementById('moisture-slider').value) || 65;
+    const rainfall = parseInt(document.getElementById('rainfall').value) || 600;
+    const temperature = parseInt(document.getElementById('temperature').value) || 22;
+    const irrigation = document.getElementById('irrigation').checked;
+    const fertilizer = document.getElementById('fertilizer').checked;
+    const pestControl = document.getElementById('pest-control').checked;
+    const coverCrop = document.getElementById('cover-crop').checked;
+    
+    // Base yield calculation (tonnes fresh weight per hectare)
+    let baseYield = 45; // Base yield in tonnes/ha
+    
+    // Variety factor
+    baseYield *= selectedVariety.yield;
+    
+    // Maturity factor
+    baseYield *= selectedMaturity.yield;
+    
+    // Stage factor
+    baseYield *= selectedStage.yield;
+    
+    // Population factor
+    const optimalPop = 75000;
+    const popFactor = Math.min(1.2, Math.max(0.7, plantPopulation / optimalPop));
+    baseYield *= popFactor;
+    
+    // Environmental factors
+    const rainfallFactor = Math.min(1.2, Math.max(0.6, rainfall / 600));
+    const tempFactor = Math.min(1.1, Math.max(0.8, 1 - Math.abs(temperature - 22) * 0.02));
+    baseYield *= rainfallFactor * tempFactor;
+    
+    // Management factors
+    if (irrigation) baseYield *= 1.15;
+    if (fertilizer) baseYield *= 1.1;
+    if (pestControl) baseYield *= 1.05;
+    if (coverCrop) baseYield *= 1.03;
+    
+    // Soil type factor
+    const soilType = document.getElementById('soil-type').value;
+    const soilFactors = {
+        'loam': 1.0,
+        'clay-loam': 0.95,
+        'sandy-loam': 0.9,
+        'clay': 0.85,
+        'sand': 0.8
+    };
+    baseYield *= soilFactors[soilType] || 1.0;
+    
+    // Calculate dry matter
+    const dryMatterPercent = 100 - moisture;
+    const dryMatterYield = baseYield * (dryMatterPercent / 100);
+    
+    // Total yields
+    const totalFresh = baseYield * areaHa;
+    const totalDry = dryMatterYield * areaHa;
+    
+    // Update main display
+    document.getElementById('fresh-yield').textContent = baseYield.toFixed(1) + ' t/ha';
+    document.getElementById('dry-matter-yield').textContent = dryMatterYield.toFixed(1) + ' t/ha';
+    document.getElementById('total-fresh').textContent = totalFresh.toFixed(0) + ' tonnes';
+    document.getElementById('total-dry').textContent = totalDry.toFixed(0) + ' tonnes';
+    
+    // Update analysis
+    document.getElementById('selected-variety').textContent = selectedVariety.name;
+    document.getElementById('selected-maturity').textContent = selectedMaturity.name;
+    document.getElementById('selected-stage').textContent = selectedStage.name;
+    document.getElementById('population-display').textContent = plantPopulation.toLocaleString() + ' plants/ha';
+    document.getElementById('field-area').textContent = areaHa.toFixed(2) + ' ha';
+    document.getElementById('row-spacing-display').textContent = document.getElementById('row-spacing').value + ' cm';
+    document.getElementById('moisture-display').textContent = moisture + '%';
+    document.getElementById('dry-matter-percent').textContent = dryMatterPercent.toFixed(1) + '%';
+    
+    // Quality assessment
+    const energyContent = (10.5 + selectedStage.starch * 0.1) * selectedVariety.digestibility / 72;
+    const proteinContent = selectedVariety.protein * selectedMaturity.quality;
+    const digestibility = selectedVariety.digestibility * selectedStage.quality;
+    
+    document.getElementById('energy-content').textContent = energyContent.toFixed(1) + ' MJ/kg';
+    document.getElementById('protein-content').textContent = proteinContent.toFixed(1) + '%';
+    document.getElementById('digestibility').textContent = digestibility.toFixed(0) + '%';
+    
+    // Economic analysis
+    const seedCostPerHa = 400;
+    const fertilizerCostPerHa = fertilizer ? 300 : 150;
+    const harvestCostPerTonne = 25;
+    
+    const totalSeedCost = seedCostPerHa * areaHa;
+    const totalFertilizerCost = fertilizerCostPerHa * areaHa;
+    const totalHarvestCost = harvestCostPerTonne * totalFresh;
+    const totalCost = totalSeedCost + totalFertilizerCost + totalHarvestCost;
+    
+    const feedValuePerTonne = 80; // USD per tonne fresh weight
+    const totalFeedValue = totalFresh * feedValuePerTonne;
+    const costPerTonneDM = totalCost / totalDry;
+    const netValue = totalFeedValue - totalCost;
+    
+    document.getElementById('seed-cost').textContent = '$' + totalSeedCost.toLocaleString();
+    document.getElementById('fertilizer-cost').textContent = '$' + totalFertilizerCost.toLocaleString();
+    document.getElementById('harvest-cost').textContent = '$' + totalHarvestCost.toLocaleString();
+    document.getElementById('total-cost').textContent = '$' + totalCost.toLocaleString();
+    document.getElementById('feed-value-per-tonne').textContent = '$' + feedValuePerTonne;
+    document.getElementById('total-feed-value').textContent = '$' + totalFeedValue.toLocaleString();
+    document.getElementById('cost-per-tonne').textContent = '$' + costPerTonneDM.toFixed(0);
+    document.getElementById('net-value').textContent = '$' + netValue.toLocaleString();
+    
+    // Generate recommendations
+    generateRecommendations(moisture, selectedStage);
+    
+    // Create yield chart
+    createYieldChart();
+    
+    // Show results
+    document.getElementById('result-container').classList.remove('hidden');
+    
+    // Scroll to results
+    setTimeout(() => {
+        document.getElementById('result-container').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
+}
+
+// Generate recommendations
+function generateRecommendations(moisture, stage) {
+    const timingGuidelines = [
+        'Monitor kernel milk line development daily',
+        'Check moisture content with field testing',
+        'Harvest during optimal weather conditions',
+        'Complete harvest within 5-7 days of target stage',
+        'Avoid harvesting during wet conditions'
+    ];
+    
+    const qualityTips = [
+        'Maintain proper chop length (10-19mm)',
+        'Pack silage immediately after chopping',
+        'Achieve target density of 15-18 lbs DM/ft³',
+        'Cover and seal within 24 hours',
+        'Monitor fermentation temperature'
+    ];
+    
+    if (moisture > 70) {
+        timingGuidelines.push('Consider waiting for lower moisture content');
+        qualityTips.push('May need to add dry matter or use additives');
+    }
+    
+    if (moisture < 60) {
+        timingGuidelines.push('Add water during chopping if too dry');
+        qualityTips.push('Ensure adequate packing to exclude air');
+    }
+    
+    if (stage.name === 'Black Layer') {
+        qualityTips.push('Monitor for mold development');
+        qualityTips.push('Consider shorter chop length for better packing');
+    }
+    
+    // Update DOM
+    const guidelinesList = document.getElementById('timing-guidelines');
+    guidelinesList.innerHTML = timingGuidelines.map(tip => `<li>${tip}</li>`).join('');
+    
+    const tipsList = document.getElementById('quality-tips');
+    tipsList.innerHTML = qualityTips.map(tip => `<li>${tip}</li>`).join('');
+}
+
+// Create yield chart
+function createYieldChart() {
+    const ctx = document.getElementById('yield-chart').getContext('2d');
+    
+    if (yieldChart) {
+        yieldChart.destroy();
+    }
+    
+    // Sample yield progression data
+    const yieldData = {
+        labels: ['Dough', '1/4 Milk', '1/2 Milk', '3/4 Milk', 'Black Layer'],
+        datasets: [
+            {
+                label: 'Fresh Weight (t/ha)',
+                data: [38, 43, 45, 47, 49],
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                yAxisID: 'y'
+            },
+            {
+                label: 'Dry Matter (%)',
+                data: [25, 30, 35, 40, 45],
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                borderWidth: 2,
+                fill: false,
+                yAxisID: 'y1'
+            },
+            {
+                label: 'Quality Score',
+                data: [75, 85, 90, 85, 75],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: false,
+                yAxisID: 'y1'
+            }
+        ]
+    };
+    
+    yieldChart = new Chart(ctx, {
+        type: 'line',
+        data: yieldData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Yield and Quality Changes Throughout Maturity'
+                },
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Fresh Weight (t/ha)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Dry Matter (%) / Quality Score'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            }
+        }
+    });
+}
+
+// Clear calculator
+function clearCalculator() {
+    // Reset form values
+    document.getElementById('field-length').value = '200';
+    document.getElementById('field-width').value = '150';
+    document.getElementById('length-unit').value = 'm';
+    document.getElementById('width-unit').value = 'm';
+    document.getElementById('row-spacing').value = '76';
+    document.getElementById('plant-population').value = '75000';
+    document.getElementById('climate-zone').value = 'temperate';
+    document.getElementById('soil-type').value = 'loam';
+    document.getElementById('moisture-slider').value = '65';
+    document.getElementById('moisture-value').textContent = '65';
+    document.getElementById('rainfall').value = '600';
+    document.getElementById('temperature').value = '22';
+    document.getElementById('irrigation').checked = false;
+    document.getElementById('fertilizer').checked = true;
+    document.getElementById('pest-control').checked = false;
+    document.getElementById('cover-crop').checked = false;
+    
+    // Reset selections
+    selectedVariety = cornVarieties[1];
+    selectedMaturity = maturityGroups[1];
+    selectedStage = harvestStages[2];
+    
+    // Reset UI
+    document.querySelectorAll('.variety-card').forEach((card, index) => {
+        card.classList.toggle('selected', index === 1);
+    });
+    document.querySelectorAll('.maturity-card').forEach((card, index) => {
+        card.classList.toggle('selected', index === 1);
+    });
+    document.querySelectorAll('.stage-card').forEach((card, index) => {
+        card.classList.toggle('selected', index === 2);
+    });
+    
+    // Hide results
+    document.getElementById('result-container').classList.add('hidden');
+    
+    // Destroy chart
+    if (yieldChart) {
+        yieldChart.destroy();
+        yieldChart = null;
+    }
+    
+    // Update displays
+    updateArea();
+    drawFieldLayout();
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initCalculator();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

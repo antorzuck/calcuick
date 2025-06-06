@@ -1,0 +1,858 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<style>
+    .metric-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    .dark .metric-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    .intensity-slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 8px;
+        border-radius: 4px;
+        background: #e2e8f0;
+        outline: none;
+    }
+    .dark .intensity-slider {
+        background: #475569;
+    }
+    .intensity-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #f97316;
+        cursor: pointer;
+    }
+    .intensity-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #f97316;
+        cursor: pointer;
+        border: none;
+    }
+    .position-card {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+    }
+    .position-card.selected {
+        border-color: #f97316;
+        background-color: #fff7ed;
+    }
+    .dark .position-card.selected {
+        border-color: #f97316;
+        background-color: #422006;
+    }
+    #calories-canvas {
+        max-height: 300px;
+    }
+    .comparison-bar {
+        height: 24px;
+        background: #f97316;
+        border-radius: 4px;
+        transition: width 1s ease-in-out;
+    }
+    .dark .comparison-bar {
+        background: #fb923c;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-orange-50 dark:bg-orange-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="flame" class="w-8 h-8 text-orange-600 dark:text-orange-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Calories Burned During Sex Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Estimate the calories burned during sexual activity based on scientific data, personalized to your body and activity level.
+        </p>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Personal Information</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Left Column: Basic Info -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Gender:
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="flex items-center justify-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <input type="radio" name="gender" value="male" checked class="sr-only peer">
+                                <div class="flex items-center space-x-2 peer-checked:text-orange-600 dark:peer-checked:text-orange-400">
+                                    <i data-lucide="mars" class="w-5 h-5"></i>
+                                    <span>Male</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center justify-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <input type="radio" name="gender" value="female" class="sr-only peer">
+                                <div class="flex items-center space-x-2 peer-checked:text-orange-600 dark:peer-checked:text-orange-400">
+                                    <i data-lucide="venus" class="w-5 h-5"></i>
+                                    <span>Female</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Weight (kg):
+                        </label>
+                        <input type="number" id="weight" min="40" max="200" value="70" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label for="age" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Age:
+                        </label>
+                        <input type="number" id="age" min="18" max="100" value="30" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label for="duration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Duration (minutes):
+                        </label>
+                        <input type="number" id="duration" min="1" max="120" value="30" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                    </div>
+                </div>
+
+                <!-- Right Column: Activity Details -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Intensity Level:
+                        </label>
+                        <div class="space-y-4">
+                            <input type="range" id="intensity" min="1" max="5" value="3" class="intensity-slider">
+                            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                <span>Gentle</span>
+                                <span>Moderate</span>
+                                <span>Vigorous</span>
+                            </div>
+                            <div class="text-center font-medium text-orange-600 dark:text-orange-400" id="intensity-label">
+                                Moderate Intensity
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Position (select dominant position):
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="position-card p-4 border border-gray-200 dark:border-gray-700 rounded-lg" data-position="missionary" data-effort="1.0">
+                                <div class="text-center">
+                                    <i data-lucide="bed" class="w-8 h-8 mx-auto mb-2 text-gray-600 dark:text-gray-300"></i>
+                                    <h4 class="font-medium text-gray-900 dark:text-white">Missionary</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Moderate effort</p>
+                                </div>
+                            </div>
+                            <div class="position-card p-4 border border-gray-200 dark:border-gray-700 rounded-lg" data-position="cowgirl" data-effort="1.2">
+                                <div class="text-center">
+                                    <i data-lucide="user" class="w-8 h-8 mx-auto mb-2 text-gray-600 dark:text-gray-300"></i>
+                                    <h4 class="font-medium text-gray-900 dark:text-white">Cowgirl</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Higher effort</p>
+                                </div>
+                            </div>
+                            <div class="position-card p-4 border border-gray-200 dark:border-gray-700 rounded-lg" data-position="standing" data-effort="1.4">
+                                <div class="text-center">
+                                    <i data-lucide="standing" class="w-8 h-8 mx-auto mb-2 text-gray-600 dark:text-gray-300"></i>
+                                    <h4 class="font-medium text-gray-900 dark:text-white">Standing</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">High effort</p>
+                                </div>
+                            </div>
+                            <div class="position-card p-4 border border-gray-200 dark:border-gray-700 rounded-lg" data-position="spooning" data-effort="0.8">
+                                <div class="text-center">
+                                    <i data-lucide="align-horizontal-justify-end" class="w-8 h-8 mx-auto mb-2 text-gray-600 dark:text-gray-300"></i>
+                                    <h4 class="font-medium text-gray-900 dark:text-white">Spooning</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Lower effort</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Role:
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="flex items-center justify-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <input type="radio" name="role" value="active" checked class="sr-only peer">
+                                <div class="flex items-center space-x-2 peer-checked:text-orange-600 dark:peer-checked:text-orange-400">
+                                    <i data-lucide="activity" class="w-5 h-5"></i>
+                                    <span>Active</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center justify-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <input type="radio" name="role" value="passive" class="sr-only peer">
+                                <div class="flex items-center space-x-2 peer-checked:text-orange-600 dark:peer-checked:text-orange-400">
+                                    <i data-lucide="heart" class="w-5 h-5"></i>
+                                    <span>Passive</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button onclick="calculateCalories()" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Calculate Calories Burned
+            </button>
+            <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4">Calorie Burn Estimate</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Total Calories Burned:</h4>
+                        <div id="total-calories" class="text-3xl font-bold text-orange-600 dark:text-orange-400"></div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">For the entire session</p>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Calories Per Minute:</h4>
+                        <div id="calories-per-minute" class="text-3xl font-bold text-orange-600 dark:text-orange-400"></div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Average burn rate</p>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Equivalent Activity:</h4>
+                        <div id="equivalent-activity" class="text-xl font-bold text-orange-600 dark:text-orange-400"></div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Similar calorie burn</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Calorie Burn Visualization</h3>
+                
+                <div class="mb-6">
+                    <canvas id="calories-canvas"></canvas>
+                </div>
+                
+                <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Comparison to Other Activities</h4>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Walking</span>
+                            <span class="text-sm text-gray-700 dark:text-gray-300" id="walking-calories">0 cal</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-6">
+                            <div id="walking-bar" class="comparison-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Jogging</span>
+                            <span class="text-sm text-gray-700 dark:text-gray-300" id="jogging-calories">0 cal</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-6">
+                            <div id="jogging-bar" class="comparison-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Sexual Activity</span>
+                            <span class="text-sm text-gray-700 dark:text-gray-300" id="sex-calories">0 cal</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-6">
+                            <div id="sex-bar" class="comparison-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Cycling</span>
+                            <span class="text-sm text-gray-700 dark:text-gray-300" id="cycling-calories">0 cal</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-6">
+                            <div id="cycling-bar" class="comparison-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Detailed Analysis</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Factors Affecting Your Calorie Burn:</h4>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300" id="factors-list">
+                            <!-- Factors will be inserted here -->
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Health Benefits:</h4>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
+                            <li>Improved cardiovascular health</li>
+                            <li>Reduced stress and anxiety</li>
+                            <li>Better sleep quality</li>
+                            <li>Enhanced mood through endorphin release</li>
+                            <li>Strengthened immune system</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Calorie Burn Breakdown:</h4>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Phase</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Duration</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Intensity</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Calories</th>
+                                </tr>
+                            </thead>
+                            <tbody id="breakdown-table" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <!-- Table rows will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Summary</h3>
+                
+                <div class="space-y-4">
+                    <p class="text-gray-700 dark:text-gray-300" id="summary-text">
+                        <!-- Summary will be inserted here -->
+                    </p>
+                    
+                    <div class="flex justify-center mt-4">
+                        <button onclick="exportResults()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center">
+                            <i data-lucide="download" class="w-5 h-5 mr-2"></i>
+                            Export Results
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Calorie Burn During Sexual Activity</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">The Science Behind the Calculator</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    This calculator uses metabolic equivalent of task (MET) values to estimate calorie expenditure. 
+                    Sexual activity has been studied and assigned MET values ranging from 1.3 (light intensity) to 2.8 (vigorous intensity). 
+                    These values are then adjusted based on individual factors like weight, gender, position, and role.
+                </p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Factors Affecting Calorie Burn</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Body Weight</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Higher body weight generally results in greater calorie expenditure for the same activity.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Intensity</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            More vigorous activity increases heart rate and energy expenditure.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Duration</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Longer duration activities burn more total calories, though intensity may decrease over time.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Position</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Different positions require varying levels of muscular engagement and exertion.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Role</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            The more active partner typically expends more energy than the more passive partner.
+                        </p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Age</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            Metabolic rate tends to decrease with age, affecting overall calorie expenditure.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Health Benefits Beyond Calories</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <ul class="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                        <li><strong>Cardiovascular Health:</strong> Regular sexual activity can improve heart health and circulation</li>
+                        <li><strong>Stress Reduction:</strong> Sexual activity releases endorphins that reduce stress and anxiety</li>
+                        <li><strong>Immune Function:</strong> Moderate sexual activity is associated with higher levels of immunoglobulin A</li>
+                        <li><strong>Sleep Quality:</strong> The release of oxytocin and prolactin after orgasm can promote better sleep</li>
+                        <li><strong>Pain Relief:</strong> Natural endorphins released during sexual activity can reduce pain perception</li>
+                        <li><strong>Emotional Bonding:</strong> Intimacy promotes relationship satisfaction and emotional wellbeing</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Research and Limitations</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    While this calculator provides estimates based on scientific research, individual results may vary. 
+                    Studies on energy expenditure during sexual activity are limited, and most research relies on small sample sizes. 
+                    Factors like individual fitness level, technique, and emotional state can all influence actual calorie expenditure.
+                </p>
+                <p class="text-gray-600 dark:text-gray-300 mt-2">
+                    This calculator should be used as an educational tool rather than a precise measurement. 
+                    For accurate fitness tracking, consider using a heart rate monitor during activity.
+                </p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+let caloriesChart = null;
+let selectedPosition = null;
+
+// Initialize the calculator
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize position selection
+    document.querySelectorAll('.position-card').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.position-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedPosition = {
+                name: this.dataset.position,
+                effort: parseFloat(this.dataset.effort)
+            };
+        });
+    });
+    
+    // Select the first position by default
+    document.querySelector('.position-card').click();
+    
+    // Initialize intensity slider label
+    document.getElementById('intensity').addEventListener('input', updateIntensityLabel);
+    updateIntensityLabel();
+    
+    // Initialize icons
+    lucide.createIcons();
+});
+
+// Update intensity label
+function updateIntensityLabel() {
+    const intensity = parseInt(document.getElementById('intensity').value);
+    const labels = ['Very Light', 'Light', 'Moderate', 'Vigorous', 'Very Vigorous'];
+    document.getElementById('intensity-label').textContent = labels[intensity - 1] + ' Intensity';
+}
+
+// Calculate calories burned
+function calculateCalories() {
+    // Get input values
+    const gender = document.querySelector('input[name="gender"]:checked').value;
+    const weight = parseFloat(document.getElementById('weight').value);
+    const age = parseInt(document.getElementById('age').value);
+    const duration = parseInt(document.getElementById('duration').value);
+    const intensity = parseInt(document.getElementById('intensity').value);
+    const role = document.querySelector('input[name="role"]:checked').value;
+    
+    // Validate inputs
+    if (isNaN(weight) || weight < 40 || weight > 200) {
+        alert('Please enter a valid weight between 40 and 200 kg.');
+        return;
+    }
+    
+    if (isNaN(age) || age < 18 || age > 100) {
+        alert('Please enter a valid age between 18 and 100.');
+        return;
+    }
+    
+    if (isNaN(duration) || duration < 1 || duration > 120) {
+        alert('Please enter a valid duration between 1 and 120 minutes.');
+        return;
+    }
+    
+    if (!selectedPosition) {
+        alert('Please select a position.');
+        return;
+    }
+    
+    // Calculate base MET value based on intensity (1.3 to 2.8)
+    const baseMET = 1.3 + (intensity - 1) * 0.375;
+    
+    // Adjust MET based on position
+    const positionMET = baseMET * selectedPosition.effort;
+    
+    // Adjust MET based on role (active burns more calories)
+    const roleFactor = role === 'active' ? 1.2 : 0.9;
+    const adjustedMET = positionMET * roleFactor;
+    
+    // Gender adjustment (slight metabolic differences)
+    const genderFactor = gender === 'male' ? 1.0 : 0.95;
+    
+    // Age adjustment (metabolism slows with age)
+    const ageFactor = age < 30 ? 1.1 : age < 50 ? 1.0 : 0.9;
+    
+    // Calculate calories burned per minute
+    // Formula: MET * weight in kg * 0.0175
+    const caloriesPerMinute = adjustedMET * weight * 0.0175 * genderFactor * ageFactor;
+    
+    // Calculate total calories
+    const totalCalories = caloriesPerMinute * duration;
+    
+    // Display results
+    document.getElementById('total-calories').textContent = Math.round(totalCalories) + ' calories';
+    document.getElementById('calories-per-minute').textContent = caloriesPerMinute.toFixed(1) + ' cal/min';
+    
+    // Determine equivalent activity
+    const equivalentActivity = getEquivalentActivity(totalCalories, duration);
+    document.getElementById('equivalent-activity').textContent = equivalentActivity;
+    
+    // Generate factors list
+    generateFactorsList(gender, weight, age, intensity, selectedPosition.name, role);
+    
+    // Generate breakdown table
+    generateBreakdownTable(duration, intensity, caloriesPerMinute);
+    
+    // Generate summary
+    generateSummary(totalCalories, duration, intensity, selectedPosition.name, role);
+    
+    // Update comparison chart
+    updateComparisonChart(totalCalories, duration, weight);
+    
+    // Show results
+    document.getElementById('result-container').classList.remove('hidden');
+    
+    // Scroll to results
+    setTimeout(() => {
+        document.getElementById('result-container').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
+}
+
+// Get equivalent activity
+function getEquivalentActivity(calories, duration) {
+    const caloriesPerHour = calories * (60 / duration);
+    
+    if (caloriesPerHour < 150) {
+        return 'Light housework';
+    } else if (caloriesPerHour < 250) {
+        return 'Casual walking';
+    } else if (caloriesPerHour < 350) {
+        return 'Brisk walking';
+    } else if (caloriesPerHour < 450) {
+        return 'Light cycling';
+    } else if (caloriesPerHour < 550) {
+        return 'Dancing';
+    } else {
+        return 'Jogging';
+    }
+}
+
+// Generate factors list
+function generateFactorsList(gender, weight, age, intensity, position, role) {
+    const factorsList = document.getElementById('factors-list');
+    factorsList.innerHTML = '';
+    
+    const factors = [
+        `<strong>Weight:</strong> ${weight} kg (higher weight = more calories burned)`,
+        `<strong>Gender:</strong> ${gender.charAt(0).toUpperCase() + gender.slice(1)} (${gender === 'male' ? 'typically higher' : 'slightly lower'} calorie burn)`,
+        `<strong>Age:</strong> ${age} years (metabolism ${age < 30 ? 'higher in younger adults' : age < 50 ? 'moderate' : 'decreases with age'})`,
+        `<strong>Intensity:</strong> ${document.getElementById('intensity-label').textContent} (higher intensity = more calories)`,
+        `<strong>Position:</strong> ${position.charAt(0).toUpperCase() + position.slice(1)} (affects muscle engagement)`,
+        `<strong>Role:</strong> ${role.charAt(0).toUpperCase() + role.slice(1)} (${role === 'active' ? 'higher' : 'lower'} energy expenditure)`
+    ];
+    
+    factors.forEach(factor => {
+        const li = document.createElement('li');
+        li.innerHTML = factor;
+        factorsList.appendChild(li);
+    });
+}
+
+// Generate breakdown table
+function generateBreakdownTable(duration, intensity, caloriesPerMinute) {
+    const breakdownTable = document.getElementById('breakdown-table');
+    breakdownTable.innerHTML = '';
+    
+    // Define phases
+    const phases = [
+        { name: 'Foreplay', durationPercent: 0.3, intensityFactor: 0.7 },
+        { name: 'Main Activity', durationPercent: 0.6, intensityFactor: 1.0 },
+        { name: 'Climax', durationPercent: 0.1, intensityFactor: 1.3 }
+    ];
+    
+    // Calculate for each phase
+    phases.forEach(phase => {
+        const phaseDuration = Math.round(duration * phase.durationPercent);
+        const phaseCalories = Math.round(caloriesPerMinute * phase.intensityFactor * phaseDuration);
+        const intensityLabel = getIntensityLabel(intensity * phase.intensityFactor);
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${phase.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${phaseDuration} minutes</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${intensityLabel}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${phaseCalories} calories</td>
+        `;
+        breakdownTable.appendChild(row);
+    });
+}
+
+// Get intensity label
+function getIntensityLabel(intensityValue) {
+    if (intensityValue < 1.5) return 'Very Light';
+    if (intensityValue < 2.5) return 'Light';
+    if (intensityValue < 3.5) return 'Moderate';
+    if (intensityValue < 4.5) return 'Vigorous';
+    return 'Very Vigorous';
+}
+
+// Generate summary
+function generateSummary(totalCalories, duration, intensity, position, role) {
+    const summaryText = document.getElementById('summary-text');
+    
+    const intensityText = intensity <= 2 ? 'light' : intensity <= 3 ? 'moderate' : 'vigorous';
+    const calorieLevel = totalCalories < 100 ? 'modest' : totalCalories < 200 ? 'moderate' : 'significant';
+    
+    summaryText.innerHTML = `
+        Based on your inputs, a ${duration}-minute session of ${intensityText} sexual activity in the ${position} position 
+        with you taking a ${role} role would burn approximately <strong>${Math.round(totalCalories)} calories</strong>. 
+        This represents a ${calorieLevel} calorie expenditure, equivalent to about ${(totalCalories / 7.7).toFixed(1)} grams of fat.
+        <br><br>
+        While sexual activity can contribute to overall physical fitness, it's most beneficial when incorporated as part of 
+        a balanced exercise routine and healthy lifestyle. Beyond calorie burning, the activity provides numerous physical and 
+        psychological health benefits.
+    `;
+}
+
+// Update comparison chart
+function updateComparisonChart(totalCalories, duration, weight) {
+    // Calculate calories for other activities
+    const walkingCalories = Math.round(3.5 * weight * 0.0175 * duration);
+    const joggingCalories = Math.round(7.0 * weight * 0.0175 * duration);
+    const cyclingCalories = Math.round(5.5 * weight * 0.0175 * duration);
+    
+    // Update text
+    document.getElementById('walking-calories').textContent = `${walkingCalories} cal`;
+    document.getElementById('jogging-calories').textContent = `${joggingCalories} cal`;
+    document.getElementById('sex-calories').textContent = `${Math.round(totalCalories)} cal`;
+    document.getElementById('cycling-calories').textContent = `${cyclingCalories} cal`;
+    
+    // Find max for scaling
+    const maxCalories = Math.max(walkingCalories, joggingCalories, totalCalories, cyclingCalories);
+    
+    // Update bars
+    document.getElementById('walking-bar').style.width = `${(walkingCalories / maxCalories) * 100}%`;
+    document.getElementById('jogging-bar').style.width = `${(joggingCalories / maxCalories) * 100}%`;
+    document.getElementById('sex-bar').style.width = `${(totalCalories / maxCalories) * 100}%`;
+    document.getElementById('cycling-bar').style.width = `${(cyclingCalories / maxCalories) * 100}%`;
+    
+    // Create or update chart
+    const ctx = document.getElementById('calories-canvas').getContext('2d');
+    
+    if (caloriesChart) {
+        caloriesChart.destroy();
+    }
+    
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#e5e7eb' : '#374151';
+    
+    caloriesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Walking', 'Jogging', 'Sexual Activity', 'Cycling'],
+            datasets: [{
+                label: 'Calories Burned',
+                data: [walkingCalories, joggingCalories, totalCalories, cyclingCalories],
+                backgroundColor: [
+                    'rgba(74, 222, 128, 0.6)',
+                    'rgba(59, 130, 246, 0.6)',
+                    'rgba(249, 115, 22, 0.6)',
+                    'rgba(168, 85, 247, 0.6)'
+                ],
+                borderColor: [
+                    'rgb(74, 222, 128)',
+                    'rgb(59, 130, 246)',
+                    'rgb(249, 115, 22)',
+                    'rgb(168, 85, 247)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.parsed.y} calories`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Calories',
+                        color: textColor
+                    },
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Export results
+function exportResults() {
+    const totalCalories = document.getElementById('total-calories').textContent;
+    const caloriesPerMinute = document.getElementById('calories-per-minute').textContent;
+    const equivalentActivity = document.getElementById('equivalent-activity').textContent;
+    const summaryText = document.getElementById('summary-text').innerText;
+    
+    const gender = document.querySelector('input[name="gender"]:checked').value;
+    const weight = document.getElementById('weight').value;
+    const age = document.getElementById('age').value;
+    const duration = document.getElementById('duration').value;
+    const intensity = document.getElementById('intensity-label').textContent;
+    const position = selectedPosition.name;
+    const role = document.querySelector('input[name="role"]:checked').value;
+    
+    const date = new Date().toLocaleDateString();
+    
+    const content = `
+CALORIES BURNED DURING SEXUAL ACTIVITY - RESULTS
+Generated on: ${date}
+
+PERSONAL INFORMATION:
+- Gender: ${gender.charAt(0).toUpperCase() + gender.slice(1)}
+- Weight: ${weight} kg
+- Age: ${age} years
+- Duration: ${duration} minutes
+- Intensity: ${intensity}
+- Position: ${position.charAt(0).toUpperCase() + position.slice(1)}
+- Role: ${role.charAt(0).toUpperCase() + role.slice(1)}
+
+RESULTS:
+- Total Calories Burned: ${totalCalories}
+- Calories Per Minute: ${caloriesPerMinute}
+- Equivalent Activity: ${equivalentActivity}
+
+SUMMARY:
+${summaryText}
+
+HEALTH BENEFITS:
+- Improved cardiovascular health
+- Reduced stress and anxiety
+- Better sleep quality
+- Enhanced mood through endorphin release
+- Strengthened immune system
+
+Note: This calculation is an estimate based on scientific research but individual results may vary.
+`;
+    
+    // Create a blob and download
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'calories-burned-results.txt';
+    link.href = url;
+    link.click();
+}
+
+// Clear calculator
+function clearCalculator() {
+    // Reset form inputs
+    document.querySelector('input[name="gender"][value="male"]').checked = true;
+    document.getElementById('weight').value = '70';
+    document.getElementById('age').value = '30';
+    document.getElementById('duration').value = '30';
+    document.getElementById('intensity').value = '3';
+    updateIntensityLabel();
+    document.querySelector('input[name="role"][value="active"]').checked = true;
+    
+    // Reset position selection
+    document.querySelectorAll('.position-card').forEach(c => c.classList.remove('selected'));
+    document.querySelector('.position-card').click();
+    
+    // Hide results
+    document.getElementById('result-container').classList.add('hidden');
+    
+    // Destroy chart if it exists
+    if (caloriesChart) {
+        caloriesChart.destroy();
+        caloriesChart = null;
+    }
+}
+</script>
+{% endblock %}

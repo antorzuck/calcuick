@@ -1,0 +1,991 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.speed-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.speed-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+.speed-card.selected {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+}
+.dark .speed-card.selected {
+    background-color: #1e3a8a;
+}
+.progress-bar {
+    background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+}
+.time-display {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+#timeline-canvas {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    max-width: 100%;
+    height: auto;
+}
+.dark #timeline-canvas {
+    border-color: #374151;
+    background: #1f2937;
+}
+.book-genre-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.book-genre-card:hover {
+    transform: translateY(-1px);
+}
+.book-genre-card.selected {
+    border-color: #10b981;
+    background-color: #ecfdf5;
+}
+.dark .book-genre-card.selected {
+    background-color: #064e3b;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+<!-- Back Button -->
+<div class="mb-6">
+    <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        <span>Back to Calculators</span>
+    </button>
+</div>
+
+<!-- Header -->
+<div class="text-center mb-12">
+    <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+        <i data-lucide="headphones" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Audiobook Reading Speed Calculator</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Calculate how long it will take to finish your audiobook at different playback speeds and optimize your listening experience.
+    </p>
+    <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+        <div class="text-blue-800 dark:text-blue-300 font-medium">
+            📚 Smart Speed Optimization • ⏱️ Time Management • 🎧 Better Comprehension
+        </div>
+    </div>
+</div>
+
+<!-- Calculator -->
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+    <!-- Book Information -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Book Information</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: Book Details -->
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Input Method:
+                    </label>
+                    <select id="input-method" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="duration">Audiobook Duration</option>
+                        <option value="pages">Book Pages</option>
+                        <option value="words">Word Count</option>
+                        <option value="genre">Book Genre (Estimate)</option>
+                    </select>
+                </div>
+
+                <!-- Duration Input -->
+                <div id="duration-input" class="space-y-4">
+                    <h3 class="font-medium text-gray-900 dark:text-white">Audiobook Duration</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hours:</label>
+                            <input type="number" id="duration-hours" value="8" min="0" max="100" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Minutes:</label>
+                            <input type="number" id="duration-minutes" value="30" min="0" max="59" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Seconds:</label>
+                            <input type="number" id="duration-seconds" value="0" min="0" max="59" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pages Input -->
+                <div id="pages-input" class="space-y-4 hidden">
+                    <h3 class="font-medium text-gray-900 dark:text-white">Book Pages</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Number of Pages:</label>
+                            <input type="number" id="book-pages" value="300" min="1" max="2000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Words per Page:</label>
+                            <input type="number" id="words-per-page" value="250" min="100" max="500" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Words Input -->
+                <div id="words-input" class="space-y-4 hidden">
+                    <h3 class="font-medium text-gray-900 dark:text-white">Word Count</h3>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Total Words:</label>
+                        <input type="number" id="total-words" value="75000" min="1000" max="500000" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+
+                <!-- Genre Input -->
+                <div id="genre-input" class="space-y-4 hidden">
+                    <h3 class="font-medium text-gray-900 dark:text-white">Book Genre</h3>
+                    <div class="grid grid-cols-2 gap-3" id="genre-grid">
+                        <!-- Genre cards will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Narrator Speed -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Narrator Speed (Words per Minute):
+                    </label>
+                    <input type="number" id="narrator-speed" value="150" min="100" max="250" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Average audiobook narrator speed is 150-160 WPM</p>
+                </div>
+            </div>
+
+            <!-- Right Column: Listening Preferences -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Listening Preferences</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Daily Listening Time:</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <input type="number" id="daily-hours" value="1" min="0" max="24" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <label class="text-xs text-gray-500 dark:text-gray-400">Hours</label>
+                                </div>
+                                <div>
+                                    <input type="number" id="daily-minutes" value="30" min="0" max="59" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <label class="text-xs text-gray-500 dark:text-gray-400">Minutes</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Listening Days per Week:</label>
+                            <input type="number" id="days-per-week" value="5" min="1" max="7" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preferred Playback Speed:</label>
+                            <div class="grid grid-cols-4 gap-2" id="speed-presets">
+                                <button class="speed-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center" data-speed="1.0">
+                                    <div class="font-medium">1.0x</div>
+                                    <div class="text-xs text-gray-500">Normal</div>
+                                </button>
+                                <button class="speed-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center selected" data-speed="1.25">
+                                    <div class="font-medium">1.25x</div>
+                                    <div class="text-xs text-gray-500">Popular</div>
+                                </button>
+                                <button class="speed-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center" data-speed="1.5">
+                                    <div class="font-medium">1.5x</div>
+                                    <div class="text-xs text-gray-500">Fast</div>
+                                </button>
+                                <button class="speed-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center" data-speed="2.0">
+                                    <div class="font-medium">2.0x</div>
+                                    <div class="text-xs text-gray-500">Very Fast</div>
+                                </button>
+                            </div>
+                            <div class="mt-3">
+                                <input type="range" id="custom-speed" min="0.5" max="3.0" step="0.05" value="1.25" class="w-full">
+                                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <span>0.5x</span>
+                                    <span id="current-speed">1.25x</span>
+                                    <span>3.0x</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Visualization -->
+                <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-3">Completion Timeline</h3>
+                    <div class="flex justify-center">
+                        <canvas id="timeline-canvas" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <button onclick="calculateReadingTime()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Calculate Reading Time
+        </button>
+        <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Clear
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-container" class="hidden">
+        <!-- Time Summary -->
+        <div class="time-display text-white rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4">Listening Time Summary</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div id="total-duration" class="text-3xl font-bold mb-2">0h 0m</div>
+                    <div class="text-sm opacity-90">Total Duration</div>
+                </div>
+                
+                <div class="text-center">
+                    <div id="completion-days" class="text-3xl font-bold mb-2">0</div>
+                    <div class="text-sm opacity-90">Days to Complete</div>
+                </div>
+                
+                <div class="text-center">
+                    <div id="time-saved" class="text-3xl font-bold mb-2">0h 0m</div>
+                    <div class="text-sm opacity-90">Time Saved</div>
+                </div>
+                
+                <div class="text-center">
+                    <div id="finish-date" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Finish Date</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Speed Comparison -->
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Speed Comparison</h3>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b border-green-200 dark:border-green-700">
+                            <th class="text-left py-2 text-green-700 dark:text-green-400">Speed</th>
+                            <th class="text-left py-2 text-green-700 dark:text-green-400">Duration</th>
+                            <th class="text-left py-2 text-green-700 dark:text-green-400">Days</th>
+                            <th class="text-left py-2 text-green-700 dark:text-green-400">Time Saved</th>
+                            <th class="text-left py-2 text-green-700 dark:text-green-400">Comprehension</th>
+                        </tr>
+                    </thead>
+                    <tbody id="speed-comparison-table">
+                        <!-- Table rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Progress Chart -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Reading Progress Chart</h3>
+            <div class="h-64">
+                <canvas id="progress-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Personalized Recommendations</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Optimal Speed</h4>
+                    <div id="optimal-speed" class="text-gray-800 dark:text-gray-200 mb-4"></div>
+                    
+                    <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Speed Training</h4>
+                    <div id="speed-training" class="text-gray-800 dark:text-gray-200"></div>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Listening Tips</h4>
+                    <ul id="listening-tips" class="list-disc list-inside space-y-1 text-gray-800 dark:text-gray-200">
+                        <!-- Tips will be populated by JavaScript -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Book Statistics -->
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
+            <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4">Book Statistics</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div id="total-words-stat" class="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-2">0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Total Words</div>
+                </div>
+                
+                <div class="text-center">
+                    <div id="words-per-hour" class="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-2">0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Words/Hour</div>
+                </div>
+                
+                <div class="text-center">
+                    <div id="effective-speed" class="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-2">0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">Effective WPM</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational Content -->
+<div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Audiobook Speed Optimization</h2>
+    
+    <div class="space-y-6">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Why Adjust Audiobook Speed?</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                Adjusting audiobook playback speed can significantly improve your listening experience and efficiency. 
+                Most people can comfortably listen at 1.25x to 1.5x speed without losing comprehension, allowing you 
+                to consume more content in less time while maintaining understanding and retention.
+            </p>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Optimal Speed Guidelines</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">1.0x - 1.1x</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">Normal Speed</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Best for complex content, poetry, or when you want to savor the narrator's performance.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">1.25x - 1.5x</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">Sweet Spot</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Optimal for most listeners. Saves time while maintaining excellent comprehension.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">1.75x - 2.0x</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">Fast Listening</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        For experienced listeners or familiar content. Requires practice to maintain comprehension.
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">2.0x+</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">Speed Reading</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        For review, familiar content, or when prioritizing speed over deep comprehension.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Speed Training Tips</h3>
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <ul class="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li>Start with 1.1x speed and gradually increase by 0.1x every few days</li>
+                    <li>Use familiar content or re-reads when training at higher speeds</li>
+                    <li>Take breaks and return to normal speed if comprehension drops</li>
+                    <li>Different genres may require different optimal speeds</li>
+                    <li>Practice active listening techniques to maintain focus at higher speeds</li>
+                    <li>Use speed variation: slower for complex sections, faster for familiar content</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Factors Affecting Optimal Speed</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Content Factors</h4>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                        <li><strong>Genre:</strong> Fiction vs. non-fiction vs. technical content</li>
+                        <li><strong>Complexity:</strong> Simple narratives vs. dense academic material</li>
+                        <li><strong>Familiarity:</strong> New concepts vs. review material</li>
+                        <li><strong>Language:</strong> Native vs. second language listening</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Personal Factors</h4>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                        <li><strong>Experience:</strong> Audiobook listening experience</li>
+                        <li><strong>Attention:</strong> Current focus and energy levels</li>
+                        <li><strong>Environment:</strong> Quiet vs. noisy surroundings</li>
+                        <li><strong>Purpose:</strong> Entertainment vs. learning vs. review</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Popular Audiobook Platforms</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Audible</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Speed range: 0.5x - 3.5x<br>
+                        Features: Whispersync, bookmarks, sleep timer
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Spotify</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Speed range: 0.5x - 3.5x<br>
+                        Features: Offline listening, cross-device sync
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Apple Books</h4>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">
+                        Speed range: 0.5x - 2.0x<br>
+                        Features: iCloud sync, sleep timer, notes
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                <li>Choose your input method (duration, pages, words, or genre)</li>
+                <li>Enter your book information and narrator speed</li>
+                <li>Set your daily listening time and frequency</li>
+                <li>Select or adjust your preferred playback speed</li>
+                <li>Click "Calculate Reading Time" to see detailed results</li>
+                <li>Review speed comparisons and personalized recommendations</li>
+                <li>Use the insights to optimize your audiobook experience</li>
+            </ol>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Book genres with average word counts
+const bookGenres = [
+    { name: 'Short Story', words: 7500, icon: '📖' },
+    { name: 'Novella', words: 40000, icon: '📚' },
+    { name: 'Romance Novel', words: 80000, icon: '💕' },
+    { name: 'Mystery/Thriller', words: 85000, icon: '🔍' },
+    { name: 'Literary Fiction', words: 90000, icon: '✨' },
+    { name: 'Science Fiction', words: 100000, icon: '🚀' },
+    { name: 'Fantasy Epic', words: 120000, icon: '🐉' },
+    { name: 'Biography', words: 95000, icon: '👤' },
+    { name: 'Self-Help', words: 65000, icon: '💡' },
+    { name: 'Business Book', words: 70000, icon: '💼' },
+    { name: 'History', words: 110000, icon: '🏛️' },
+    { name: 'Academic Text', words: 150000, icon: '🎓' }
+];
+
+let selectedGenre = null;
+let currentSpeed = 1.25;
+let progressChart = null;
+let canvas, ctx;
+
+// Initialize calculator
+function initCalculator() {
+    populateGenreGrid();
+    initCanvas();
+    setupEventListeners();
+    updateInputMethod();
+}
+
+// Populate genre grid
+function populateGenreGrid() {
+    const grid = document.getElementById('genre-grid');
+    grid.innerHTML = '';
+
+    bookGenres.forEach(genre => {
+        const card = document.createElement('div');
+        card.className = 'book-genre-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center';
+        card.onclick = () => selectGenre(genre, card);
+        
+        card.innerHTML = `
+            <div class="text-lg mb-1">${genre.icon}</div>
+            <div class="font-medium text-gray-900 dark:text-white text-sm">${genre.name}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">${genre.words.toLocaleString()} words</div>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
+
+// Select genre
+function selectGenre(genre, cardElement) {
+    // Remove selection from all cards
+    document.querySelectorAll('.book-genre-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selection to clicked card
+    cardElement.classList.add('selected');
+    selectedGenre = genre;
+}
+
+// Initialize canvas
+function initCanvas() {
+    canvas = document.getElementById('timeline-canvas');
+    ctx = canvas.getContext('2d');
+    drawTimeline();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    // Input method change
+    document.getElementById('input-method').addEventListener('change', updateInputMethod);
+    
+    // Speed preset buttons
+    document.querySelectorAll('.speed-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const speed = parseFloat(this.dataset.speed);
+            selectSpeed(speed);
+        });
+    });
+    
+    // Custom speed slider
+    document.getElementById('custom-speed').addEventListener('input', function() {
+        const speed = parseFloat(this.value);
+        selectSpeed(speed);
+    });
+    
+    // Real-time updates
+    const inputs = ['duration-hours', 'duration-minutes', 'duration-seconds', 'daily-hours', 'daily-minutes'];
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('input', drawTimeline);
+    });
+}
+
+// Update input method
+function updateInputMethod() {
+    const method = document.getElementById('input-method').value;
+    
+    // Hide all input sections
+    document.getElementById('duration-input').classList.add('hidden');
+    document.getElementById('pages-input').classList.add('hidden');
+    document.getElementById('words-input').classList.add('hidden');
+    document.getElementById('genre-input').classList.add('hidden');
+    
+    // Show selected input section
+    document.getElementById(method + '-input').classList.remove('hidden');
+}
+
+// Select speed
+function selectSpeed(speed) {
+    currentSpeed = speed;
+    
+    // Update speed cards
+    document.querySelectorAll('.speed-card').forEach(card => {
+        card.classList.remove('selected');
+        if (parseFloat(card.dataset.speed) === speed) {
+            card.classList.add('selected');
+        }
+    });
+    
+    // Update slider
+    document.getElementById('custom-speed').value = speed;
+    document.getElementById('current-speed').textContent = speed.toFixed(2) + 'x';
+    
+    // Update timeline
+    drawTimeline();
+}
+
+// Get total duration in minutes
+function getTotalDurationMinutes() {
+    const method = document.getElementById('input-method').value;
+    const narratorSpeed = parseInt(document.getElementById('narrator-speed').value);
+    
+    switch (method) {
+        case 'duration':
+            const hours = parseInt(document.getElementById('duration-hours').value) || 0;
+            const minutes = parseInt(document.getElementById('duration-minutes').value) || 0;
+            const seconds = parseInt(document.getElementById('duration-seconds').value) || 0;
+            return (hours * 60) + minutes + (seconds / 60);
+            
+        case 'pages':
+            const pages = parseInt(document.getElementById('book-pages').value) || 0;
+            const wordsPerPage = parseInt(document.getElementById('words-per-page').value) || 250;
+            const totalWords = pages * wordsPerPage;
+            return totalWords / narratorSpeed;
+            
+        case 'words':
+            const words = parseInt(document.getElementById('total-words').value) || 0;
+            return words / narratorSpeed;
+            
+        case 'genre':
+            if (!selectedGenre) return 0;
+            return selectedGenre.words / narratorSpeed;
+            
+        default:
+            return 0;
+    }
+}
+
+// Get total words
+function getTotalWords() {
+    const method = document.getElementById('input-method').value;
+    const narratorSpeed = parseInt(document.getElementById('narrator-speed').value);
+    
+    switch (method) {
+        case 'duration':
+            const totalMinutes = getTotalDurationMinutes();
+            return totalMinutes * narratorSpeed;
+            
+        case 'pages':
+            const pages = parseInt(document.getElementById('book-pages').value) || 0;
+            const wordsPerPage = parseInt(document.getElementById('words-per-page').value) || 250;
+            return pages * wordsPerPage;
+            
+        case 'words':
+            return parseInt(document.getElementById('total-words').value) || 0;
+            
+        case 'genre':
+            return selectedGenre ? selectedGenre.words : 0;
+            
+        default:
+            return 0;
+    }
+}
+
+// Draw timeline
+function drawTimeline() {
+    if (!ctx) return;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const totalMinutes = getTotalDurationMinutes();
+    const adjustedMinutes = totalMinutes / currentSpeed;
+    const dailyHours = parseInt(document.getElementById('daily-hours').value) || 0;
+    const dailyMinutes = parseInt(document.getElementById('daily-minutes').value) || 0;
+    const dailyTotal = (dailyHours * 60) + dailyMinutes;
+    
+    if (totalMinutes === 0 || dailyTotal === 0) return;
+    
+    const daysToComplete = Math.ceil(adjustedMinutes / dailyTotal);
+    
+    const isDark = document.documentElement.classList.contains('dark');
+    const bgColor = isDark ? '#1f2937' : '#f9fafb';
+    const textColor = isDark ? '#e5e7eb' : '#374151';
+    const progressColor = '#3b82f6';
+    const remainingColor = isDark ? '#4b5563' : '#d1d5db';
+    
+    // Background
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Progress bar
+    const barWidth = canvas.width - 40;
+    const barHeight = 20;
+    const barX = 20;
+    const barY = canvas.height / 2 - 10;
+    
+    // Background bar
+    ctx.fillStyle = remainingColor;
+    ctx.fillRect(barX, barY, barWidth, barHeight);
+    
+    // Progress segments
+    const segmentWidth = barWidth / Math.min(daysToComplete, 30); // Max 30 days visible
+    
+    for (let i = 0; i < Math.min(daysToComplete, 30); i++) {
+        ctx.fillStyle = i < 7 ? progressColor : remainingColor;
+        ctx.fillRect(barX + (i * segmentWidth), barY, segmentWidth - 1, barHeight);
+    }
+    
+    // Labels
+    ctx.fillStyle = textColor;
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    
+    // Title
+    ctx.fillText(`${daysToComplete} days to complete at ${currentSpeed}x speed`, canvas.width / 2, 30);
+    
+    // Time labels
+    ctx.font = '10px sans-serif';
+    ctx.fillText('Start', barX, barY + barHeight + 15);
+    ctx.fillText('Finish', barX + barWidth, barY + barHeight + 15);
+    
+    // Weekly markers
+    if (daysToComplete > 7) {
+        const weekMarkers = Math.min(Math.floor(daysToComplete / 7), 4);
+        for (let i = 1; i <= weekMarkers; i++) {
+            const x = barX + (barWidth * (i * 7) / daysToComplete);
+            ctx.strokeStyle = textColor;
+            ctx.beginPath();
+            ctx.moveTo(x, barY - 5);
+            ctx.lineTo(x, barY + barHeight + 5);
+            ctx.stroke();
+            ctx.fillText(`Week ${i}`, x, barY - 10);
+        }
+    }
+}
+
+// Calculate reading time
+function calculateReadingTime() {
+    const totalMinutes = getTotalDurationMinutes();
+    const totalWords = getTotalWords();
+    
+    if (totalMinutes === 0) {
+        alert('Please enter valid book information');
+        return;
+    }
+    
+    const adjustedMinutes = totalMinutes / currentSpeed;
+    const dailyHours = parseInt(document.getElementById('daily-hours').value) || 0;
+    const dailyMinutes = parseInt(document.getElementById('daily-minutes').value) || 0;
+    const dailyTotal = (dailyHours * 60) + dailyMinutes;
+    const daysPerWeek = parseInt(document.getElementById('days-per-week').value) || 5;
+    
+    // Calculate completion time
+    const effectiveDailyTime = dailyTotal * (daysPerWeek / 7);
+    const daysToComplete = Math.ceil(adjustedMinutes / effectiveDailyTime);
+    const timeSaved = totalMinutes - adjustedMinutes;
+    
+    // Update main display
+    const hours = Math.floor(adjustedMinutes / 60);
+    const minutes = Math.round(adjustedMinutes % 60);
+    document.getElementById('total-duration').textContent = `${hours}h ${minutes}m`;
+    document.getElementById('completion-days').textContent = daysToComplete;
+    
+    const savedHours = Math.floor(timeSaved / 60);
+    const savedMinutes = Math.round(timeSaved % 60);
+    document.getElementById('time-saved').textContent = `${savedHours}h ${savedMinutes}m`;
+    
+    // Calculate finish date
+    const finishDate = new Date();
+    finishDate.setDate(finishDate.getDate() + daysToComplete);
+    document.getElementById('finish-date').textContent = finishDate.toLocaleDateString();
+    
+    // Generate speed comparison table
+    generateSpeedComparison(totalMinutes, effectiveDailyTime);
+    
+    // Update book statistics
+    document.getElementById('total-words-stat').textContent = totalWords.toLocaleString();
+    document.getElementById('words-per-hour').textContent = Math.round(totalWords / (adjustedMinutes / 60)).toLocaleString();
+    document.getElementById('effective-speed').textContent = Math.round((totalWords / adjustedMinutes) * currentSpeed);
+    
+    // Generate recommendations
+    generateRecommendations(currentSpeed, totalMinutes);
+    
+    // Create progress chart
+    createProgressChart(daysToComplete, dailyTotal);
+    
+    // Show results
+    document.getElementById('result-container').classList.remove('hidden');
+    
+    // Scroll to results
+    setTimeout(() => {
+        document.getElementById('result-container').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
+}
+
+// Generate speed comparison table
+function generateSpeedComparison(totalMinutes, effectiveDailyTime) {
+    const speeds = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5];
+    const tableBody = document.getElementById('speed-comparison-table');
+    tableBody.innerHTML = '';
+    
+    speeds.forEach(speed => {
+        const adjustedMinutes = totalMinutes / speed;
+        const days = Math.ceil(adjustedMinutes / effectiveDailyTime);
+        const timeSaved = totalMinutes - adjustedMinutes;
+        
+        // Comprehension estimate (simplified model)
+        let comprehension = 100;
+        if (speed > 1.5) comprehension = Math.max(70, 100 - ((speed - 1.5) * 20));
+        if (speed < 1.0) comprehension = Math.min(100, 100 + ((1.0 - speed) * 10));
+        
+        const row = document.createElement('tr');
+        row.className = speed === currentSpeed ? 'bg-blue-100 dark:bg-blue-900/30' : '';
+        
+        const hours = Math.floor(adjustedMinutes / 60);
+        const minutes = Math.round(adjustedMinutes % 60);
+        const savedHours = Math.floor(timeSaved / 60);
+        const savedMinutes = Math.round(timeSaved % 60);
+        
+        row.innerHTML = `
+            <td class="py-2 font-medium">${speed}x ${speed === currentSpeed ? '(Current)' : ''}</td>
+            <td class="py-2">${hours}h ${minutes}m</td>
+            <td class="py-2">${days} days</td>
+            <td class="py-2">${savedHours}h ${savedMinutes}m</td>
+            <td class="py-2">
+                <div class="flex items-center">
+                    <div class="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: ${comprehension}%"></div>
+                    </div>
+                    <span class="text-sm">${Math.round(comprehension)}%</span>
+                </div>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+}
+
+// Generate recommendations
+function generateRecommendations(speed, totalMinutes) {
+    let optimalSpeed = '';
+    let speedTraining = '';
+    const tips = [];
+    
+    // Optimal speed recommendation
+    if (speed < 1.1) {
+        optimalSpeed = 'Consider gradually increasing to 1.25x for better time efficiency while maintaining comprehension.';
+    } else if (speed >= 1.1 && speed <= 1.5) {
+        optimalSpeed = 'You\'re in the optimal speed range! This balance provides good time savings with excellent comprehension.';
+    } else if (speed > 1.5 && speed <= 2.0) {
+        optimalSpeed = 'Fast listening! Ensure you\'re maintaining comprehension. Consider slowing down for complex content.';
+    } else {
+        optimalSpeed = 'Very fast listening. This speed is best for familiar content or review material.';
+    }
+    
+    // Speed training recommendation
+    if (speed < 1.25) {
+        speedTraining = 'Try increasing by 0.1x every few days. Start with familiar content to build comfort at higher speeds.';
+    } else if (speed < 1.75) {
+        speedTraining = 'You can likely handle faster speeds. Practice with non-fiction or familiar genres first.';
+    } else {
+        speedTraining = 'You\'re an advanced listener! Focus on maintaining comprehension and take breaks when needed.';
+    }
+    
+    // Listening tips based on duration and speed
+    if (totalMinutes > 600) { // 10+ hours
+        tips.push('Long audiobook! Consider breaking into smaller daily sessions');
+        tips.push('Use bookmarks to track your progress and key insights');
+    }
+    
+    if (speed > 1.5) {
+        tips.push('Take notes on key points to ensure retention at higher speeds');
+        tips.push('Pause and rewind if you miss important information');
+    }
+    
+    tips.push('Use a consistent listening environment to build focus habits');
+    tips.push('Adjust speed based on content complexity and your energy level');
+    tips.push('Consider slower speeds for poetry, dialogue-heavy scenes, or technical content');
+    
+    // Update DOM
+    document.getElementById('optimal-speed').textContent = optimalSpeed;
+    document.getElementById('speed-training').textContent = speedTraining;
+    
+    const tipsList = document.getElementById('listening-tips');
+    tipsList.innerHTML = tips.map(tip => `<li>${tip}</li>`).join('');
+}
+
+// Create progress chart
+function createProgressChart(daysToComplete, dailyMinutes) {
+    const ctx = document.getElementById('progress-chart').getContext('2d');
+    
+    if (progressChart) {
+        progressChart.destroy();
+    }
+    
+    // Generate data for up to 30 days or completion
+    const days = Math.min(daysToComplete, 30);
+    const labels = [];
+    const progressData = [];
+    
+    for (let i = 1; i <= days; i++) {
+        labels.push(`Day ${i}`);
+        progressData.push((i / daysToComplete) * 100);
+    }
+    
+    progressChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Reading Progress (%)',
+                data: progressData,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Clear calculator
+function clearCalculator() {
+    // Reset form values
+    document.getElementById('input-method').value = 'duration';
+    document.getElementById('duration-hours').value = '8';
+    document.getElementById('duration-minutes').value = '30';
+    document.getElementById('duration-seconds').value = '0';
+    document.getElementById('book-pages').value = '300';
+    document.getElementById('words-per-page').value = '250';
+    document.getElementById('total-words').value = '75000';
+    document.getElementById('narrator-speed').value = '150';
+    document.getElementById('daily-hours').value = '1';
+    document.getElementById('daily-minutes').value = '30';
+    document.getElementById('days-per-week').value = '5';
+    
+    // Reset speed selection
+    selectSpeed(1.25);
+    
+    // Reset genre selection
+    selectedGenre = null;
+    document.querySelectorAll('.book-genre-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Update input method display
+    updateInputMethod();
+    
+    // Hide results
+    document.getElementById('result-container').classList.add('hidden');
+    
+    // Destroy chart
+    if (progressChart) {
+        progressChart.destroy();
+        progressChart = null;
+    }
+    
+    // Redraw timeline
+    drawTimeline();
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initCalculator();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,772 @@
+{% extends 'base.html' %}
+
+
+{% block head %}
+    <title>Calories Burned Tabata Calculator - Calcuick</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        .tabata-timer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .exercise-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .exercise-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .exercise-card.selected {
+            border-color: #10b981;
+            background-color: #ecfdf5;
+        }
+        .dark .exercise-card.selected {
+            background-color: #064e3b;
+        }
+        .calorie-display {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            transform-origin: 50% 50%;
+        }
+        #workout-canvas {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+            max-width: 100%;
+            height: auto;
+        }
+        .dark #workout-canvas {
+            border-color: #374151;
+            background: #1f2937;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Back Button -->
+        <div class="mb-6">
+            <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                <span>Back to Calculators</span>
+            </button>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <div class="w-16 h-16 bg-red-50 dark:bg-red-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="flame" class="w-8 h-8 text-red-600 dark:text-red-400"></i>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Calories Burned Tabata Calculator</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Calculate calories burned during Tabata HIIT workouts based on your personal data and exercise type.
+            </p>
+            <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+                <div class="text-blue-800 dark:text-blue-300 font-medium">
+                    4 minutes • 8 rounds • 20s work / 10s rest
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculator -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+            <!-- Personal Information -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Personal Information</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Weight</label>
+                        <div class="relative">
+                            <input type="number" id="weight" value="70" min="30" max="300" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <select id="weight-unit" class="absolute right-2 top-3 bg-transparent text-gray-500 dark:text-gray-400 text-sm focus:outline-none">
+                                <option value="kg">kg</option>
+                                <option value="lbs">lbs</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Height</label>
+                        <div class="relative">
+                            <input type="number" id="height" value="170" min="100" max="250" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <select id="height-unit" class="absolute right-2 top-3 bg-transparent text-gray-500 dark:text-gray-400 text-sm focus:outline-none">
+                                <option value="cm">cm</option>
+                                <option value="ft">ft</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Age</label>
+                        <input type="number" id="age" value="30" min="15" max="100" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gender</label>
+                        <select id="gender" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exercise Selection -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Select Tabata Exercise</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="exercise-grid">
+                    <!-- Exercise cards will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Workout Configuration -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Workout Configuration</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Number of Tabata Rounds</label>
+                        <input type="number" id="tabata-rounds" value="1" min="1" max="10" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">1 round = 4 minutes (8 intervals)</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rest Between Rounds (minutes)</label>
+                        <input type="number" id="rest-between" value="1" min="0" max="5" step="0.5" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Intensity Level</label>
+                        <select id="intensity" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="0.8">Moderate (80%)</option>
+                            <option value="0.9">High (90%)</option>
+                            <option value="1.0" selected>Maximum (100%)</option>
+                            <option value="1.1">Elite (110%)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workout Visualization -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Workout Structure</h2>
+                <div class="flex justify-center">
+                    <canvas id="workout-canvas" width="600" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                <button onclick="calculateCalories()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                    Calculate Calories Burned
+                </button>
+                <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                    Clear
+                </button>
+            </div>
+
+            <!-- Results -->
+            <div id="result-container" class="hidden">
+                <!-- Calorie Summary -->
+                <div class="calorie-display text-white rounded-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold mb-4">Calories Burned</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="text-center">
+                            <div id="total-calories" class="text-4xl font-bold mb-2">0</div>
+                            <div class="text-sm opacity-90">Total Calories</div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div id="calories-per-minute" class="text-4xl font-bold mb-2">0</div>
+                            <div class="text-sm opacity-90">Calories/Minute</div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div id="workout-duration" class="text-4xl font-bold mb-2">0</div>
+                            <div class="text-sm opacity-90">Total Minutes</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Breakdown -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Workout Breakdown</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Exercise Details</h4>
+                            <div class="space-y-2 text-gray-800 dark:text-gray-200">
+                                <div class="flex justify-between">
+                                    <span>Exercise:</span>
+                                    <span id="selected-exercise" class="font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>MET Value:</span>
+                                    <span id="exercise-met" class="font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Intensity Factor:</span>
+                                    <span id="intensity-factor" class="font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Work Time:</span>
+                                    <span id="work-time" class="font-medium">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Personal Metrics</h4>
+                            <div class="space-y-2 text-gray-800 dark:text-gray-200">
+                                <div class="flex justify-between">
+                                    <span>BMR:</span>
+                                    <span id="bmr-value" class="font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Body Weight:</span>
+                                    <span id="body-weight" class="font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>BMI:</span>
+                                    <span id="bmi-value" class="font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Rest Time:</span>
+                                    <span id="rest-time" class="font-medium">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Chart -->
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4">Calorie Comparison</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
+                            <span class="font-medium">Tabata (Your Workout)</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div id="tabata-bar" class="bg-red-500 h-2 rounded-full" style="width: 100%"></div>
+                                </div>
+                                <span id="tabata-calories" class="font-bold text-red-600">0 cal</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
+                            <span class="font-medium">Running (6 mph)</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div id="running-bar" class="bg-blue-500 h-2 rounded-full"></div>
+                                </div>
+                                <span id="running-calories" class="font-bold text-blue-600">0 cal</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
+                            <span class="font-medium">Cycling (moderate)</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div id="cycling-bar" class="bg-green-500 h-2 rounded-full"></div>
+                                </div>
+                                <span id="cycling-calories" class="font-bold text-green-600">0 cal</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
+                            <span class="font-medium">Walking (3.5 mph)</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div id="walking-bar" class="bg-yellow-500 h-2 rounded-full"></div>
+                                </div>
+                                <span id="walking-calories" class="font-bold text-yellow-600">0 cal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Health Insights -->
+                <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4">Health Insights</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Workout Benefits</h4>
+                            <ul id="workout-benefits" class="list-disc list-inside space-y-1 text-gray-800 dark:text-gray-200">
+                                <!-- Benefits will be populated by JavaScript -->
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-2">Recommendations</h4>
+                            <ul id="recommendations" class="list-disc list-inside space-y-1 text-gray-800 dark:text-gray-200">
+                                <!-- Recommendations will be populated by JavaScript -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Educational Content -->
+        <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">About Tabata Training</h2>
+            
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Tabata?</h3>
+                    <p class="text-gray-600 dark:text-gray-300">
+                        Tabata is a high-intensity interval training (HIIT) protocol developed by Dr. Izumi Tabata. 
+                        It consists of 20 seconds of ultra-high intensity exercise followed by 10 seconds of rest, 
+                        repeated for 8 rounds (4 minutes total). This protocol has been scientifically proven to 
+                        improve both aerobic and anaerobic capacity while burning significant calories.
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Benefits of Tabata Training</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">🔥 High Calorie Burn</h4>
+                            <p class="text-gray-600 dark:text-gray-300 text-sm">
+                                Burns more calories in 4 minutes than traditional cardio in 30 minutes due to EPOC (excess post-exercise oxygen consumption).
+                            </p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">⏱️ Time Efficient</h4>
+                            <p class="text-gray-600 dark:text-gray-300 text-sm">
+                                Complete workout in just 4 minutes, perfect for busy schedules while delivering maximum results.
+                            </p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">💪 Improves VO2 Max</h4>
+                            <p class="text-gray-600 dark:text-gray-300 text-sm">
+                                Significantly improves aerobic capacity and cardiovascular fitness in a short time period.
+                            </p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">🏃 Afterburn Effect</h4>
+                            <p class="text-gray-600 dark:text-gray-300 text-sm">
+                                Continues burning calories for hours after the workout due to increased metabolic rate.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How Calories Are Calculated</h3>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p class="text-gray-600 dark:text-gray-300 mb-3">
+                            Our calculator uses the following formula based on metabolic equivalents (METs):
+                        </p>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded font-mono text-sm">
+                            Calories = MET × Weight (kg) × Time (hours) × Intensity Factor
+                        </div>
+                        <ul class="list-disc list-inside mt-3 space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                            <li><strong>MET:</strong> Metabolic equivalent specific to each exercise type</li>
+                            <li><strong>Weight:</strong> Your body weight in kilograms</li>
+                            <li><strong>Time:</strong> Duration of active exercise (excluding rest periods)</li>
+                            <li><strong>Intensity Factor:</strong> Adjustment based on your effort level</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Best Tabata Exercises</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">Bodyweight</h4>
+                            <ul class="text-gray-600 dark:text-gray-300 text-sm space-y-1">
+                                <li>• Burpees</li>
+                                <li>• Mountain Climbers</li>
+                                <li>• Jump Squats</li>
+                                <li>• High Knees</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">Cardio Equipment</h4>
+                            <ul class="text-gray-600 dark:text-gray-300 text-sm space-y-1">
+                                <li>• Stationary Bike</li>
+                                <li>• Rowing Machine</li>
+                                <li>• Treadmill Sprints</li>
+                                <li>• Elliptical</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">Strength Training</h4>
+                            <ul class="text-gray-600 dark:text-gray-300 text-sm space-y-1">
+                                <li>• Kettlebell Swings</li>
+                                <li>• Thrusters</li>
+                                <li>• Battle Ropes</li>
+                                <li>• Medicine Ball Slams</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Safety Guidelines</h3>
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                        <ul class="list-disc list-inside space-y-1 text-gray-800 dark:text-gray-200">
+                            <li>Always warm up for 5-10 minutes before starting Tabata</li>
+                            <li>Start with 1-2 rounds if you're a beginner</li>
+                            <li>Maintain proper form even at high intensity</li>
+                            <li>Stay hydrated throughout the workout</li>
+                            <li>Cool down and stretch after completing the session</li>
+                            <li>Consult a healthcare provider before starting any new exercise program</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Exercise data with MET values
+        const exercises = [
+            { name: 'Burpees', met: 12.0, icon: '🏃', category: 'Bodyweight' },
+            { name: 'Mountain Climbers', met: 8.0, icon: '⛰️', category: 'Bodyweight' },
+            { name: 'Jump Squats', met: 8.0, icon: '🦵', category: 'Bodyweight' },
+            { name: 'High Knees', met: 8.0, icon: '🦵', category: 'Bodyweight' },
+            { name: 'Jumping Jacks', met: 7.0, icon: '🤸', category: 'Bodyweight' },
+            { name: 'Push-ups', met: 6.0, icon: '💪', category: 'Bodyweight' },
+            { name: 'Stationary Bike (vigorous)', met: 14.0, icon: '🚴', category: 'Cardio Equipment' },
+            { name: 'Rowing Machine (vigorous)', met: 12.0, icon: '🚣', category: 'Cardio Equipment' },
+            { name: 'Treadmill Sprints', met: 16.0, icon: '🏃', category: 'Cardio Equipment' },
+            { name: 'Elliptical (vigorous)', met: 10.0, icon: '🏃', category: 'Cardio Equipment' },
+            { name: 'Kettlebell Swings', met: 12.0, icon: '🏋️', category: 'Strength Training' },
+            { name: 'Thrusters', met: 10.0, icon: '🏋️', category: 'Strength Training' },
+            { name: 'Battle Ropes', met: 10.0, icon: '🪢', category: 'Strength Training' },
+            { name: 'Medicine Ball Slams', met: 8.0, icon: '⚽', category: 'Strength Training' }
+        ];
+
+        let selectedExercise = exercises[0];
+        let canvas, ctx;
+
+        // Initialize the calculator
+        function initCalculator() {
+            populateExerciseGrid();
+            initCanvas();
+            drawWorkoutStructure();
+            
+            // Add event listeners
+            document.getElementById('tabata-rounds').addEventListener('input', drawWorkoutStructure);
+            document.getElementById('rest-between').addEventListener('input', drawWorkoutStructure);
+        }
+
+        // Populate exercise grid
+        function populateExerciseGrid() {
+            const grid = document.getElementById('exercise-grid');
+            grid.innerHTML = '';
+
+            exercises.forEach((exercise, index) => {
+                const card = document.createElement('div');
+                card.className = `exercise-card bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 ${index === 0 ? 'selected' : ''}`;
+                card.onclick = () => selectExercise(exercise, card);
+                
+                card.innerHTML = `
+                    <div class="text-center">
+                        <div class="text-2xl mb-2">${exercise.icon}</div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-1">${exercise.name}</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">${exercise.category}</p>
+                        <div class="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-2 py-1 rounded text-xs font-medium">
+                            ${exercise.met} METs
+                        </div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // Select exercise
+        function selectExercise(exercise, cardElement) {
+            // Remove selection from all cards
+            document.querySelectorAll('.exercise-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selection to clicked card
+            cardElement.classList.add('selected');
+            selectedExercise = exercise;
+        }
+
+        // Initialize canvas
+        function initCanvas() {
+            canvas = document.getElementById('workout-canvas');
+            ctx = canvas.getContext('2d');
+        }
+
+        // Draw workout structure
+        function drawWorkoutStructure() {
+            if (!ctx) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const rounds = parseInt(document.getElementById('tabata-rounds').value);
+            const restBetween = parseFloat(document.getElementById('rest-between').value);
+            
+            const isDark = document.documentElement.classList.contains('dark');
+            const bgColor = isDark ? '#1f2937' : '#f9fafb';
+            const textColor = isDark ? '#e5e7eb' : '#374151';
+            const workColor = '#ef4444';
+            const restColor = '#10b981';
+            const breakColor = '#6b7280';
+            
+            // Background
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Calculate dimensions
+            const totalWidth = canvas.width - 40;
+            const barHeight = 30;
+            const startX = 20;
+            const startY = 50;
+            
+            // Calculate total time for scaling
+            const tabataTime = 4; // 4 minutes per round
+            const totalRestTime = (rounds - 1) * restBetween;
+            const totalTime = (rounds * tabataTime) + totalRestTime;
+            
+            let currentX = startX;
+            
+            for (let round = 0; round < rounds; round++) {
+                // Draw Tabata round
+                const roundWidth = (tabataTime / totalTime) * totalWidth;
+                const intervalWidth = roundWidth / 8;
+                
+                for (let interval = 0; interval < 8; interval++) {
+                    // Work period (20s)
+                    const workWidth = intervalWidth * 0.67; // 20s out of 30s
+                    ctx.fillStyle = workColor;
+                    ctx.fillRect(currentX, startY, workWidth, barHeight);
+                    
+                    // Rest period (10s)
+                    const restWidth = intervalWidth * 0.33; // 10s out of 30s
+                    ctx.fillStyle = restColor;
+                    ctx.fillRect(currentX + workWidth, startY, restWidth, barHeight);
+                    
+                    currentX += intervalWidth;
+                }
+                
+                // Rest between rounds
+                if (round < rounds - 1 && restBetween > 0) {
+                    const breakWidth = (restBetween / totalTime) * totalWidth;
+                    ctx.fillStyle = breakColor;
+                    ctx.fillRect(currentX, startY, breakWidth, barHeight);
+                    currentX += breakWidth;
+                }
+            }
+            
+            // Labels
+            ctx.fillStyle = textColor;
+            ctx.font = '12px sans-serif';
+            ctx.fillText('Work (20s)', startX, startY - 10);
+            ctx.fillStyle = workColor;
+            ctx.fillRect(startX + 80, startY - 15, 15, 10);
+            
+            ctx.fillStyle = textColor;
+            ctx.fillText('Rest (10s)', startX + 150, startY - 10);
+            ctx.fillStyle = restColor;
+            ctx.fillRect(startX + 210, startY - 15, 15, 10);
+            
+            if (restBetween > 0) {
+                ctx.fillStyle = textColor;
+                ctx.fillText('Break', startX + 280, startY - 10);
+                ctx.fillStyle = breakColor;
+                ctx.fillRect(startX + 320, startY - 15, 15, 10);
+            }
+            
+            // Time labels
+            ctx.fillStyle = textColor;
+            ctx.font = '10px sans-serif';
+            ctx.fillText('0:00', startX, startY + barHeight + 15);
+            ctx.fillText(`${Math.floor(totalTime)}:${String(Math.round((totalTime % 1) * 60)).padStart(2, '0')}`, 
+                        startX + totalWidth - 20, startY + barHeight + 15);
+        }
+
+        // Convert weight to kg
+        function getWeightInKg() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const unit = document.getElementById('weight-unit').value;
+            return unit === 'lbs' ? weight * 0.453592 : weight;
+        }
+
+        // Convert height to cm
+        function getHeightInCm() {
+            const height = parseFloat(document.getElementById('height').value);
+            const unit = document.getElementById('height-unit').value;
+            return unit === 'ft' ? height * 30.48 : height;
+        }
+
+        // Calculate BMR using Mifflin-St Jeor equation
+        function calculateBMR() {
+            const weight = getWeightInKg();
+            const height = getHeightInCm();
+            const age = parseInt(document.getElementById('age').value);
+            const gender = document.getElementById('gender').value;
+            
+            if (gender === 'male') {
+                return (10 * weight) + (6.25 * height) - (5 * age) + 5;
+            } else {
+                return (10 * weight) + (6.25 * height) - (5 * age) - 161;
+            }
+        }
+
+        // Calculate BMI
+        function calculateBMI() {
+            const weight = getWeightInKg();
+            const height = getHeightInCm() / 100; // Convert to meters
+            return weight / (height * height);
+        }
+
+        // Calculate calories burned
+        function calculateCalories() {
+            const weight = getWeightInKg();
+            const rounds = parseInt(document.getElementById('tabata-rounds').value);
+            const restBetween = parseFloat(document.getElementById('rest-between').value);
+            const intensity = parseFloat(document.getElementById('intensity').value);
+            
+            // Tabata timing: 8 intervals of 20s work + 10s rest = 4 minutes per round
+            const workTimePerRound = (20 * 8) / 60; // Convert to hours
+            const totalWorkTime = workTimePerRound * rounds;
+            const totalDuration = (4 * rounds) + ((rounds - 1) * restBetween);
+            
+            // Calculate calories using MET formula
+            const met = selectedExercise.met * intensity;
+            const caloriesBurned = met * weight * totalWorkTime;
+            const caloriesPerMinute = caloriesBurned / totalDuration;
+            
+            // Update display
+            document.getElementById('total-calories').textContent = Math.round(caloriesBurned);
+            document.getElementById('calories-per-minute').textContent = Math.round(caloriesPerMinute);
+            document.getElementById('workout-duration').textContent = Math.round(totalDuration);
+            
+            // Update breakdown
+            document.getElementById('selected-exercise').textContent = selectedExercise.name;
+            document.getElementById('exercise-met').textContent = selectedExercise.met.toFixed(1);
+            document.getElementById('intensity-factor').textContent = intensity + 'x';
+            document.getElementById('work-time').textContent = `${Math.round(totalWorkTime * 60)} seconds`;
+            document.getElementById('bmr-value').textContent = Math.round(calculateBMR()) + ' cal/day';
+            document.getElementById('body-weight').textContent = weight.toFixed(1) + ' kg';
+            document.getElementById('bmi-value').textContent = calculateBMI().toFixed(1);
+            document.getElementById('rest-time').textContent = `${Math.round((totalDuration - (totalWorkTime * 60)) / 60)} minutes`;
+            
+            // Calculate comparison activities (for same duration)
+            const comparisonDuration = totalDuration / 60; // Convert to hours
+            const runningCalories = 10.0 * weight * comparisonDuration; // 6 mph running
+            const cyclingCalories = 8.0 * weight * comparisonDuration; // Moderate cycling
+            const walkingCalories = 4.3 * weight * comparisonDuration; // 3.5 mph walking
+            
+            // Update comparison chart
+            const maxCalories = Math.max(caloriesBurned, runningCalories, cyclingCalories, walkingCalories);
+            
+            document.getElementById('tabata-calories').textContent = Math.round(caloriesBurned) + ' cal';
+            document.getElementById('running-calories').textContent = Math.round(runningCalories) + ' cal';
+            document.getElementById('cycling-calories').textContent = Math.round(cyclingCalories) + ' cal';
+            document.getElementById('walking-calories').textContent = Math.round(walkingCalories) + ' cal';
+            
+            document.getElementById('tabata-bar').style.width = '100%';
+            document.getElementById('running-bar').style.width = (runningCalories / maxCalories * 100) + '%';
+            document.getElementById('cycling-bar').style.width = (cyclingCalories / maxCalories * 100) + '%';
+            document.getElementById('walking-bar').style.width = (walkingCalories / maxCalories * 100) + '%';
+            
+            // Generate health insights
+            generateHealthInsights(caloriesBurned, totalDuration, intensity);
+            
+            // Show results
+            document.getElementById('result-container').classList.remove('hidden');
+            
+            // Scroll to results
+            setTimeout(() => {
+                document.getElementById('result-container').scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 100);
+        }
+
+        // Generate health insights
+        function generateHealthInsights(calories, duration, intensity) {
+            const benefits = [
+                'Improved cardiovascular fitness and VO2 max',
+                'Enhanced fat burning and metabolic rate',
+                'Increased anaerobic power and endurance',
+                'Time-efficient workout with maximum results',
+                'Continued calorie burn for hours post-workout (EPOC)'
+            ];
+            
+            const recommendations = [];
+            
+            if (intensity >= 1.0) {
+                recommendations.push('Excellent intensity! You\'re maximizing the Tabata benefits');
+            } else {
+                recommendations.push('Consider increasing intensity for maximum Tabata benefits');
+            }
+            
+            if (duration < 5) {
+                recommendations.push('Perfect duration for beginners - gradually increase rounds');
+            } else if (duration > 15) {
+                recommendations.push('Long session! Ensure adequate recovery between workouts');
+            } else {
+                recommendations.push('Great workout duration for intermediate to advanced fitness');
+            }
+            
+            if (calories > 100) {
+                recommendations.push('Excellent calorie burn! This supports weight management goals');
+            }
+            
+            recommendations.push('Allow 48-72 hours recovery between intense Tabata sessions');
+            recommendations.push('Combine with strength training 2-3x per week for best results');
+            
+            // Update DOM
+            const benefitsList = document.getElementById('workout-benefits');
+            benefitsList.innerHTML = benefits.map(benefit => `<li>${benefit}</li>`).join('');
+            
+            const recommendationsList = document.getElementById('recommendations');
+            recommendationsList.innerHTML = recommendations.map(rec => `<li>${rec}</li>`).join('');
+        }
+
+        // Clear calculator
+        function clearCalculator() {
+            // Reset form values
+            document.getElementById('weight').value = '70';
+            document.getElementById('height').value = '170';
+            document.getElementById('age').value = '30';
+            document.getElementById('gender').value = 'male';
+            document.getElementById('tabata-rounds').value = '1';
+            document.getElementById('rest-between').value = '1';
+            document.getElementById('intensity').value = '1.0';
+            
+            // Reset exercise selection
+            selectedExercise = exercises[0];
+            document.querySelectorAll('.exercise-card').forEach((card, index) => {
+                card.classList.toggle('selected', index === 0);
+            });
+            
+            // Hide results
+            document.getElementById('result-container').classList.add('hidden');
+            
+            // Redraw workout structure
+            drawWorkoutStructure();
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initCalculator();
+            lucide.createIcons();
+        });
+    </script>
+
+
+{% endblock %}
