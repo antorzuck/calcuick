@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<style>
+.zodiac-card {
+    transition: all 0.3s ease;
+}
+.golden-display {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5) sepia(1) saturate(5) hue-rotate(175deg);
+}
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+<!-- Back Button -->
+<div class="mb-6">
+    <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        <span>Back to Calculators</span>
+    </button>
+</div>
+
+<!-- Header -->
+<div class="text-center mb-12">
+    <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+        <i data-lucide="star" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Golden Birthday Calculator</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Discover your golden birthday, when your age matches your birth day, and uncover fun astrology insights tied to your zodiac sign!
+    </p>
+    <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+        <div class="text-blue-800 dark:text-blue-300 font-medium">
+            🌟 Golden Birthday • ♈ Zodiac Insights • 🎉 Personality Vibes
+        </div>
+    </div>
+</div>
+
+<!-- Calculator -->
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+    <!-- Input Section -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Enter Your Birth Date</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Left Column: Birth Date Input -->
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Birth Date:</label>
+                    <input type="date" id="birth-date" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" max="2025-06-06">
+                </div>
+            </div>
+            <!-- Right Column: Placeholder for Balance -->
+            <div class="space-y-6">
+                <div class="text-center text-gray-600 dark:text-gray-300 italic">
+                    Enter your birth date to find your golden birthday and zodiac insights!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <button onclick="calculateGoldenBirthday()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Calculate Golden Birthday
+        </button>
+        <button onclick="clearCalculator()" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+            Clear
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-container" class="hidden">
+        <!-- Golden Birthday Summary -->
+        <div class="golden-display text-white rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4">Your Golden Birthday</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div id="golden-date" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Golden Birthday Date</div>
+                </div>
+                <div class="text-center">
+                    <div id="golden-age" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Golden Age</div>
+                </div>
+                <div class="text-center">
+                    <div id="status" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Status</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zodiac Insights -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Zodiac Insights</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Your Zodiac Sign</h4>
+                    <div class="flex items-center space-x-2">
+                        <span id="zodiac-icon" class="text-2xl"></span>
+                        <span id="zodiac-sign" class="font-medium text-gray-800 dark:text-gray-200">-</span>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Golden Birthday Vibe</h4>
+                    <p id="zodiac-insight" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personality Tidbits -->
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4">Personality Tidbits</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Strength</h4>
+                    <p id="strength" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Celebration Tip</h4>
+                    <p id="celebration-tip" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational Content -->
+<div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Golden Birthday Guide</h2>
+    <div class="space-y-6">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is a Golden Birthday?</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                A golden birthday occurs when your age matches the day of the month you were born (e.g., turning 20 on the 20th). It’s a special milestone celebrated with extra sparkle!
+            </p>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Why It’s Special</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                Golden birthdays are rare, happening only once in a lifetime, and are often tied to personal growth and cosmic alignment in astrology.
+            </p>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                <li>Enter your birth date using the date picker</li>
+                <li>Click "Calculate Golden Birthday" to see your results</li>
+                <li>Discover your golden birthday date, age, and status</li>
+                <li>Explore zodiac insights and personality tidbits</li>
+                <li>Plan a memorable celebration for your golden milestone!</li>
+            </ol>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Zodiac data
+const zodiacSigns = [
+    { name: 'Aries', icon: '♈', start: '03-21', end: '04-19', strength: 'Bold and ambitious', vibe: 'A fiery celebration full of energy', tip: 'Host an adventurous party with bold themes' },
+    { name: 'Taurus', icon: '♉', start: '04-20', end: '05-20', strength: 'Reliable and patient', vibe: 'A luxurious, grounded festivity', tip: 'Indulge in fine dining and cozy vibes' },
+    { name: 'Gemini', icon: '♊', start: '05-21', end: '06-20', strength: 'Adaptable and witty', vibe: 'A social, lively gathering', tip: 'Plan a vibrant party with games and chats' },
+    { name: 'Cancer', icon: '♋', start: '06-21', end: '07-22', strength: 'Nurturing and intuitive', vibe: 'A heartfelt, intimate event', tip: 'Host a cozy gathering with close friends' },
+    { name: 'Leo', icon: '♌', start: '07-23', end: '08-22', strength: 'Confident and charismatic', vibe: 'A glamorous, show-stopping bash', tip: 'Go big with a dazzling, star-studded party' },
+    { name: 'Virgo', icon: '♍', start: '08-23', end: '09-22', strength: 'Practical and analytical', vibe: 'An organized, meaningful celebration', tip: 'Plan a detailed, elegant event' },
+    { name: 'Libra', icon: '♎', start: '09-23', end: '10-22', strength: 'Diplomatic and charming', vibe: 'A harmonious, stylish affair', tip: 'Create a balanced, aesthetically pleasing party' },
+    { name: 'Scorpio', icon: '♏', start: '10-23', end: '11-21', strength: 'Passionate and resourceful', vibe: 'An intense, transformative milestone', tip: 'Host a mysterious, immersive celebration' },
+    { name: 'Sagittarius', icon: '♐', start: '11-22', end: '12-21', strength: 'Optimistic and adventurous', vibe: 'A free-spirited, exploratory party', tip: 'Plan a travel-themed or outdoor adventure' },
+    { name: 'Capricorn', icon: '♑', start: '12-22', end: '01-19', strength: 'Disciplined and ambitious', vibe: 'A structured, goal-oriented event', tip: 'Organize a classy, achievement-focused party' },
+    { name: 'Aquarius', icon: '♒', start: '01-20', end: '02-18', strength: 'Innovative and independent', vibe: 'A quirky, forward-thinking celebration', tip: 'Host a unique, tech-savvy gathering' },
+    { name: 'Pisces', icon: '♓', start: '02-19', end: '03-20', strength: 'Compassionate and imaginative', vibe: 'A dreamy, spiritual milestone', tip: 'Create a whimsical, artistic celebration' }
+];
+
+// Initialize calculator
+function initCalculator() {
+    setupEventListeners();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    const birthDateInput = document.getElementById('birth-date');
+    if (birthDateInput) {
+        birthDateInput.addEventListener('change', () => {
+            calculateGoldenBirthday();
+        });
+    }
+}
+
+// Calculate golden birthday
+function calculateGoldenBirthday() {
+    try {
+        const birthDateInput = document.getElementById('birth-date').value;
+        if (!birthDateInput) {
+            throw new Error('Please enter your birth date.');
+        }
+
+        const birthDate = new Date(birthDateInput);
+        if (isNaN(birthDate.getTime())) {
+            throw new Error('Invalid birth date.');
+        }
+
+        const today = new Date('2025-06-06');
+        const birthDay = birthDate.getDate();
+        const birthMonth = birthDate.getMonth();
+        const birthYear = birthDate.getFullYear();
+
+        // Calculate golden birthday year
+        const goldenYear = birthYear + birthDay;
+        const goldenDate = new Date(goldenYear, birthMonth, birthDay);
+        if (isNaN(goldenDate.getTime())) {
+            throw new Error('Unable to calculate golden birthday.');
+        }
+
+        // Determine status
+        const isPast = goldenDate < today;
+        const status = isPast ? 'Past' : 'Upcoming';
+        const yearsUntil = !isPast ? Math.floor((goldenDate - today) / (1000 * 60 * 60 * 24 * 365)) : null;
+
+        // Format date
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        const formattedGoldenDate = goldenDate.toLocaleDateString('en-US', options);
+
+        // Get zodiac sign
+        const zodiac = getZodiacSign(birthDate);
+
+        // Update results
+        document.getElementById('golden-date').textContent = formattedGoldenDate;
+        document.getElementById('golden-age').textContent = birthDay;
+        document.getElementById('status').textContent = yearsUntil ? `${status} (in ~${yearsUntil} years)` : status;
+        document.getElementById('zodiac-icon').textContent = zodiac.icon;
+        document.getElementById('zodiac-sign').textContent = zodiac.name;
+        document.getElementById('zodiac-insight').textContent = zodiac.vibe;
+        document.getElementById('strength').textContent = zodiac.strength;
+        document.getElementById('celebration-tip').textContent = zodiac.tip;
+
+        // Show results
+        document.getElementById('result-container').classList.remove('hidden');
+
+        // Scroll to results
+        setTimeout(() => {
+            document.getElementById('result-container').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('Golden birthday calculated:', { date: formattedGoldenDate, age: birthDay, status });
+    } catch (error) {
+        console.error('Error in calculateGoldenBirthday:', error);
+        alert(error.message || 'An error occurred. Please check your input and try again.');
+    }
+}
+
+// Get zodiac sign based on birth date
+function getZodiacSign(birthDate) {
+    const month = birthDate.getMonth() + 1; // 1-12
+    const day = birthDate.getDate();
+    const dateStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+    for (const sign of zodiacSigns) {
+        const start = sign.start;
+        const end = sign.end;
+        if (start <= end) {
+            if (dateStr >= start && dateStr <= end) return sign;
+        } else {
+            // Handle Capricorn (crosses year boundary)
+            if (dateStr >= start || dateStr <= end) return sign;
+        }
+    }
+    return zodiacSigns[0]; // Default to Aries if no match
+}
+
+// Clear calculator
+function clearCalculator() {
+    document.getElementById('birth-date').value = '';
+    document.getElementById('result-container').classList.add('hidden');
+    document.getElementById('golden-date').textContent = '-';
+    document.getElementById('golden-age').textContent = '-';
+    document.getElementById('status').textContent = '-';
+    document.getElementById('zodiac-icon').textContent = '';
+    document.getElementById('zodiac-sign').textContent = '-';
+    document.getElementById('zodiac-insight').textContent = '-';
+    document.getElementById('strength').textContent = '-';
+    document.getElementById('celebration-tip').textContent = '-';
+    console.log('Calculator cleared successfully.');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initCalculator();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

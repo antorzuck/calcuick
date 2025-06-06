@@ -1,0 +1,838 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.twin-flame-card {
+    transition: all 0.3s ease;
+}
+.flame-display {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5) sepia(1) saturate(5) hue-rotate(175deg);
+}
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+}
+#flame-chart {
+    max-height: 400px;
+}
+.compatibility-meter {
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #8b5cf6 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.compatibility-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.love-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #8b5cf6;
+    border-radius: 0 8px 8px 0;
+}
+.name-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .name-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+<!-- Back Button -->
+<div class="mb-6">
+    <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        <span>Back to Calculators</span>
+    </button>
+</div>
+
+<!-- Header -->
+<div class="text-center mb-12">
+    <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+        <i data-lucide="heart" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Twin Flame Calculator</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Discover if you and your partner share a twin flame connection with numerology, zodiac insights, and name compatibility!
+    </p>
+    <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+        <div class="text-blue-800 dark:text-blue-300 font-medium">
+            🔥 Twin Flame Score • ♈ Zodiac Harmony • ✨ Name Resonance • 🌙 Cosmic Vibes
+        </div>
+    </div>
+</div>
+
+<!-- Calculator -->
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+    <!-- Input Section -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Enter Your Information</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Left Column: Person 1 -->
+            <div class="space-y-6">
+                <div class="text-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">First Soul</h3>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name:</label>
+                    <input type="text" id="name-1" placeholder="Enter first name" class="name-input w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Birth Date:</label>
+                    <input type="date" id="birth-date-1" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" max="2025-06-06">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Birth Time (optional):</label>
+                    <input type="time" id="birth-time-1" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+            <!-- Right Column: Person 2 -->
+            <div class="space-y-6">
+                <div class="text-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Second Soul</h3>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name:</label>
+                    <input type="text" id="name-2" placeholder="Enter second name" class="name-input w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Birth Date:</label>
+                    <input type="date" id="birth-date-2" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" max="2025-06-06">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Birth Time (optional):</label>
+                    <input type="time" id="birth-time-2" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <button id="calculate-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="heart" class="w-5 h-5"></i>
+            <span>Calculate Twin Flame</span>
+        </button>
+        <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            <span>Clear</span>
+        </button>
+        <button id="save-btn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            <span>Save Results</span>
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-container" class="hidden">
+        <!-- Twin Flame Summary -->
+        <div class="flame-display text-white rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                <span id="couple-names">Your Twin Flame Connection</span>
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div id="flame-score" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Compatibility Score</div>
+                </div>
+                <div class="text-center">
+                    <div id="flame-vibe" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Twin Flame Vibe</div>
+                </div>
+                <div class="text-center">
+                    <div id="element-balance" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Elemental Balance</div>
+                </div>
+                <div class="text-center">
+                    <div id="name-harmony" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Name Harmony</div>
+                </div>
+            </div>
+            
+            <!-- Compatibility Meter -->
+            <div class="mt-6">
+                <div class="flex justify-between text-sm mb-2">
+                    <span>Soul Connection Level</span>
+                    <span id="connection-level">Calculating...</span>
+                </div>
+                <div class="compatibility-meter">
+                    <div class="compatibility-indicator" id="compatibility-indicator"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zodiac Insights -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="star" class="w-5 h-5"></i>
+                <span>Zodiac & Numerology Insights</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">First Soul</h4>
+                    <div class="flex items-center space-x-2 mb-2">
+                        <span id="zodiac-icon-1" class="text-2xl"></span>
+                        <span id="zodiac-sign-1" class="font-medium text-gray-800 dark:text-gray-200">-</span>
+                    </div>
+                    <p id="life-path-1" class="text-gray-800 dark:text-gray-200 mb-2">-</p>
+                    <p id="name-vibration-1" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div>
+                    <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Second Soul</h4>
+                    <div class="flex items-center space-x-2 mb-2">
+                        <span id="zodiac-icon-2" class="text-2xl"></span>
+                        <span id="zodiac-sign-2" class="font-medium text-gray-800 dark:text-gray-200">-</span>
+                    </div>
+                    <p id="life-path-2" class="text-gray-800 dark:text-gray-200 mb-2">-</p>
+                    <p id="name-vibration-2" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compatibility Chart -->
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                <span>Compatibility Factors</span>
+            </h3>
+            <div class="h-64">
+                <canvas id="flame-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Love Quote -->
+        <div class="love-quote mb-6">
+            <p id="love-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                "Two souls with but a single thought, two hearts that beat as one."
+            </p>
+            <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- John Keats</p>
+        </div>
+
+        <!-- Fun Facts -->
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="lightbulb" class="w-5 h-5"></i>
+                <span>Soul Insights</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span>Shared Trait</span>
+                    </h4>
+                    <p id="shared-trait" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="gift" class="w-4 h-4"></i>
+                        <span>Celebration Idea</span>
+                    </h4>
+                    <p id="celebration-idea" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="compass" class="w-4 h-4"></i>
+                        <span>Spiritual Guidance</span>
+                    </h4>
+                    <p id="spiritual-guidance" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                        <span>Lucky Days</span>
+                    </h4>
+                    <p id="lucky-days" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational Content -->
+<div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+        <i data-lucide="book-open" class="w-6 h-6"></i>
+        <span>Twin Flame Guide</span>
+    </h2>
+    <div class="space-y-6">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is a Twin Flame?</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                A twin flame is a deep, soul-level connection between two people, often seen as two halves of the same soul. This calculator uses numerology, zodiac compatibility, and name vibrations to assess your bond.
+            </p>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How It's Calculated</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                We calculate life path numbers from your birth dates, evaluate zodiac sign compatibility based on elemental harmony, analyze name vibrations through numerology, and combine these factors for a comprehensive twin flame score.
+            </p>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Enhanced Features</h3>
+            <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                <li>Name compatibility analysis using numerological vibrations</li>
+                <li>Birth time consideration for more accurate readings</li>
+                <li>Spiritual guidance and lucky day predictions</li>
+                <li>Save and share your results</li>
+                <li>Interactive compatibility meter</li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                <li>Enter both names and birth dates</li>
+                <li>Optionally add birth times for enhanced accuracy</li>
+                <li>Click "Calculate Twin Flame" to see your results</li>
+                <li>View your compatibility score, zodiac insights, and spiritual guidance</li>
+                <li>Save your results or share them with your twin flame!</li>
+            </ol>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Enhanced zodiac data with more detailed information
+const zodiacSigns = [
+    { name: 'Aries', icon: '♈', start: '03-21', end: '04-19', element: 'Fire', trait: 'Dynamic energy', vibe: 'A fiery, passionate bond', ruling: 'Mars' },
+    { name: 'Taurus', icon: '♉', start: '04-20', end: '05-20', element: 'Earth', trait: 'Grounded charm', vibe: 'A stable, sensual connection', ruling: 'Venus' },
+    { name: 'Gemini', icon: '♊', start: '05-21', end: '06-20', element: 'Air', trait: 'Witty curiosity', vibe: 'A lively, intellectual spark', ruling: 'Mercury' },
+    { name: 'Cancer', icon: '♋', start: '06-21', end: '07-22', element: 'Water', trait: 'Empathetic warmth', vibe: 'A nurturing, emotional bond', ruling: 'Moon' },
+    { name: 'Leo', icon: '♌', start: '07-23', end: '08-22', element: 'Fire', trait: 'Radiant confidence', vibe: 'A bold, dramatic connection', ruling: 'Sun' },
+    { name: 'Virgo', icon: '♍', start: '08-23', end: '09-22', element: 'Earth', trait: 'Precise elegance', vibe: 'A practical, supportive bond', ruling: 'Mercury' },
+    { name: 'Libra', icon: '♎', start: '09-23', end: '10-22', element: 'Air', trait: 'Balanced grace', vibe: 'A harmonious, romantic spark', ruling: 'Venus' },
+    { name: 'Scorpio', icon: '♏', start: '10-23', end: '11-21', element: 'Water', trait: 'Magnetic intensity', vibe: 'A deep, transformative bond', ruling: 'Pluto' },
+    { name: 'Sagittarius', icon: '♐', start: '11-22', end: '12-21', element: 'Fire', trait: 'Adventurous spirit', vibe: 'A free-spirited, exploratory connection', ruling: 'Jupiter' },
+    { name: 'Capricorn', icon: '♑', start: '12-22', end: '01-19', element: 'Earth', trait: 'Steadfast ambition', vibe: 'A driven, enduring bond', ruling: 'Saturn' },
+    { name: 'Aquarius', icon: '♒', start: '01-20', end: '02-18', element: 'Air', trait: 'Innovative quirkiness', vibe: 'A unique, visionary spark', ruling: 'Uranus' },
+    { name: 'Pisces', icon: '♓', start: '02-19', end: '03-20', element: 'Water', trait: 'Dreamy intuition', vibe: 'A soulful, dreamy connection', ruling: 'Neptune' }
+];
+
+// Enhanced compatibility matrix
+const elementCompatibility = {
+    'Fire': { 'Fire': 1, 'Air': 0.9, 'Earth': 0.6, 'Water': 0.4 },
+    'Earth': { 'Fire': 0.6, 'Earth': 1, 'Air': 0.4, 'Water': 0.9 },
+    'Air': { 'Fire': 0.9, 'Earth': 0.4, 'Air': 1, 'Water': 0.6 },
+    'Water': { 'Fire': 0.4, 'Earth': 0.9, 'Air': 0.6, 'Water': 1 }
+};
+
+// Love quotes for different compatibility levels
+const loveQuotes = [
+    { min: 90, quote: "In all the world, there is no heart for me like yours. In all the world, there is no love for you like mine.", author: "Maya Angelou" },
+    { min: 80, quote: "Being deeply loved by someone gives you strength, while loving someone deeply gives you courage.", author: "Lao Tzu" },
+    { min: 70, quote: "The best love is the kind that awakens the soul and makes us reach for more.", author: "Nicholas Sparks" },
+    { min: 60, quote: "Love is not about how many days, months, or years you have been together. Love is about how much you love each other every single day.", author: "Unknown" },
+    { min: 0, quote: "Two souls with but a single thought, two hearts that beat as one.", author: "John Keats" }
+];
+
+let flameChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Enhanced Twin Flame Calculator...');
+    setupEventListeners();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const birthDate1 = document.getElementById('birth-date-1');
+    const birthDate2 = document.getElementById('birth-date-2');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateTwinFlame);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (birthDate1) {
+        birthDate1.addEventListener('change', () => {
+            if (birthDate1.value && document.getElementById('birth-date-2').value) {
+                calculateTwinFlame();
+            }
+        });
+    }
+
+    if (birthDate2) {
+        birthDate2.addEventListener('change', () => {
+            if (birthDate2.value && document.getElementById('birth-date-1').value) {
+                calculateTwinFlame();
+            }
+        });
+    }
+}
+
+// Calculate life path number
+function getLifePathNumber(birthDate) {
+    const dateStr = birthDate.toISOString().split('T')[0].replace(/-/g, '');
+    let sum = dateStr.split('').reduce((acc, digit) => acc + parseInt(digit), 0);
+    while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+        sum = sum.toString().split('').reduce((acc, digit) => acc + parseInt(digit), 0);
+    }
+    return sum;
+}
+
+// Calculate name vibration number
+function getNameVibration(name) {
+    if (!name) return 0;
+    const values = {
+        'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8, 'i': 9,
+        'j': 1, 'k': 2, 'l': 3, 'm': 4, 'n': 5, 'o': 6, 'p': 7, 'q': 8, 'r': 9,
+        's': 1, 't': 2, 'u': 3, 'v': 4, 'w': 5, 'x': 6, 'y': 7, 'z': 8
+    };
+    
+    let sum = 0;
+    for (let char of name.toLowerCase()) {
+        if (values[char]) {
+            sum += values[char];
+        }
+    }
+    
+    while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+        sum = sum.toString().split('').reduce((acc, digit) => acc + parseInt(digit), 0);
+    }
+    
+    return sum;
+}
+
+// Get zodiac sign
+function getZodiacSign(birthDate) {
+    const month = birthDate.getMonth() + 1;
+    const day = birthDate.getDate();
+    const dateStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+    for (const sign of zodiacSigns) {
+        const start = sign.start;
+        const end = sign.end;
+        if (start <= end) {
+            if (dateStr >= start && dateStr <= end) return sign;
+        } else {
+            if (dateStr >= start || dateStr <= end) return sign;
+        }
+    }
+    return zodiacSigns[0];
+}
+
+// Calculate name compatibility
+function calculateNameCompatibility(name1, name2) {
+    if (!name1 || !name2) return 50;
+    
+    const vib1 = getNameVibration(name1);
+    const vib2 = getNameVibration(name2);
+    
+    const difference = Math.abs(vib1 - vib2);
+    
+    if (difference === 0) return 100;
+    if (difference <= 2) return 85;
+    if (difference <= 4) return 70;
+    if (difference <= 6) return 55;
+    return 40;
+}
+
+// Get spiritual guidance
+function getSpiritualGuidance(score, zodiac1, zodiac2) {
+    if (score >= 85) {
+        return `Your souls are deeply connected. Focus on spiritual growth together and trust your intuitive bond.`;
+    } else if (score >= 70) {
+        return `You share a beautiful connection. Practice patience and open communication to deepen your bond.`;
+    } else if (score >= 55) {
+        return `Your relationship offers valuable lessons. Embrace differences as opportunities for growth.`;
+    } else {
+        return `Every connection serves a purpose. Focus on understanding and supporting each other's journey.`;
+    }
+}
+
+// Get lucky days
+function getLuckyDays(zodiac1, zodiac2) {
+    const days = {
+        'Fire': ['Tuesday', 'Sunday'],
+        'Earth': ['Friday', 'Saturday'],
+        'Air': ['Wednesday', 'Saturday'],
+        'Water': ['Monday', 'Thursday']
+    };
+    
+    const element1Days = days[zodiac1.element] || [];
+    const element2Days = days[zodiac2.element] || [];
+    
+    const commonDays = element1Days.filter(day => element2Days.includes(day));
+    const allDays = [...new Set([...element1Days, ...element2Days])];
+    
+    if (commonDays.length > 0) {
+        return `${commonDays.join(' and ')} are especially powerful for your connection.`;
+    } else {
+        return `${allDays.slice(0, 2).join(' and ')} bring positive energy to your relationship.`;
+    }
+}
+
+// Get love quote based on score
+function getLoveQuote(score) {
+    for (const quote of loveQuotes) {
+        if (score >= quote.min) {
+            return quote;
+        }
+    }
+    return loveQuotes[loveQuotes.length - 1];
+}
+
+// Calculate twin flame compatibility
+function calculateTwinFlame() {
+    console.log('Calculating enhanced twin flame compatibility...');
+    try {
+        const name1 = document.getElementById('name-1').value.trim();
+        const name2 = document.getElementById('name-2').value.trim();
+        const birthDate1Input = document.getElementById('birth-date-1').value;
+        const birthDate2Input = document.getElementById('birth-date-2').value;
+
+        if (!birthDate1Input || !birthDate2Input) {
+            console.log("Please enter both birth dates");
+            return;
+        }
+
+        const birthDate1 = new Date(birthDate1Input);
+        const birthDate2 = new Date(birthDate2Input);
+
+        if (isNaN(birthDate1.getTime()) || isNaN(birthDate2.getTime())) {
+            throw new Error('Invalid birth dates.');
+        }
+
+        // Calculate all compatibility factors
+        const lifePath1 = getLifePathNumber(birthDate1);
+        const lifePath2 = getLifePathNumber(birthDate2);
+        const nameVib1 = getNameVibration(name1);
+        const nameVib2 = getNameVibration(name2);
+        const zodiac1 = getZodiacSign(birthDate1);
+        const zodiac2 = getZodiacSign(birthDate2);
+
+        // Calculate individual scores
+        const numerologyMatch = Math.min(50, 50 * (1 - Math.abs(lifePath1 - lifePath2) / 9));
+        const zodiacMatch = 30 * elementCompatibility[zodiac1.element][zodiac2.element];
+        const nameMatch = calculateNameCompatibility(name1, name2) * 0.2; // 20% weight
+        
+        // Total compatibility score
+        const flameScore = Math.floor(numerologyMatch + zodiacMatch + nameMatch);
+
+        // Determine various aspects
+        const vibe = getFlameVibe(flameScore);
+        const elementBalance = zodiac1.element === zodiac2.element ? 'Harmonious' : 'Complementary';
+        const nameHarmony = getNameHarmony(nameMatch);
+        const connectionLevel = getConnectionLevel(flameScore);
+        const sharedTrait = getSharedTrait(zodiac1, zodiac2);
+        const celebrationIdea = getCelebrationIdea(zodiac1, zodiac2);
+        const spiritualGuidance = getSpiritualGuidance(flameScore, zodiac1, zodiac2);
+        const luckyDays = getLuckyDays(zodiac1, zodiac2);
+        const loveQuote = getLoveQuote(flameScore);
+
+        // Update DOM
+        const coupleNames = (name1 && name2) ? `${name1} & ${name2}` : 'Your Twin Flame Connection';
+        document.getElementById('couple-names').textContent = coupleNames;
+        document.getElementById('flame-score').textContent = flameScore;
+        document.getElementById('flame-vibe').textContent = vibe;
+        document.getElementById('element-balance').textContent = elementBalance;
+        document.getElementById('name-harmony').textContent = nameHarmony;
+        document.getElementById('connection-level').textContent = connectionLevel;
+        
+        // Update compatibility indicator
+        const indicator = document.getElementById('compatibility-indicator');
+        indicator.style.left = `${flameScore}%`;
+        
+        // Update zodiac and numerology info
+        document.getElementById('zodiac-icon-1').textContent = zodiac1.icon;
+        document.getElementById('zodiac-sign-1').textContent = zodiac1.name;
+        document.getElementById('life-path-1').textContent = `Life Path: ${lifePath1}`;
+        document.getElementById('name-vibration-1').textContent = name1 ? `Name Vibration: ${nameVib1}` : 'Name Vibration: -';
+        
+        document.getElementById('zodiac-icon-2').textContent = zodiac2.icon;
+        document.getElementById('zodiac-sign-2').textContent = zodiac2.name;
+        document.getElementById('life-path-2').textContent = `Life Path: ${lifePath2}`;
+        document.getElementById('name-vibration-2').textContent = name2 ? `Name Vibration: ${nameVib2}` : 'Name Vibration: -';
+        
+        // Update insights
+        document.getElementById('shared-trait').textContent = sharedTrait;
+        document.getElementById('celebration-idea').textContent = celebrationIdea;
+        document.getElementById('spiritual-guidance').textContent = spiritualGuidance;
+        document.getElementById('lucky-days').textContent = luckyDays;
+        
+        // Update love quote
+        document.getElementById('love-quote').textContent = `"${loveQuote.quote}"`;
+        document.querySelector('.love-quote p:last-child').textContent = `- ${loveQuote.author}`;
+
+        // Create enhanced chart
+        createFlameChart(numerologyMatch, zodiacMatch, nameMatch, flameScore);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        if (resultContainer) {
+            resultContainer.classList.remove('hidden');
+            setTimeout(() => {
+                resultContainer.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 100);
+        }
+
+        console.log('Enhanced twin flame calculated:', { score: flameScore, vibe, elementBalance, nameHarmony });
+    } catch (error) {
+        console.error('Error in calculateTwinFlame:', error.message);
+        alert(error.message || 'An error occurred. Please check your inputs and try again.');
+    }
+}
+
+// Helper functions for new features
+function getFlameVibe(score) {
+    if (score >= 90) return '🔥 Eternal Flame';
+    if (score >= 80) return '✨ Soulful Connection';
+    if (score >= 70) return '💫 Dynamic Spark';
+    if (score >= 60) return '🌟 Growing Bond';
+    if (score >= 50) return '🌙 Gentle Glow';
+    return '🌱 Learning Flame';
+}
+
+function getNameHarmony(nameScore) {
+    if (nameScore >= 80) return '🎵 Perfect Harmony';
+    if (nameScore >= 60) return '🎶 Sweet Melody';
+    if (nameScore >= 40) return '🎵 Gentle Tune';
+    return '🎶 Unique Rhythm';
+}
+
+function getConnectionLevel(score) {
+    if (score >= 90) return 'Twin Flame Union';
+    if (score >= 80) return 'Soulmate Bond';
+    if (score >= 70) return 'Karmic Connection';
+    if (score >= 60) return 'Spiritual Partnership';
+    if (score >= 50) return 'Soul Friendship';
+    return 'Learning Connection';
+}
+
+function getSharedTrait(zodiac1, zodiac2) {
+    if (zodiac1.element === zodiac2.element) {
+        return `Shared ${zodiac1.element.toLowerCase()} energy creates natural understanding and passion.`;
+    }
+    return `Complementary energies: ${zodiac1.trait.toLowerCase()} balances beautifully with ${zodiac2.trait.toLowerCase()}.`;
+}
+
+function getCelebrationIdea(zodiac1, zodiac2) {
+    const elements = [zodiac1.element, zodiac2.element].sort().join('-');
+    const ideas = {
+        'Fire-Fire': 'A passionate dance party under the stars with live music',
+        'Earth-Earth': 'A cozy retreat in nature with gourmet picnic and stargazing',
+        'Air-Air': 'A lively gathering with intellectual games and deep conversations',
+        'Water-Water': 'A romantic evening by the water with candles and poetry',
+        'Fire-Air': 'An adventurous trip with spontaneous activities and lively debates',
+        'Fire-Earth': 'A hiking adventure followed by a luxurious spa experience',
+        'Fire-Water': 'A creative workshop with emotional bonding and artistic expression',
+        'Earth-Air': 'A cultural outing with museum visits and philosophical discussions',
+        'Earth-Water': 'A spa day with meditation and soulful connection rituals',
+        'Air-Water': 'An artistic event with dreamy vibes and creative collaboration'
+    };
+    return ideas[elements] || 'A unique celebration tailored to your special bond';
+}
+
+// Create enhanced compatibility chart
+function createFlameChart(numerologyMatch, zodiacMatch, nameMatch, flameScore) {
+    console.log('Creating enhanced flame chart...');
+    try {
+        const ctx = document.getElementById('flame-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+        const context = ctx.getContext('2d');
+
+        if (flameChart) {
+            flameChart.destroy();
+        }
+
+        flameChart = new Chart(context, {
+            type: 'radar',
+            data: {
+                labels: ['Numerology Match', 'Zodiac Harmony', 'Name Resonance', 'Overall Score'],
+                datasets: [{
+                    label: 'Compatibility Factors',
+                    data: [numerologyMatch * 2, zodiacMatch * 3.33, nameMatch * 5, flameScore],
+                    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                    borderColor: '#8b5cf6',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#8b5cf6',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Twin Flame Compatibility Analysis',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            color: '#6b7280',
+                            stepSize: 20,
+                            backdropColor: 'transparent'
+                        },
+                        pointLabels: {
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        },
+                        angleLines: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Enhanced flame chart created successfully');
+    } catch (error) {
+        console.error('Error in createFlameChart:', error.message);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const name1 = document.getElementById('name-1').value || 'Person 1';
+        const name2 = document.getElementById('name-2').value || 'Person 2';
+        const score = document.getElementById('flame-score').textContent;
+        const vibe = document.getElementById('flame-vibe').textContent;
+        const connectionLevel = document.getElementById('connection-level').textContent;
+        
+        const results = `
+Twin Flame Calculator Results
+=============================
+
+Couple: ${name1} & ${name2}
+Compatibility Score: ${score}
+Twin Flame Vibe: ${vibe}
+Connection Level: ${connectionLevel}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Twin Flame Calculator for more insights!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `twin-flame-results-${name1}-${name2}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing enhanced calculator...');
+    document.getElementById('name-1').value = '';
+    document.getElementById('name-2').value = '';
+    document.getElementById('birth-date-1').value = '';
+    document.getElementById('birth-date-2').value = '';
+    document.getElementById('birth-time-1').value = '';
+    document.getElementById('birth-time-2').value = '';
+    
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+    
+    // Reset all display values
+    document.getElementById('couple-names').textContent = 'Your Twin Flame Connection';
+    document.getElementById('flame-score').textContent = '-';
+    document.getElementById('flame-vibe').textContent = '-';
+    document.getElementById('element-balance').textContent = '-';
+    document.getElementById('name-harmony').textContent = '-';
+    document.getElementById('connection-level').textContent = 'Calculating...';
+    document.getElementById('zodiac-icon-1').textContent = '';
+    document.getElementById('zodiac-sign-1').textContent = '-';
+    document.getElementById('life-path-1').textContent = '-';
+    document.getElementById('name-vibration-1').textContent = '-';
+    document.getElementById('zodiac-icon-2').textContent = '';
+    document.getElementById('zodiac-sign-2').textContent = '-';
+    document.getElementById('life-path-2').textContent = '-';
+    document.getElementById('name-vibration-2').textContent = '-';
+    document.getElementById('shared-trait').textContent = '-';
+    document.getElementById('celebration-idea').textContent = '-';
+    document.getElementById('spiritual-guidance').textContent = '-';
+    document.getElementById('lucky-days').textContent = '-';
+
+    if (flameChart) {
+        flameChart.destroy();
+        flameChart = null;
+    }
+
+    console.log('Enhanced calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing enhanced calculator...');
+    initCalculator();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

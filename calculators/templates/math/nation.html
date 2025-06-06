@@ -1,0 +1,1031 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.nationality-card {
+    transition: all 0.3s ease;
+}
+.heritage-display {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.flag-emoji {
+    font-size: 1.5rem;
+    margin-right: 0.5rem;
+}
+.percentage-bar {
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #059669 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.percentage-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.heritage-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(5, 150, 105, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #059669;
+    border-radius: 0 8px 8px 0;
+}
+.nationality-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .nationality-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.country-option {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+}
+.remove-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+}
+.remove-btn:hover {
+    background: #dc2626;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+<!-- Back Button -->
+<div class="mb-6">
+    <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        <span>Back to Calculators</span>
+    </button>
+</div>
+
+<!-- Header -->
+<div class="text-center mb-12">
+    <div class="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+        <i data-lucide="globe" class="w-8 h-8 text-green-600 dark:text-green-400"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Nationality Percentage Calculator</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Discover your heritage breakdown by analyzing your family's nationality background across generations!
+    </p>
+    <div class="mt-4 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg inline-block">
+        <div class="text-green-800 dark:text-green-300 font-medium">
+            🌍 Heritage Analysis • 🧬 Genetic Breakdown • 📊 Family Tree • 🗺️ Cultural Roots
+        </div>
+    </div>
+</div>
+
+<!-- Calculator -->
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+    <!-- Input Section -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Enter Your Family Heritage</h2>
+        
+        <!-- Parents Section -->
+        <div class="mb-8">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
+                <i data-lucide="users" class="w-5 h-5"></i>
+                <span>Parents (50% each)</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Mother -->
+                <div class="space-y-4">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300">Mother's Heritage</h4>
+                    <div id="mother-nationalities" class="space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <select class="nationality-select flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="">Select nationality...</option>
+                            </select>
+                            <input type="number" class="percentage-input w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="%" min="0" max="100">
+                            <button type="button" class="remove-btn" onclick="removeNationality(this)" style="display: none;">×</button>
+                        </div>
+                    </div>
+                    <button type="button" onclick="addNationality('mother')" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 flex items-center space-x-1">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Add Nationality</span>
+                    </button>
+                </div>
+                
+                <!-- Father -->
+                <div class="space-y-4">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300">Father's Heritage</h4>
+                    <div id="father-nationalities" class="space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <select class="nationality-select flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="">Select nationality...</option>
+                            </select>
+                            <input type="number" class="percentage-input w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="%" min="0" max="100">
+                            <button type="button" class="remove-btn" onclick="removeNationality(this)" style="display: none;">×</button>
+                        </div>
+                    </div>
+                    <button type="button" onclick="addNationality('father')" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 flex items-center space-x-1">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Add Nationality</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grandparents Section (Optional) -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white flex items-center space-x-2">
+                    <i data-lucide="family" class="w-5 h-5"></i>
+                    <span>Grandparents (25% each) - Optional</span>
+                </h3>
+                <button type="button" id="toggle-grandparents" onclick="toggleGrandparents()" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 flex items-center space-x-1">
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                    <span>Show Grandparents</span>
+                </button>
+            </div>
+            <div id="grandparents-section" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Maternal Grandmother -->
+                <div class="space-y-3">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300 text-sm">Maternal Grandmother</h4>
+                    <div id="maternal-grandmother-nationalities" class="space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <select class="nationality-select flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                                <option value="">Select...</option>
+                            </select>
+                            <input type="number" class="percentage-input w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" placeholder="%" min="0" max="100">
+                        </div>
+                    </div>
+                    <button type="button" onclick="addNationality('maternal-grandmother')" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 flex items-center space-x-1 text-sm">
+                        <i data-lucide="plus" class="w-3 h-3"></i>
+                        <span>Add</span>
+                    </button>
+                </div>
+
+                <!-- Maternal Grandfather -->
+                <div class="space-y-3">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300 text-sm">Maternal Grandfather</h4>
+                    <div id="maternal-grandfather-nationalities" class="space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <select class="nationality-select flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                                <option value="">Select...</option>
+                            </select>
+                            <input type="number" class="percentage-input w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" placeholder="%" min="0" max="100">
+                        </div>
+                    </div>
+                    <button type="button" onclick="addNationality('maternal-grandfather')" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 flex items-center space-x-1 text-sm">
+                        <i data-lucide="plus" class="w-3 h-3"></i>
+                        <span>Add</span>
+                    </button>
+                </div>
+
+                <!-- Paternal Grandmother -->
+                <div class="space-y-3">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300 text-sm">Paternal Grandmother</h4>
+                    <div id="paternal-grandmother-nationalities" class="space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <select class="nationality-select flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                                <option value="">Select...</option>
+                            </select>
+                            <input type="number" class="percentage-input w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" placeholder="%" min="0" max="100">
+                        </div>
+                    </div>
+                    <button type="button" onclick="addNationality('paternal-grandmother')" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 flex items-center space-x-1 text-sm">
+                        <i data-lucide="plus" class="w-3 h-3"></i>
+                        <span>Add</span>
+                    </button>
+                </div>
+
+                <!-- Paternal Grandfather -->
+                <div class="space-y-3">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300 text-sm">Paternal Grandfather</h4>
+                    <div id="paternal-grandfather-nationalities" class="space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <select class="nationality-select flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                                <option value="">Select...</option>
+                            </select>
+                            <input type="number" class="percentage-input w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" placeholder="%" min="0" max="100">
+                        </div>
+                    </div>
+                    <button type="button" onclick="addNationality('paternal-grandfather')" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 flex items-center space-x-1 text-sm">
+                        <i data-lucide="plus" class="w-3 h-3"></i>
+                        <span>Add</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <button id="calculate-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="calculator" class="w-5 h-5"></i>
+            <span>Calculate Heritage</span>
+        </button>
+        <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            <span>Clear</span>
+        </button>
+        <button id="save-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            <span>Save Results</span>
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-container" class="hidden">
+        <!-- Heritage Summary -->
+        <div class="heritage-display text-white rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                <span>Your Heritage Breakdown</span>
+                <i data-lucide="dna" class="w-5 h-5"></i>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div id="total-countries" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Countries</div>
+                </div>
+                <div class="text-center">
+                    <div id="dominant-heritage" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Dominant Heritage</div>
+                </div>
+                <div class="text-center">
+                    <div id="diversity-score" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Diversity Score</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nationality Breakdown -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="flag" class="w-5 h-5"></i>
+                <span>Nationality Percentages</span>
+            </h3>
+            <div id="nationality-breakdown" class="space-y-4">
+                <!-- Nationality items will be populated here -->
+            </div>
+        </div>
+
+        <!-- Heritage Chart -->
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                <span>Heritage Visualization</span>
+            </h3>
+            <div class="h-64">
+                <canvas id="heritage-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Heritage Quote -->
+        <div class="heritage-quote mb-6">
+            <p id="heritage-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                "We are all travelers in the wilderness of this world, and the best we can find in our travels is an honest friend."
+            </p>
+            <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Robert Louis Stevenson</p>
+        </div>
+
+        <!-- Cultural Insights -->
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="compass" class="w-5 h-5"></i>
+                <span>Cultural Insights</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="map" class="w-4 h-4"></i>
+                        <span>Geographic Spread</span>
+                    </h4>
+                    <p id="geographic-spread" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="globe-2" class="w-4 h-4"></i>
+                        <span>Cultural Traits</span>
+                    </h4>
+                    <p id="cultural-traits" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="utensils" class="w-4 h-4"></i>
+                        <span>Culinary Heritage</span>
+                    </h4>
+                    <p id="culinary-heritage" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                        <span>Traditional Celebrations</span>
+                    </h4>
+                    <p id="traditional-celebrations" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational Content -->
+<div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+        <i data-lucide="book-open" class="w-6 h-6"></i>
+        <span>Heritage Calculator Guide</span>
+    </h2>
+    <div class="space-y-6">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Heritage Calculation?</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                This calculator helps you determine your nationality percentages based on your family tree. It uses genetic inheritance principles where you receive 50% from each parent, 25% from each grandparent, and so on.
+            </p>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How It Works</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                Enter the nationalities and percentages for your parents and optionally your grandparents. The calculator will compute your overall heritage breakdown and provide cultural insights about your diverse background.
+            </p>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Features</h3>
+            <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                <li>Support for multiple nationalities per family member</li>
+                <li>Automatic percentage calculation and validation</li>
+                <li>Visual heritage breakdown with charts</li>
+                <li>Cultural insights and geographic analysis</li>
+                <li>Diversity score calculation</li>
+                <li>Save and share your heritage results</li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                <li>Start by entering your parents' nationalities and percentages</li>
+                <li>Optionally expand the grandparents section for more detailed analysis</li>
+                <li>Ensure percentages for each family member add up to 100%</li>
+                <li>Click "Calculate Heritage" to see your breakdown</li>
+                <li>Explore your cultural insights and save your results!</li>
+            </ol>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Comprehensive list of countries with flags and cultural data
+const countries = [
+    { name: 'Afghanistan', flag: '🇦🇫', continent: 'Asia', culture: 'Central Asian', cuisine: 'Spiced rice and meat dishes' },
+    { name: 'Albania', flag: '🇦🇱', continent: 'Europe', culture: 'Balkan', cuisine: 'Mediterranean with Ottoman influences' },
+    { name: 'Algeria', flag: '🇩🇿', continent: 'Africa', culture: 'North African', cuisine: 'Berber and Arab fusion' },
+    { name: 'Argentina', flag: '🇦🇷', continent: 'South America', culture: 'Latin American', cuisine: 'Beef and wine culture' },
+    { name: 'Armenia', flag: '🇦🇲', continent: 'Asia', culture: 'Caucasian', cuisine: 'Ancient culinary traditions' },
+    { name: 'Australia', flag: '🇦🇺', continent: 'Oceania', culture: 'Anglo-Celtic', cuisine: 'Multicultural fusion' },
+    { name: 'Austria', flag: '🇦🇹', continent: 'Europe', culture: 'Germanic', cuisine: 'Alpine and classical European' },
+    { name: 'Bangladesh', flag: '🇧🇩', continent: 'Asia', culture: 'South Asian', cuisine: 'Rice and fish based' },
+    { name: 'Belgium', flag: '🇧🇪', continent: 'Europe', culture: 'Western European', cuisine: 'Chocolate and beer culture' },
+    { name: 'Brazil', flag: '🇧🇷', continent: 'South America', culture: 'Latin American', cuisine: 'Tropical and diverse' },
+    { name: 'Canada', flag: '🇨🇦', continent: 'North America', culture: 'Anglo-French', cuisine: 'Multicultural mosaic' },
+    { name: 'China', flag: '🇨🇳', continent: 'Asia', culture: 'East Asian', cuisine: 'Regional Chinese varieties' },
+    { name: 'Colombia', flag: '🇨🇴', continent: 'South America', culture: 'Latin American', cuisine: 'Coffee and tropical fruits' },
+    { name: 'Croatia', flag: '🇭🇷', continent: 'Europe', culture: 'Balkan', cuisine: 'Mediterranean and Central European' },
+    { name: 'Czech Republic', flag: '🇨🇿', continent: 'Europe', culture: 'Central European', cuisine: 'Beer and hearty dishes' },
+    { name: 'Denmark', flag: '🇩🇰', continent: 'Europe', culture: 'Nordic', cuisine: 'Scandinavian simplicity' },
+    { name: 'Egypt', flag: '🇪🇬', continent: 'Africa', culture: 'Middle Eastern', cuisine: 'Ancient and modern fusion' },
+    { name: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', continent: 'Europe', culture: 'Anglo-Saxon', cuisine: 'Traditional British' },
+    { name: 'Ethiopia', flag: '🇪🇹', continent: 'Africa', culture: 'East African', cuisine: 'Spiced stews and injera' },
+    { name: 'Finland', flag: '🇫🇮', continent: 'Europe', culture: 'Nordic', cuisine: 'Forest and lake cuisine' },
+    { name: 'France', flag: '🇫🇷', continent: 'Europe', culture: 'Romance', cuisine: 'Culinary arts capital' },
+    { name: 'Germany', flag: '🇩🇪', continent: 'Europe', culture: 'Germanic', cuisine: 'Beer and sausage culture' },
+    { name: 'Ghana', flag: '🇬🇭', continent: 'Africa', culture: 'West African', cuisine: 'Yam and plantain based' },
+    { name: 'Greece', flag: '🇬🇷', continent: 'Europe', culture: 'Mediterranean', cuisine: 'Olive oil and seafood' },
+    { name: 'Hungary', flag: '🇭🇺', continent: 'Europe', culture: 'Central European', cuisine: 'Paprika and hearty stews' },
+    { name: 'Iceland', flag: '🇮🇸', continent: 'Europe', culture: 'Nordic', cuisine: 'Seafood and preserved foods' },
+    { name: 'India', flag: '🇮🇳', continent: 'Asia', culture: 'South Asian', cuisine: 'Spice-rich and diverse' },
+    { name: 'Indonesia', flag: '🇮🇩', continent: 'Asia', culture: 'Southeast Asian', cuisine: 'Island spices and rice' },
+    { name: 'Iran', flag: '🇮🇷', continent: 'Asia', culture: 'Persian', cuisine: 'Rice and saffron dishes' },
+    { name: 'Iraq', flag: '🇮🇶', continent: 'Asia', culture: 'Middle Eastern', cuisine: 'Mesopotamian heritage' },
+    { name: 'Ireland', flag: '🇮🇪', continent: 'Europe', culture: 'Celtic', cuisine: 'Potato and dairy based' },
+    { name: 'Israel', flag: '🇮🇱', continent: 'Asia', culture: 'Middle Eastern', cuisine: 'Mediterranean and Jewish' },
+    { name: 'Italy', flag: '🇮🇹', continent: 'Europe', culture: 'Romance', cuisine: 'Pasta and regional specialties' },
+    { name: 'Jamaica', flag: '🇯🇲', continent: 'North America', culture: 'Caribbean', cuisine: 'Jerk spices and tropical' },
+    { name: 'Japan', flag: '🇯🇵', continent: 'Asia', culture: 'East Asian', cuisine: 'Umami and seasonal' },
+    { name: 'Kenya', flag: '🇰🇪', continent: 'Africa', culture: 'East African', cuisine: 'Maize and meat based' },
+    { name: 'Korea', flag: '🇰🇷', continent: 'Asia', culture: 'East Asian', cuisine: 'Fermented and spicy' },
+    { name: 'Lebanon', flag: '🇱🇧', continent: 'Asia', culture: 'Middle Eastern', cuisine: 'Levantine mezze culture' },
+    { name: 'Mexico', flag: '🇲🇽', continent: 'North America', culture: 'Latin American', cuisine: 'Corn, beans, and chili' },
+    { name: 'Morocco', flag: '🇲🇦', continent: 'Africa', culture: 'North African', cuisine: 'Tagines and mint tea' },
+    { name: 'Netherlands', flag: '🇳🇱', continent: 'Europe', culture: 'Germanic', cuisine: 'Cheese and seafood' },
+    { name: 'New Zealand', flag: '🇳🇿', continent: 'Oceania', culture: 'Anglo-Polynesian', cuisine: 'Farm to table' },
+    { name: 'Nigeria', flag: '🇳🇬', continent: 'Africa', culture: 'West African', cuisine: 'Yam and palm oil based' },
+    { name: 'Norway', flag: '🇳🇴', continent: 'Europe', culture: 'Nordic', cuisine: 'Seafood and preserved foods' },
+    { name: 'Pakistan', flag: '🇵🇰', continent: 'Asia', culture: 'South Asian', cuisine: 'Spiced meat and bread' },
+    { name: 'Peru', flag: '🇵🇪', continent: 'South America', culture: 'Latin American', cuisine: 'Potato and quinoa heritage' },
+    { name: 'Philippines', flag: '🇵🇭', continent: 'Asia', culture: 'Southeast Asian', cuisine: 'Sweet and savory fusion' },
+    { name: 'Poland', flag: '🇵🇱', continent: 'Europe', culture: 'Slavic', cuisine: 'Pierogi and hearty dishes' },
+    { name: 'Portugal', flag: '🇵🇹', continent: 'Europe', culture: 'Romance', cuisine: 'Seafood and pastries' },
+    { name: 'Romania', flag: '🇷🇴', continent: 'Europe', culture: 'Eastern European', cuisine: 'Balkan and Latin influences' },
+    { name: 'Russia', flag: '🇷🇺', continent: 'Europe/Asia', culture: 'Slavic', cuisine: 'Hearty and preserved foods' },
+    { name: 'Saudi Arabia', flag: '🇸🇦', continent: 'Asia', culture: 'Middle Eastern', cuisine: 'Desert and Bedouin traditions' },
+    { name: 'Scotland', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', continent: 'Europe', culture: 'Celtic', cuisine: 'Highland traditions' },
+    { name: 'Serbia', flag: '🇷🇸', continent: 'Europe', culture: 'Balkan', cuisine: 'Grilled meats and rakija' },
+    { name: 'South Africa', flag: '🇿🇦', continent: 'Africa', culture: 'African', cuisine: 'Braai and diverse influences' },
+    { name: 'Spain', flag: '🇪🇸', continent: 'Europe', culture: 'Romance', cuisine: 'Tapas and regional varieties' },
+    { name: 'Sweden', flag: '🇸🇪', continent: 'Europe', culture: 'Nordic', cuisine: 'Meatballs and fish' },
+    { name: 'Switzerland', flag: '🇨🇭', continent: 'Europe', culture: 'Alpine', cuisine: 'Cheese and chocolate' },
+    { name: 'Thailand', flag: '🇹🇭', continent: 'Asia', culture: 'Southeast Asian', cuisine: 'Sweet, sour, salty, spicy' },
+    { name: 'Turkey', flag: '🇹🇷', continent: 'Europe/Asia', culture: 'Turkish', cuisine: 'Ottoman and Mediterranean' },
+    { name: 'Ukraine', flag: '🇺🇦', continent: 'Europe', culture: 'Slavic', cuisine: 'Borscht and grain dishes' },
+    { name: 'United States', flag: '🇺🇸', continent: 'North America', culture: 'Anglo-American', cuisine: 'Melting pot cuisine' },
+    { name: 'Venezuela', flag: '🇻🇪', continent: 'South America', culture: 'Latin American', cuisine: 'Arepas and tropical' },
+    { name: 'Vietnam', flag: '🇻🇳', continent: 'Asia', culture: 'Southeast Asian', cuisine: 'Fresh herbs and pho' },
+    { name: 'Wales', flag: '🏴󠁧󠁢󠁷󠁬󠁳󠁿', continent: 'Europe', culture: 'Celtic', cuisine: 'Lamb and leek traditions' }
+];
+
+// Heritage quotes for different diversity levels
+const heritageQuotes = [
+    { min: 80, quote: "In diversity there is beauty and there is strength.", author: "Maya Angelou" },
+    { min: 60, quote: "We all should know that diversity makes for a rich tapestry, and we must understand that all the threads of the tapestry are equal in value no matter what their color.", author: "Maya Angelou" },
+    { min: 40, quote: "Our ability to reach unity in diversity will be the beauty and the test of our civilization.", author: "Mahatma Gandhi" },
+    { min: 20, quote: "Diversity is not about how we differ. Diversity is about embracing one another's uniqueness.", author: "Ola Joseph" },
+    { min: 0, quote: "We are all travelers in the wilderness of this world, and the best we can find in our travels is an honest friend.", author: "Robert Louis Stevenson" }
+];
+
+let heritageChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Nationality Percentage Calculator...');
+    populateCountrySelects();
+    setupEventListeners();
+    clearCalculator();
+}
+
+// Populate all country select dropdowns
+function populateCountrySelects() {
+    const selects = document.querySelectorAll('.nationality-select');
+    selects.forEach(select => {
+        // Clear existing options except the first one
+        select.innerHTML = '<option value="">Select nationality...</option>';
+        
+        countries.forEach(country => {
+            const option = document.createElement('option');
+            option.value = country.name;
+            option.textContent = `${country.flag} ${country.name}`;
+            select.appendChild(option);
+        });
+    });
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateHeritage);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    // Add event listeners for percentage validation
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('percentage-input')) {
+            validatePercentages();
+        }
+    });
+}
+
+// Toggle grandparents section
+function toggleGrandparents() {
+    const section = document.getElementById('grandparents-section');
+    const button = document.getElementById('toggle-grandparents');
+    const icon = button.querySelector('i');
+    const text = button.querySelector('span');
+    
+    if (section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+        icon.setAttribute('data-lucide', 'chevron-up');
+        text.textContent = 'Hide Grandparents';
+    } else {
+        section.classList.add('hidden');
+        icon.setAttribute('data-lucide', 'chevron-down');
+        text.textContent = 'Show Grandparents';
+    }
+    
+    // Refresh lucide icons
+    lucide.createIcons();
+}
+
+// Add nationality input for a family member
+function addNationality(familyMember) {
+    const container = document.getElementById(`${familyMember}-nationalities`);
+    const newRow = document.createElement('div');
+    newRow.className = 'flex items-center space-x-3';
+    
+    const isGrandparent = familyMember.includes('grandmother') || familyMember.includes('grandfather');
+    const selectClass = isGrandparent ? 'text-sm' : '';
+    const inputClass = isGrandparent ? 'w-16 text-sm' : 'w-20';
+    const spacing = isGrandparent ? 'space-x-2' : 'space-x-3';
+    
+    newRow.className = `flex items-center ${spacing}`;
+    
+    newRow.innerHTML = `
+        <select class="nationality-select flex-1 px-${isGrandparent ? '3' : '4'} py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 ${selectClass}">
+            <option value="">${isGrandparent ? 'Select...' : 'Select nationality...'}</option>
+        </select>
+        <input type="number" class="percentage-input ${inputClass} px-${isGrandparent ? '2' : '3'} py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 ${selectClass}" placeholder="%" min="0" max="100">
+        <button type="button" class="remove-btn" onclick="removeNationality(this)">×</button>
+    `;
+    
+    container.appendChild(newRow);
+    
+    // Populate the new select with countries
+    const newSelect = newRow.querySelector('.nationality-select');
+    countries.forEach(country => {
+        const option = document.createElement('option');
+        option.value = country.name;
+        option.textContent = `${country.flag} ${country.name}`;
+        newSelect.appendChild(option);
+    });
+    
+    // Show remove button for all rows in this container
+    const removeButtons = container.querySelectorAll('.remove-btn');
+    removeButtons.forEach(btn => btn.style.display = 'flex');
+}
+
+// Remove nationality input
+function removeNationality(button) {
+    const container = button.closest('[id$="-nationalities"]');
+    const row = button.closest('.flex');
+    
+    row.remove();
+    
+    // Hide remove buttons if only one row remains
+    const remainingRows = container.querySelectorAll('.flex');
+    if (remainingRows.length === 1) {
+        const removeBtn = remainingRows[0].querySelector('.remove-btn');
+        if (removeBtn) removeBtn.style.display = 'none';
+    }
+    
+    validatePercentages();
+}
+
+// Validate percentages for each family member
+function validatePercentages() {
+    const familyMembers = ['mother', 'father', 'maternal-grandmother', 'maternal-grandfather', 'paternal-grandmother', 'paternal-grandfather'];
+    
+    familyMembers.forEach(member => {
+        const container = document.getElementById(`${member}-nationalities`);
+        if (!container) return;
+        
+        const inputs = container.querySelectorAll('.percentage-input');
+        let total = 0;
+        
+        inputs.forEach(input => {
+            const value = parseFloat(input.value) || 0;
+            total += value;
+        });
+        
+        // Visual feedback for percentage validation
+        inputs.forEach(input => {
+            if (total > 100) {
+                input.classList.add('border-red-500');
+                input.classList.remove('border-gray-300', 'dark:border-gray-600');
+            } else {
+                input.classList.remove('border-red-500');
+                input.classList.add('border-gray-300', 'dark:border-gray-600');
+            }
+        });
+    });
+}
+
+// Calculate heritage breakdown
+function calculateHeritage() {
+    console.log('Calculating heritage breakdown...');
+    try {
+        const heritageData = {};
+        
+        // Process parents (50% each)
+        const parentData = processParents();
+        
+        // Process grandparents (25% each) if provided
+        const grandparentData = processGrandparents();
+        
+        // Combine data
+        const combinedData = combineHeritageData(parentData, grandparentData);
+        
+        if (Object.keys(combinedData).length === 0) {
+            alert('Please enter at least one nationality for your parents.');
+            return;
+        }
+        
+        // Calculate insights
+        const insights = calculateInsights(combinedData);
+        
+        // Update display
+        updateResults(combinedData, insights);
+        
+        // Create chart
+        createHeritageChart(combinedData);
+        
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+        
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+        
+        console.log('Heritage calculated successfully:', combinedData);
+    } catch (error) {
+        console.error('Error calculating heritage:', error);
+        alert('An error occurred while calculating heritage. Please check your inputs.');
+    }
+}
+
+// Process parent data
+function processParents() {
+    const parentData = {};
+    
+    ['mother', 'father'].forEach(parent => {
+        const container = document.getElementById(`${parent}-nationalities`);
+        const rows = container.querySelectorAll('.flex');
+        
+        rows.forEach(row => {
+            const select = row.querySelector('.nationality-select');
+            const input = row.querySelector('.percentage-input');
+            
+            const nationality = select.value;
+            const percentage = parseFloat(input.value) || 0;
+            
+            if (nationality && percentage > 0) {
+                const contribution = (percentage / 100) * 0.5; // 50% from each parent
+                parentData[nationality] = (parentData[nationality] || 0) + contribution;
+            }
+        });
+    });
+    
+    return parentData;
+}
+
+// Process grandparent data
+function processGrandparents() {
+    const grandparentData = {};
+    
+    ['maternal-grandmother', 'maternal-grandfather', 'paternal-grandmother', 'paternal-grandfather'].forEach(grandparent => {
+        const container = document.getElementById(`${grandparent}-nationalities`);
+        if (!container) return;
+        
+        const rows = container.querySelectorAll('.flex');
+        
+        rows.forEach(row => {
+            const select = row.querySelector('.nationality-select');
+            const input = row.querySelector('.percentage-input');
+            
+            const nationality = select.value;
+            const percentage = parseFloat(input.value) || 0;
+            
+            if (nationality && percentage > 0) {
+                const contribution = (percentage / 100) * 0.25; // 25% from each grandparent
+                grandparentData[nationality] = (grandparentData[nationality] || 0) + contribution;
+            }
+        });
+    });
+    
+    return grandparentData;
+}
+
+// Combine heritage data from parents and grandparents
+function combineHeritageData(parentData, grandparentData) {
+    const combined = { ...parentData };
+    
+    Object.keys(grandparentData).forEach(nationality => {
+        combined[nationality] = (combined[nationality] || 0) + grandparentData[nationality];
+    });
+    
+    return combined;
+}
+
+// Calculate cultural insights
+function calculateInsights(heritageData) {
+    const nationalities = Object.keys(heritageData);
+    const percentages = Object.values(heritageData);
+    
+    // Find dominant heritage
+    const maxPercentage = Math.max(...percentages);
+    const dominantNationality = nationalities[percentages.indexOf(maxPercentage)];
+    const dominantCountry = countries.find(c => c.name === dominantNationality);
+    
+    // Calculate diversity score
+    const diversityScore = Math.min(100, nationalities.length * 15 + (100 - maxPercentage * 100));
+    
+    // Get continents represented
+    const continents = [...new Set(nationalities.map(nat => {
+        const country = countries.find(c => c.name === nat);
+        return country ? country.continent : 'Unknown';
+    }))];
+    
+    // Get cultural traits
+    const cultures = nationalities.map(nat => {
+        const country = countries.find(c => c.name === nat);
+        return country ? country.culture : 'Unknown';
+    });
+    
+    // Get cuisines
+    const cuisines = nationalities.map(nat => {
+        const country = countries.find(c => c.name === nat);
+        return country ? country.cuisine : 'Unknown';
+    });
+    
+    return {
+        totalCountries: nationalities.length,
+        dominantHeritage: dominantCountry ? `${dominantCountry.flag} ${dominantCountry.name}` : dominantNationality,
+        diversityScore: Math.round(diversityScore),
+        continents,
+        cultures,
+        cuisines,
+        maxPercentage: maxPercentage * 100
+    };
+}
+
+// Update results display
+function updateResults(heritageData, insights) {
+    // Update summary
+    document.getElementById('total-countries').textContent = insights.totalCountries;
+    document.getElementById('dominant-heritage').textContent = insights.dominantHeritage;
+    document.getElementById('diversity-score').textContent = `${insights.diversityScore}%`;
+    
+    // Update nationality breakdown
+    const breakdownContainer = document.getElementById('nationality-breakdown');
+    breakdownContainer.innerHTML = '';
+    
+    // Sort by percentage
+    const sortedNationalities = Object.entries(heritageData)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 10); // Show top 10
+    
+    sortedNationalities.forEach(([nationality, percentage]) => {
+        const country = countries.find(c => c.name === nationality);
+        const percentageValue = Math.round(percentage * 100);
+        
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg';
+        item.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <span class="flag-emoji">${country ? country.flag : '🏳️'}</span>
+                <span class="font-medium text-gray-900 dark:text-white">${nationality}</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                    <div class="bg-green-600 h-2 rounded-full" style="width: ${percentageValue}%"></div>
+                </div>
+                <span class="font-semibold text-gray-900 dark:text-white w-12 text-right">${percentageValue}%</span>
+            </div>
+        `;
+        breakdownContainer.appendChild(item);
+    });
+    
+    // Update cultural insights
+    document.getElementById('geographic-spread').textContent = 
+        `Your heritage spans ${insights.continents.length} continent${insights.continents.length > 1 ? 's' : ''}: ${insights.continents.join(', ')}`;
+    
+    document.getElementById('cultural-traits').textContent = 
+        `You inherit traits from ${[...new Set(insights.cultures)].join(', ')} cultural traditions`;
+    
+    document.getElementById('culinary-heritage').textContent = 
+        `Your culinary background includes ${insights.cuisines.slice(0, 3).join(', ')}${insights.cuisines.length > 3 ? ' and more' : ''}`;
+    
+    document.getElementById('traditional-celebrations').textContent = 
+        `You can celebrate traditions from ${insights.totalCountries} different culture${insights.totalCountries > 1 ? 's' : ''}`;
+    
+    // Update heritage quote
+    const quote = getHeritageQuote(insights.diversityScore);
+    document.getElementById('heritage-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.heritage-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get heritage quote based on diversity score
+function getHeritageQuote(diversityScore) {
+    for (const quote of heritageQuotes) {
+        if (diversityScore >= quote.min) {
+            return quote;
+        }
+    }
+    return heritageQuotes[heritageQuotes.length - 1];
+}
+
+// Create heritage chart
+function createHeritageChart(heritageData) {
+    console.log('Creating heritage chart...');
+    try {
+        const ctx = document.getElementById('heritage-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+        
+        if (heritageChart) {
+            heritageChart.destroy();
+        }
+        
+        // Prepare data for chart
+        const sortedData = Object.entries(heritageData)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 8); // Show top 8 for readability
+        
+        const labels = sortedData.map(([nationality]) => {
+            const country = countries.find(c => c.name === nationality);
+            return `${country ? country.flag : '🏳️'} ${nationality}`;
+        });
+        
+        const data = sortedData.map(([, percentage]) => Math.round(percentage * 100));
+        
+        // Generate colors
+        const colors = [
+            '#059669', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6',
+            '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
+        ];
+        
+        heritageChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors.slice(0, data.length),
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Your Heritage Breakdown',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#374151',
+                            font: { size: 12 },
+                            padding: 15,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('Heritage chart created successfully');
+    } catch (error) {
+        console.error('Error creating heritage chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const totalCountries = document.getElementById('total-countries').textContent;
+        const dominantHeritage = document.getElementById('dominant-heritage').textContent;
+        const diversityScore = document.getElementById('diversity-score').textContent;
+        
+        const results = `
+Nationality Percentage Calculator Results
+========================================
+
+Total Countries: ${totalCountries}
+Dominant Heritage: ${dominantHeritage}
+Diversity Score: ${diversityScore}
+
+Heritage Breakdown:
+${Array.from(document.querySelectorAll('#nationality-breakdown .flex')).map(item => {
+    const nationality = item.querySelector('span:nth-child(2)').textContent;
+    const percentage = item.querySelector('span:last-child').textContent;
+    return `${nationality}: ${percentage}`;
+}).join('\n')}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Nationality Calculator for more insights!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `heritage-results-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing nationality calculator...');
+    
+    // Reset all nationality containers to single row
+    const familyMembers = ['mother', 'father', 'maternal-grandmother', 'maternal-grandfather', 'paternal-grandmother', 'paternal-grandfather'];
+    
+    familyMembers.forEach(member => {
+        const container = document.getElementById(`${member}-nationalities`);
+        if (!container) return;
+        
+        // Keep only the first row and clear its values
+        const rows = container.querySelectorAll('.flex');
+        rows.forEach((row, index) => {
+            if (index === 0) {
+                row.querySelector('.nationality-select').value = '';
+                row.querySelector('.percentage-input').value = '';
+                row.querySelector('.remove-btn').style.display = 'none';
+            } else {
+                row.remove();
+            }
+        });
+    });
+    
+    // Hide grandparents section
+    const grandparentsSection = document.getElementById('grandparents-section');
+    const toggleButton = document.getElementById('toggle-grandparents');
+    if (grandparentsSection && !grandparentsSection.classList.contains('hidden')) {
+        toggleGrandparents();
+    }
+    
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+    
+    // Destroy chart
+    if (heritageChart) {
+        heritageChart.destroy();
+        heritageChart = null;
+    }
+    
+    console.log('Nationality calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing nationality calculator...');
+    initCalculator();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,517 @@
+{% extends 'base.html' %}
+
+{% block head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .rarity-card {
+            transition: all 0.3s ease;
+        }
+        .rarity-display {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+        }
+        .insight-card {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        }
+        .dark .insight-card {
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.5) sepia(1) saturate(5) hue-rotate(175deg);
+        }
+        .dark input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8);
+        }
+        #rarity-chart {
+            max-height: 300px;
+        }
+        /* Dark mode toggle */
+        .dark {
+            background-color: #1f2937;
+            color: #f3f4f6;
+        }
+    </style>
+
+{% endblock %}
+
+
+{% block body %}
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Back Button -->
+        <div class="mb-6">
+            <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                <span>Back to Calculators</span>
+            </button>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="calendar" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">How Rare Is My Birthday Calculator</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Find out how rare your birthday is and uncover unique zodiac insights tied to your special day!
+            </p>
+            <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+                <div class="text-blue-800 dark:text-blue-300 font-medium">
+                    📅 Birthday Rarity • ♈ Zodiac Insights • 🌟 Unique Vibes
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculator -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+            <!-- Input Section -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Enter Your Birth Date</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Left Column: Birth Date Input -->
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Birth Date:</label>
+                            <input type="date" id="birth-date" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" max="2025-06-06">
+                        </div>
+                    </div>
+                    <!-- Right Column: Placeholder for Balance -->
+                    <div class="space-y-6">
+                        <div class="text-center text-gray-600 dark:text-gray-300 italic">
+                            Enter your birth date to discover its rarity and zodiac insights!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                <button id="calculate-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                    Calculate Birthday Rarity
+                </button>
+                <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                    Clear
+                </button>
+            </div>
+
+            <!-- Results -->
+            <div id="result-container" class="hidden">
+                <!-- Rarity Summary -->
+                <div class="rarity-display text-white rounded-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold mb-4">Your Birthday Rarity</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="text-center">
+                            <div id="rarity-score" class="text-3xl font-bold mb-2">-</div>
+                            <div class="text-sm opacity-90">Rarity Score</div>
+                        </div>
+                        <div class="text-center">
+                            <div id="rarity-rank" class="text-3xl font-bold mb-2">-</div>
+                            <div class="text-sm opacity-90">Rarity Rank</div>
+                        </div>
+                        <div class="text-center">
+                            <div id="rarity-percentile" class="text-3xl font-bold mb-2">-</div>
+                            <div class="text-sm opacity-90">Rarity Percentile</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zodiac Insights -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4">Zodiac Insights</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-3">Your Zodiac Sign</h4>
+                            <div class="flex items-center space-x-2">
+                                <span id="zodiac-icon" class="text-2xl"></span>
+                                <span id="zodiac-sign" class="font-medium text-gray-800 dark:text-white"></span>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-2">Birthday Vibe</h4>
+                            <p id="zodiac-vibe" class="text-gray-800 dark:text-white">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rarity Distribution -->
+                <div class="bg-orange-50 dark:bg-gray-700 border border-orange-200 dark:border-gray-600 rounded-xl p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-orange-700 dark:text-orange-300 mb-4">Rarity Distribution</h3>
+                    <div class="h-[400px]">
+                        <canvas id="rarity-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Fun Facts -->
+                <div class="bg-yellow-50 dark:bg-gray-700 border border-yellow-200 dark:border-gray-600 rounded-xl p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-orange-700 dark:text-yellow-300 mb-3">Fun Facts</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="insight-card p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">Unique Trait</h4>
+                            <p id="unique-trait" class="text-gray-800 dark:text-white">-</p>
+                        </div>
+                        <div class="insight-card p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">Celebration Idea</h4>
+                            <p id="celebration-idea" class="text-gray-800 dark:text-white">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Educational Content -->
+        <div class="mt-12 bg-gray-100 dark:bg-gray-800 rounded-xl p-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Birthday Rarity Guide</h2>
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Birthday Rarity?</h3>
+                    <p class="text-gray-600 dark:text-gray-300">
+                        Birthday rarity measures how common or uncommon your birth date is based on birth distribution patterns. Dates like February 29 are extremely rare, while holidays like December 25 are less common.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How Rarity is Calculated</h3>
+                    <p class="text-gray-600 dark:text-gray-300">
+                        We use statistical patterns to assign a rarity score. Leap day (Feb 29) is the rarest, followed by holidays and dates with uneven birth distributions. Your score is ranked among all possible dates.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Why It’s Fun</h3>
+                    <p class="text-gray-600 dark:text-gray-300">
+                        Knowing your birthday’s rarity adds a unique twist to your identity, with zodiac insights highlighting your cosmic charm!
+                    </p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use This Calculator</h3>
+                    <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                        <li>Enter your birth date using the date picker</li>
+                        <li>Click "Calculate Birthday Rarity" to see your results</li>
+                        <li>View your rarity score, rank, and percentile</li>
+                        <li>Explore zodiac insights and fun facts</li>
+                        <li>Celebrate your unique birthday with our suggested ideas!</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // Zodiac data
+        const zodiacSigns = [
+            { name: 'Aries', icon: '♈', start: '03-21', end: '04-19', trait: 'Dynamic energy', vibe: 'A vibrant, action-packed birthday', idea: 'Throw an energetic party with bold activities' },
+            { name: 'Taurus', icon: '♉', start: '04-20', end: '05-20', trait: 'Grounded charm', vibe: 'A serene, indulgent celebration', idea: 'Host a cozy event with gourmet treats' },
+            { name: 'Gemini', icon: '♊', start: '05-21', end: '06-20', trait: 'Witty curiosity', vibe: 'A lively, social gathering', idea: 'Plan a fun, interactive party with games' },
+            { name: 'Cancer', icon: '♋', start: '06-21', end: '07-22', trait: 'Empathetic warmth', vibe: 'A heartfelt, intimate birthday', idea: 'Gather close friends for a sentimental event' },
+            { name: 'Leo', icon: '♌', start: '07-23', end: '08-22', trait: 'Radiant confidence', vibe: 'A glamorous, show-stopping bash', idea: 'Host a dazzling party with a spotlight theme' },
+            { name: 'Virgo', icon: '♍', start: '08-23', end: '09-22', trait: 'Precise elegance', vibe: 'A thoughtful, organized celebration', idea: 'Plan a refined event with meticulous details' },
+            { name: 'Libra', icon: '♎', start: '09-23', end: '10-22', trait: 'Balanced grace', vibe: 'A stylish, harmonious party', idea: 'Create an aesthetically pleasing celebration' },
+            { name: 'Scorpio', icon: '♏', start: '10-23', end: '11-21', trait: 'Magnetic intensity', vibe: 'A mysterious, intense birthday', idea: 'Host an immersive, themed event' },
+            { name: 'Sagittarius', icon: '♐', start: '11-22', end: '12-21', trait: 'Adventurous spirit', vibe: 'A free-spirited, exploratory party', idea: 'Plan an outdoor or travel-themed celebration' },
+            { name: 'Capricorn', icon: '♑', start: '12-22', end: '01-19', trait: 'Steadfast ambition', vibe: 'A classic, goal-oriented birthday', idea: 'Host a sophisticated, milestone-focused event' },
+            { name: 'Aquarius', icon: '♒', start: '01-20', end: '02-18', trait: 'Innovative quirkiness', vibe: 'A unique, visionary celebration', idea: 'Throw a creative, unconventional party' },
+            { name: 'Pisces', icon: '♓', start: '02-19', end: '03-20', trait: 'Dreamy intuition', vibe: 'A whimsical, soulful birthday', idea: 'Host an artistic, dreamy celebration' }
+        ];
+
+        let rarityChart = null;
+
+        // Initialize calculator
+        function initCalculator() {
+            console.log('Initializing calculator...');
+            setupEventListeners();
+            clearCalculator();
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            console.log('Setting up event listeners...');
+            const calculateBtn = document.getElementById('calculate-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const birthDateInput = document.getElementById('birth-date');
+
+            if (calculateBtn) {
+                calculateBtn.addEventListener('click', calculateBirthdayRarity);
+            } else {
+                console.error('Calculate button not found');
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', clearCalculator);
+            } else {
+                console.error('Clear button not found');
+            }
+
+            if (birthDateInput) {
+                birthDateInput.addEventListener('change', calculateBirthdayRarity);
+            } else {
+                console.error('Birth date input not found');
+            }
+        }
+
+        // Calculate day of year (1-366)
+        function getDayOfYear(date) {
+            const year = date.getFullYear();
+            const start = new Date(year, 0, 0);
+            const diff = date - start;
+            const oneDay = 1000 * 60 * 60 * 24;
+            const day = Math.floor(diff / oneDay);
+            console.log('Day of year calculated:', { year, day });
+            return day;
+        }
+
+        // Calculate birthday rarity
+        function calculateBirthdayRarity() {
+            console.log('Calculating birthday rarity...');
+            try {
+                const birthDateInput = document.getElementById('birth-date').value;
+                if (!birthDateInput) {
+                    throw new Error('Please enter your birth date.');
+                }
+
+                const birthDate = new Date(birthDateInput);
+                if (isNaN(birthDate.getTime())) {
+                    throw new Error('Invalid birth date.');
+                }
+
+                const month = birthDate.getMonth() + 1; // 1-12
+                const day = birthDate.getDate();
+
+                // Calculate rarity score (0-100, higher is rarer)
+                const rarityData = getRarityScore(month, day);
+                const rarityScore = rarityData.score;
+                const rarityRank = getRarityRank(month, day, birthDate);
+                const rarityPercentile = ((366 - rarityRank) / 366 * 100).toFixed(1);
+
+                // Get zodiac sign
+                const zodiac = getZodiacSign(birthDate);
+
+                // Update results
+                console.log('Updating results:', { rarityScore, rarityRank, rarityPercentile, zodiac });
+                document.getElementById('rarity-score').textContent = rarityScore;
+                document.getElementById('rarity-rank').textContent = `${rarityRank}/366`;
+                document.getElementById('rarity-percentile').textContent = `${rarityPercentile}%`;
+                document.getElementById('zodiac-icon').textContent = zodiac.icon;
+                document.getElementById('zodiac-sign').textContent = zodiac.name;
+                document.getElementById('zodiac-vibe').textContent = zodiac.vibe;
+                document.getElementById('unique-trait').textContent = zodiac.trait;
+                document.getElementById('celebration-idea').textContent = zodiac.idea;
+
+                // Create rarity chart
+                createRarityChart(month, day, rarityScore);
+
+                // Show results
+                const resultContainer = document.getElementById('result-container');
+                if (resultContainer) {
+                    resultContainer.classList.remove('hidden');
+                    console.log('Results container shown');
+                } else {
+                    console.error('Result container not found');
+                }
+
+                // Scroll to results
+                setTimeout(() => {
+                    resultContainer.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }, 100);
+
+                console.log('Birthday rarity calculated:', { score: rarityScore, rank: rarityRank, percentile: rarityPercentile });
+            } catch (error) {
+                console.error('Error in calculateBirthdayRarity:', error.message);
+                alert(error.message || 'An error occurred. Please check your input and try again.');
+            }
+        }
+
+        // Get rarity score based on month and day
+        function getRarityScore(month, day) {
+            let score = 50; // Average rarity
+            let reason = 'Average birth distribution';
+
+            // Special cases
+            if (month === 2 && day === 29) {
+                score = 95;
+                reason = 'Leap day (extremely rare)';
+            } else if (month === 12 && day === 25) {
+                score = 80;
+                reason = 'Christmas Day (fewer births due to holiday)';
+            } else if (month === 7 && day === 4) {
+                score = 75;
+                reason = 'Independence Day (fewer births due to holiday)';
+            } else if (month === 1 && day === 1) {
+                score = 70;
+                reason = 'New Year’s Day (fewer births due to holiday)';
+            } else if (month === 2 && day <= 28) {
+                score = 60;
+                reason = 'February (shorter month, fewer births)';
+            } else if (month === 9) {
+                score = 45;
+                reason = 'September (common due to holiday conceptions)';
+            }
+
+            console.log('Rarity score:', { month, day, score, reason });
+            return { score, reason };
+        }
+
+        // Get rarity rank (1 = rarest, 366 = most common)
+        function getRarityRank(month, day, date) {
+            if (month === 2 && day === 29) return 1;
+            if (month === 12 && day === 25) return 2;
+            if (month === 7 && day === 4) return 3;
+            if (month === 1 && day === 1) return 4;
+            if (month === 2 && day <= 28) return 5 + day; // Feb 1-28 ranks 5-32
+            if (month === 9) return 200 + day; // Sep ranks lower (less rare)
+            // Default: spread remaining days evenly
+            const dayOfYear = getDayOfYear(date);
+            const rank = 33 + (dayOfYear % 333); // Approximate rank for non-special days
+            console.log('Rarity rank:', { month, day, dayOfYear, rank });
+            return rank;
+        }
+
+        // Get zodiac sign based on birth date
+        function getZodiacSign(birthDate) {
+            const month = birthDate.getMonth() + 1; // 1-12
+            const day = birthDate.getDate();
+            const dateStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+            for (const sign of zodiacSigns) {
+                const start = sign.start;
+                const end = sign.end;
+                if (start <= end) {
+                    if (dateStr >= start && dateStr <= end) return sign;
+                } else {
+                    // Handle Capricorn (crosses year boundary)
+                    if (dateStr >= start || dateStr <= end) return sign;
+                }
+            }
+            return zodiacSigns[0]; // Default to Aries
+        }
+
+        // Create rarity chart
+        function createRarityChart(month, day, userScore) {
+            console.log('Creating rarity chart...');
+            try {
+                const ctx = document.getElementById('rarity-chart');
+                if (!ctx) {
+                    throw new Error('Chart canvas not found');
+                }
+                const context = ctx.getContext('2d');
+                if (!context) {
+                    throw new Error('Failed to get chart context');
+                }
+
+                if (rarityChart) {
+                    rarityChart.destroy();
+                    console.log('Previous chart destroyed');
+                }
+
+                const categories = [
+                    { label: 'Leap Day (Feb 29)', score: 95 },
+                    { label: 'Holidays (e.g., Dec 25)', score: 80 },
+                    { label: 'February (1-28)', score: 60 },
+                    { label: 'Average Days', score: 50 },
+                    { label: 'Common Days (e.g., Sep)', score: 45 }
+                ];
+
+                const labels = categories.map(c => c.label);
+                const scores = categories.map(c => c.score);
+                const colors = categories.map((c, i) => 
+                    c.label === 'Your Birthday' ? '#3b82f6' : `hsl(${i * 60}, 70%, 60%)`
+                );
+
+                // Highlight user's category
+                const userCategory = categories.find(c => Math.abs(c.score - userScore) < 10) || categories[3];
+                const userIndex = categories.indexOf(userCategory);
+                labels[userIndex] = 'Your Birthday';
+                scores[userIndex] = userScore;
+                colors[userIndex] = '#3b82f6';
+
+                rarityChart = new Chart(context, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Rarity Score',
+                            data: scores,
+                            backgroundColor: colors,
+                            borderColor: '#1e3a8a',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Birthday Rarity Comparison',
+                                color: '#1f2937',
+                                font: { size: 16 }
+                            },
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                title: {
+                                    display: true,
+                                    text: 'Rarity Score (Higher = Rarer)',
+                                    color: '#1f2937'
+                                },
+                                ticks: { color: '#1f2937' }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Birthday Categories',
+                                    color: '#1f2937'
+                                },
+                                ticks: { color: '#1f2937' }
+                            }
+                        }
+                    }
+                });
+
+                console.log('Rarity chart created successfully');
+            } catch (error) {
+                console.error('Error in createRarityChart:', error.message);
+                alert('Failed to create rarity chart. Please check the console for details.');
+            }
+        }
+
+        // Clear calculator
+        function clearCalculator() {
+            console.log('Clearing calculator...');
+            document.getElementById('birth-date').value = '';
+            const resultContainer = document.getElementById('result-container');
+            if (resultContainer) {
+                resultContainer.classList.add('hidden');
+            }
+            document.getElementById('rarity-score').textContent = '-';
+            document.getElementById('rarity-rank').textContent = '-';
+            document.getElementById('rarity-percentile').textContent = '-';
+            document.getElementById('zodiac-icon').textContent = '';
+            document.getElementById('zodiac-sign').textContent = '-';
+            document.getElementById('zodiac-vibe').textContent = '-';
+            document.getElementById('unique-trait').textContent = '-';
+            document.getElementById('celebration-idea').textContent = '-';
+            
+            if (rarityChart) {
+                rarityChart.destroy();
+                rarityChart = null;
+                console.log('Chart destroyed');
+            }
+
+            console.log('Calculator cleared successfully');
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing...');
+            initCalculator();
+            lucide.createIcons();
+        });
+    </script>
+{% endblock %}
