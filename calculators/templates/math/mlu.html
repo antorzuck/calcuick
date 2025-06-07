@@ -1,0 +1,1302 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Math.js for calculations -->
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11.11.0/lib/browser/math.min.js"></script>
+<style>
+.analysis-card {
+    transition: all 0.3s ease;
+}
+.mlu-display {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.text-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .text-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.linguistics-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(5, 150, 105, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #059669;
+    border-radius: 0 8px 8px 0;
+}
+.development-meter {
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #059669 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.development-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.utterance-visualization {
+    width: 250px;
+    height: 250px;
+    border: 2px solid #059669;
+    border-radius: 20px;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(5, 150, 105, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.morpheme-bubbles {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0.7;
+}
+.morpheme-bubble {
+    position: absolute;
+    background: #059669;
+    border-radius: 50%;
+    transition: all 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+.speech-center {
+    width: 40px;
+    height: 40px;
+    background: #dc2626;
+    border-radius: 50%;
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+    animation: speak 2s ease-in-out infinite alternate;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+@keyframes speak {
+    from { box-shadow: 0 0 20px rgba(220, 38, 38, 0.5); }
+    to { box-shadow: 0 0 30px rgba(220, 38, 38, 0.8); }
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.utterance-card {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #bbf7d0;
+    transition: all 0.3s ease;
+}
+.dark .utterance-card {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+    border-color: #059669;
+}
+.utterance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+}
+.morpheme-highlight {
+    background: rgba(5, 150, 105, 0.2);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    margin: 0 0.125rem;
+    border-bottom: 2px solid #059669;
+}
+.age-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.below-expected { background: #ef4444; }
+.at-expected { background: #22c55e; }
+.above-expected { background: #3b82f6; }
+.advanced { background: #8b5cf6; }
+.text-analysis {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    background: #f9fafb;
+}
+.dark .text-analysis {
+    background: #374151;
+    border-color: #4b5563;
+}
+.utterance-item {
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+    background: white;
+    border-radius: 6px;
+    border-left: 4px solid #059669;
+}
+.dark .utterance-item {
+    background: #4b5563;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="message-circle" class="w-8 h-8 text-green-600 dark:text-green-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">MLU Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate Mean Length of Utterance (MLU) for language development assessment. Essential for speech-language pathologists and linguists!
+        </p>
+        <div class="mt-4 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg inline-block">
+            <div class="text-green-800 dark:text-green-300 font-medium">
+                🗣️ Speech Analysis • 📊 MLU = Total Morphemes ÷ Total Utterances • 👶 Development Assessment • 🔬 Linguistic Research
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Speech Sample Analysis</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Analysis Method:</label>
+                        <select id="analysis-method" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="morphemes">Morphemes (Standard MLU-m)</option>
+                            <option value="words">Words (MLU-w)</option>
+                            <option value="brown">Brown's Rules (MLU-m)</option>
+                            <option value="advanced">Advanced Morphological</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Child's Age:</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <input type="number" id="child-age-years" min="1" max="10" placeholder="Years" 
+                                       class="text-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                            </div>
+                            <div>
+                                <input type="number" id="child-age-months" min="0" max="11" placeholder="Months" 
+                                       class="text-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Speech Sample:</label>
+                        <textarea id="speech-sample" rows="8" placeholder="Enter speech sample here. Each line should be one utterance.
+
+Example:
+I want cookie
+Mommy go store
+The big dog running
+Me no like that
+Can I have more juice please"
+                                  class="text-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter one utterance per line. Minimum 50 utterances recommended for reliable MLU.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Language:</label>
+                        <select id="language-select" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="english">English</option>
+                            <option value="spanish">Spanish</option>
+                            <option value="french">French</option>
+                            <option value="german">German</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Sample Presets:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('toddler')" class="px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                                2-Year-Old Sample
+                            </button>
+                            <button onclick="setPreset('preschool')" class="px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                                4-Year-Old Sample
+                            </button>
+                            <button onclick="setPreset('school')" class="px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                                6-Year-Old Sample
+                            </button>
+                            <button onclick="setPreset('advanced')" class="px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                                Complex Sample
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Language Development Visualization</h3>
+                        <div class="utterance-visualization" id="utterance-viz">
+                            <div class="morpheme-bubbles" id="morpheme-bubbles">
+                                <!-- Morpheme bubbles will be generated here -->
+                            </div>
+                            <div class="speech-center" id="speech-center">🗣️</div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <span id="mlu-display" class="text-lg font-semibold text-green-600 dark:text-green-400 flex items-center justify-center">
+                                <span class="age-indicator at-expected"></span>
+                                MLU: 0.00
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Current Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            MLU = Total Morphemes ÷ Total Utterances
+                        </div>
+                    </div>
+                    
+                    <!-- Development Meter -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Development Level</h4>
+                        <div class="development-meter" id="development-meter">
+                            <div class="development-indicator" id="development-indicator"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <span>Below</span>
+                            <span>Expected</span>
+                            <span>Advanced</span>
+                        </div>
+                        <div class="text-center mt-2">
+                            <span id="development-level" class="text-sm font-medium text-gray-900 dark:text-white">Assessment Pending</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Real-time Analysis -->
+                    <div class="utterance-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Live Analysis:</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-700 dark:text-gray-300">Utterances:</span>
+                                <span id="live-utterances" class="font-semibold text-green-600 dark:text-green-400">0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-700 dark:text-gray-300">Morphemes:</span>
+                                <span id="live-morphemes" class="font-semibold text-green-600 dark:text-green-400">0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-700 dark:text-gray-300">Current MLU:</span>
+                                <span id="live-mlu" class="font-semibold text-green-600 dark:text-green-400">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Analyze Speech Sample</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Analysis</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- MLU Summary -->
+            <div class="mlu-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>MLU Analysis Results</span>
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="mlu-result" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">MLU Score</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="total-utterances" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Utterances</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="total-morphemes" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Morphemes</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="age-equivalent" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Age Equivalent</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Analysis -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Statistical Analysis</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Mean Length:</span>
+                            <span id="mean-length" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Standard Deviation:</span>
+                            <span id="std-deviation" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Range:</span>
+                            <span id="length-range" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Longest Utterance:</span>
+                            <span id="longest-utterance" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Shortest Utterance:</span>
+                            <span id="shortest-utterance" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Complexity Score:</span>
+                            <span id="complexity-score" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Utterance Analysis -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="list" class="w-5 h-5"></i>
+                    <span>Utterance Breakdown</span>
+                </h3>
+                <div class="text-analysis" id="utterance-breakdown">
+                    <!-- Utterance analysis will be displayed here -->
+                </div>
+            </div>
+
+            <!-- MLU Chart -->
+            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-purple-800 dark:text-purple-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    <span>MLU Distribution</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="mlu-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Linguistics Quote -->
+            <div class="linguistics-quote mb-6">
+                <p id="linguistics-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "Language is the road map of a culture. It tells you where its people come from and where they are going."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Rita Mae Brown</p>
+            </div>
+
+            <!-- Clinical Insights -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                    <span>Clinical Insights</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="target" class="w-4 h-4"></i>
+                            <span>Development Assessment</span>
+                        </h4>
+                        <p id="development-assessment" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                            <span>Clinical Recommendations</span>
+                        </h4>
+                        <p id="clinical-recommendations" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="book-open" class="w-4 h-4"></i>
+                            <span>Language Features</span>
+                        </h4>
+                        <p id="language-features" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="users" class="w-4 h-4"></i>
+                            <span>Intervention Goals</span>
+                        </h4>
+                        <p id="intervention-goals" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>MLU Calculator Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Mean Length of Utterance (MLU)?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    MLU is a measure of linguistic productivity in children. It's calculated by dividing the total number of morphemes by the total number of utterances in a speech sample. MLU is widely used to assess language development and identify potential delays.
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Analysis Methods</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Morphemes (MLU-m):</strong> Standard method counting grammatical morphemes</li>
+                    <li><strong>Words (MLU-w):</strong> Alternative method counting words only</li>
+                    <li><strong>Brown's Rules:</strong> Classic rules for morpheme counting</li>
+                    <li><strong>Advanced:</strong> Detailed morphological analysis</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Expected MLU by Age</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>18-24 months:</strong> 1.0-2.0 morphemes</li>
+                    <li><strong>2-3 years:</strong> 2.0-3.0 morphemes</li>
+                    <li><strong>3-4 years:</strong> 3.0-4.0 morphemes</li>
+                    <li><strong>4-5 years:</strong> 4.0-5.0 morphemes</li>
+                    <li><strong>5+ years:</strong> 5.0+ morphemes</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Clinical Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Language development assessment</li>
+                    <li>Speech-language therapy planning</li>
+                    <li>Progress monitoring in intervention</li>
+                    <li>Research in child language acquisition</li>
+                    <li>Educational placement decisions</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Linguistics quotes for different MLU ranges
+const linguisticsQuotes = [
+    { min: 5.0, quote: "Language is the road map of a culture. It tells you where its people come from and where they are going.", author: "Rita Mae Brown" },
+    { min: 4.0, quote: "The limits of my language mean the limits of my world.", author: "Ludwig Wittgenstein" },
+    { min: 3.0, quote: "Language is the dress of thought.", author: "Samuel Johnson" },
+    { min: 2.0, quote: "Language is the blood of the soul into which thoughts run and out of which they grow.", author: "Oliver Wendell Holmes" },
+    { min: 0.0, quote: "Every child is born with the capacity for language.", author: "Noam Chomsky" }
+];
+
+// Sample speech data for presets
+const speechSamples = {
+    toddler: {
+        age: { years: 2, months: 0 },
+        sample: `Me want cookie
+Go car
+Mommy up
+No no no
+More juice
+Big doggy
+My ball
+Want that
+Go bye-bye
+Daddy work
+Hot hot
+All done
+Want more
+See birdie
+My shoe`
+    },
+    preschool: {
+        age: { years: 4, months: 0 },
+        sample: `I want to go to the store
+The big dog is running fast
+Can I have some more cookies please
+Mommy is cooking dinner now
+I don't like that green vegetable
+The car is very very big
+We are going to grandma's house
+I can ride my bike really good
+The kitty is sleeping on the bed
+I want to play with my friends
+That's my favorite toy truck
+I need to wash my hands first
+The flowers are pretty and yellow
+I can count to ten by myself
+We saw a big elephant at the zoo`
+    },
+    school: {
+        age: { years: 6, months: 0 },
+        sample: `Yesterday we went to the museum and saw dinosaurs
+I really like playing soccer with my friends after school
+My teacher said I'm getting better at reading chapter books
+Can you help me with my homework because it's really hard
+The movie we watched last night was scary but exciting
+I want to be a scientist when I grow up like my dad
+We're learning about different countries in social studies class
+I think the new student in our class is really nice and funny
+My little sister always wants to play with my toys
+The pizza we had for lunch was the best I've ever tasted
+I can't wait for summer vacation to start next month
+We need to clean up our room before mom gets home
+The book I'm reading has a really interesting mystery story
+I hope it doesn't rain tomorrow so we can have recess outside
+My grandparents are coming to visit us this weekend`
+    },
+    advanced: {
+        age: { years: 8, months: 0 },
+        sample: `I've been thinking about what I want to study when I get to college
+The documentary we watched about ocean life was absolutely fascinating
+Even though I practiced really hard, I still made some mistakes during the piano recital
+My science teacher explained how photosynthesis works and now I understand why plants need sunlight
+I disagree with my friend's opinion about which movie was better because I think the plot was more interesting
+The book I'm currently reading has taught me about different cultures and their traditions
+If I could travel anywhere in the world, I would probably choose to visit Japan or Australia
+My mom and I are planning to bake cookies for the school fundraiser next week
+I've noticed that when I get enough sleep, I perform much better on tests and assignments
+The art project we're working on requires us to use different techniques and materials
+I wonder if scientists will ever discover life on other planets in our solar system
+My younger brother is learning to ride a bike and I'm trying to help him practice
+The weather forecast says it might snow this weekend which would be really exciting
+I think it's important to recycle and take care of our environment for future generations
+Sometimes I like to write stories about imaginary characters and their adventures`
+    }
+};
+
+// MLU developmental norms
+const mluNorms = {
+    18: 1.0, 24: 2.0, 30: 2.5, 36: 3.0, 42: 3.5, 48: 4.0, 54: 4.5, 60: 5.0, 72: 5.5
+};
+
+let mluChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing MLU Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    updateFormula();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const speechSample = document.getElementById('speech-sample');
+    const analysisMethod = document.getElementById('analysis-method');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', analyzeMLU);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (speechSample) {
+        speechSample.addEventListener('input', updateLiveAnalysis);
+    }
+
+    if (analysisMethod) {
+        analysisMethod.addEventListener('change', () => {
+            updateFormula();
+            updateLiveAnalysis();
+        });
+    }
+
+    // Age inputs
+    document.getElementById('child-age-years')?.addEventListener('input', updateVisualization);
+    document.getElementById('child-age-months')?.addEventListener('input', updateVisualization);
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    const preset = speechSamples[presetKey];
+    if (!preset) return;
+
+    document.getElementById('child-age-years').value = preset.age.years;
+    document.getElementById('child-age-months').value = preset.age.months;
+    document.getElementById('speech-sample').value = preset.sample;
+
+    updateVisualization();
+    updateLiveAnalysis();
+}
+
+// Update formula display
+function updateFormula() {
+    const method = document.getElementById('analysis-method').value;
+    const formulaDisplay = document.getElementById('formula-display');
+
+    const formulas = {
+        'morphemes': 'MLU = Total Morphemes ÷ Total Utterances',
+        'words': 'MLU-w = Total Words ÷ Total Utterances',
+        'brown': 'MLU (Brown\'s Rules) = Morphemes ÷ Utterances',
+        'advanced': 'MLU = (Roots + Inflections + Derivations) ÷ Utterances'
+    };
+
+    if (formulaDisplay) {
+        formulaDisplay.textContent = formulas[method] || formulas['morphemes'];
+    }
+}
+
+// Update visualization
+function updateVisualization() {
+    const years = parseInt(document.getElementById('child-age-years').value) || 0;
+    const months = parseInt(document.getElementById('child-age-months').value) || 0;
+    const totalMonths = years * 12 + months;
+
+    // Update morpheme bubbles
+    generateMorphemeBubbles(totalMonths);
+
+    // Update development level indicator
+    updateDevelopmentMeter(0); // Will be updated with actual MLU later
+}
+
+// Generate morpheme bubbles for visualization
+function generateMorphemeBubbles(ageInMonths) {
+    const container = document.getElementById('morpheme-bubbles');
+    container.innerHTML = '';
+
+    const expectedMLU = getExpectedMLU(ageInMonths);
+    const numBubbles = Math.min(Math.max(Math.round(expectedMLU * 2), 3), 12);
+
+    for (let i = 0; i < numBubbles; i++) {
+        const bubble = document.createElement('div');
+        bubble.className = 'morpheme-bubble';
+        
+        const size = 20 + Math.random() * 15;
+        const angle = (360 / numBubbles) * i + Math.random() * 30;
+        const distance = 60 + Math.random() * 40;
+        
+        const x = Math.cos(angle * Math.PI / 180) * distance;
+        const y = Math.sin(angle * Math.PI / 180) * distance;
+        
+        bubble.style.width = `${size}px`;
+        bubble.style.height = `${size}px`;
+        bubble.style.left = `calc(50% + ${x}px - ${size/2}px)`;
+        bubble.style.top = `calc(50% + ${y}px - ${size/2}px)`;
+        bubble.textContent = i + 1;
+        
+        container.appendChild(bubble);
+    }
+}
+
+// Get expected MLU for age
+function getExpectedMLU(ageInMonths) {
+    if (ageInMonths < 18) return 1.0;
+    if (ageInMonths > 72) return 5.5;
+
+    // Linear interpolation between known values
+    const ages = Object.keys(mluNorms).map(Number).sort((a, b) => a - b);
+    
+    for (let i = 0; i < ages.length - 1; i++) {
+        if (ageInMonths >= ages[i] && ageInMonths <= ages[i + 1]) {
+            const ratio = (ageInMonths - ages[i]) / (ages[i + 1] - ages[i]);
+            return mluNorms[ages[i]] + ratio * (mluNorms[ages[i + 1]] - mluNorms[ages[i]]);
+        }
+    }
+    
+    return 3.0; // Default
+}
+
+// Update development meter
+function updateDevelopmentMeter(actualMLU) {
+    const years = parseInt(document.getElementById('child-age-years').value) || 0;
+    const months = parseInt(document.getElementById('child-age-months').value) || 0;
+    const totalMonths = years * 12 + months;
+    const expectedMLU = getExpectedMLU(totalMonths);
+
+    const indicator = document.getElementById('development-indicator');
+    const levelDisplay = document.getElementById('development-level');
+    const mluDisplay = document.getElementById('mlu-display');
+
+    if (actualMLU === 0) {
+        indicator.style.left = '50%';
+        levelDisplay.textContent = 'Assessment Pending';
+        mluDisplay.innerHTML = '<span class="age-indicator at-expected"></span>MLU: 0.00';
+        return;
+    }
+
+    const ratio = actualMLU / expectedMLU;
+    let position, level, indicatorClass;
+
+    if (ratio < 0.8) {
+        position = 20;
+        level = 'Below Expected';
+        indicatorClass = 'below-expected';
+    } else if (ratio < 1.2) {
+        position = 50;
+        level = 'At Expected Level';
+        indicatorClass = 'at-expected';
+    } else if (ratio < 1.5) {
+        position = 75;
+        level = 'Above Expected';
+        indicatorClass = 'above-expected';
+    } else {
+        position = 90;
+        level = 'Advanced';
+        indicatorClass = 'advanced';
+    }
+
+    indicator.style.left = `${position}%`;
+    levelDisplay.textContent = level;
+    mluDisplay.innerHTML = `<span class="age-indicator ${indicatorClass}"></span>MLU: ${actualMLU.toFixed(2)}`;
+}
+
+// Update live analysis
+function updateLiveAnalysis() {
+    const sample = document.getElementById('speech-sample').value;
+    const method = document.getElementById('analysis-method').value;
+
+    if (!sample.trim()) {
+        document.getElementById('live-utterances').textContent = '0';
+        document.getElementById('live-morphemes').textContent = '0';
+        document.getElementById('live-mlu').textContent = '0.00';
+        return;
+    }
+
+    const utterances = sample.trim().split('\n').filter(u => u.trim());
+    const totalUtterances = utterances.length;
+    
+    let totalMorphemes = 0;
+    utterances.forEach(utterance => {
+        totalMorphemes += countMorphemes(utterance.trim(), method);
+    });
+
+    const mlu = totalUtterances > 0 ? totalMorphemes / totalUtterances : 0;
+
+    document.getElementById('live-utterances').textContent = totalUtterances;
+    document.getElementById('live-morphemes').textContent = totalMorphemes;
+    document.getElementById('live-mlu').textContent = mlu.toFixed(2);
+
+    updateDevelopmentMeter(mlu);
+}
+
+// Count morphemes in an utterance
+function countMorphemes(utterance, method) {
+    if (!utterance.trim()) return 0;
+
+    const words = utterance.toLowerCase().replace(/[^\w\s']/g, '').split(/\s+/).filter(w => w);
+    
+    if (method === 'words') {
+        return words.length;
+    }
+
+    let morphemeCount = 0;
+
+    words.forEach(word => {
+        morphemeCount += 1; // Base word
+
+        if (method === 'morphemes' || method === 'brown' || method === 'advanced') {
+            // Count inflectional morphemes
+            if (word.endsWith('s') && !word.endsWith('ss')) morphemeCount += 1; // Plural
+            if (word.endsWith('ed') && !word.endsWith('eed')) morphemeCount += 1; // Past tense
+            if (word.endsWith('ing')) morphemeCount += 1; // Progressive
+            if (word.endsWith('er') && word.length > 3) morphemeCount += 1; // Comparative
+            if (word.endsWith('est') && word.length > 4) morphemeCount += 1; // Superlative
+            if (word.endsWith('ly') && word.length > 3) morphemeCount += 1; // Adverb
+
+            // Contractions
+            if (word.includes("'")) morphemeCount += 1;
+
+            if (method === 'advanced') {
+                // Additional derivational morphemes
+                if (word.startsWith('un')) morphemeCount += 1;
+                if (word.startsWith('re')) morphemeCount += 1;
+                if (word.endsWith('tion') || word.endsWith('sion')) morphemeCount += 1;
+                if (word.endsWith('ness')) morphemeCount += 1;
+                if (word.endsWith('ment')) morphemeCount += 1;
+            }
+        }
+    });
+
+    return morphemeCount;
+}
+
+// Analyze MLU
+function analyzeMLU() {
+    console.log('Analyzing MLU...');
+    try {
+        const sample = document.getElementById('speech-sample').value.trim();
+        const method = document.getElementById('analysis-method').value;
+        const years = parseInt(document.getElementById('child-age-years').value) || 0;
+        const months = parseInt(document.getElementById('child-age-months').value) || 0;
+
+        if (!sample) {
+            alert('Please enter a speech sample for analysis');
+            return;
+        }
+
+        const utterances = sample.split('\n').filter(u => u.trim());
+        
+        if (utterances.length < 10) {
+            alert('Please provide at least 10 utterances for reliable analysis');
+            return;
+        }
+
+        // Analyze each utterance
+        const utteranceData = utterances.map(utterance => {
+            const cleaned = utterance.trim();
+            const morphemes = countMorphemes(cleaned, method);
+            return {
+                text: cleaned,
+                morphemes: morphemes,
+                words: cleaned.split(/\s+/).filter(w => w).length
+            };
+        });
+
+        // Calculate statistics
+        const totalUtterances = utteranceData.length;
+        const totalMorphemes = utteranceData.reduce((sum, u) => sum + u.morphemes, 0);
+        const mlu = totalMorphemes / totalUtterances;
+
+        const morphemeCounts = utteranceData.map(u => u.morphemes);
+        const mean = mlu;
+        const variance = morphemeCounts.reduce((sum, count) => sum + Math.pow(count - mean, 2), 0) / totalUtterances;
+        const stdDev = Math.sqrt(variance);
+        const minLength = Math.min(...morphemeCounts);
+        const maxLength = Math.max(...morphemeCounts);
+
+        // Age analysis
+        const totalMonths = years * 12 + months;
+        const expectedMLU = getExpectedMLU(totalMonths);
+        const ageEquivalent = getAgeEquivalent(mlu);
+
+        // Calculate insights
+        const insights = calculateClinicalInsights(mlu, expectedMLU, totalMonths, utteranceData);
+
+        // Update display
+        updateResults(mlu, totalUtterances, totalMorphemes, ageEquivalent, mean, stdDev, minLength, maxLength, utteranceData, insights);
+
+        // Create chart
+        createMLUChart(morphemeCounts);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('MLU analysis completed:', { mlu, totalUtterances, totalMorphemes });
+    } catch (error) {
+        console.error('Error analyzing MLU:', error);
+        alert('An error occurred during analysis. Please check your input.');
+    }
+}
+
+// Get age equivalent for MLU
+function getAgeEquivalent(mlu) {
+    const ages = Object.keys(mluNorms).map(Number).sort((a, b) => a - b);
+    
+    for (let i = 0; i < ages.length - 1; i++) {
+        if (mlu >= mluNorms[ages[i]] && mlu <= mluNorms[ages[i + 1]]) {
+            const ratio = (mlu - mluNorms[ages[i]]) / (mluNorms[ages[i + 1]] - mluNorms[ages[i]]);
+            const ageInMonths = ages[i] + ratio * (ages[i + 1] - ages[i]);
+            const years = Math.floor(ageInMonths / 12);
+            const months = Math.round(ageInMonths % 12);
+            return `${years};${months}`;
+        }
+    }
+    
+    if (mlu < mluNorms[18]) return '<1;6';
+    if (mlu > mluNorms[72]) return '>6;0';
+    return '~3;0';
+}
+
+// Calculate clinical insights
+function calculateClinicalInsights(mlu, expectedMLU, ageInMonths, utteranceData) {
+    const ratio = mlu / expectedMLU;
+    
+    let developmentAssessment = '';
+    if (ratio < 0.8) {
+        developmentAssessment = 'MLU is below expected range for chronological age. Consider further language assessment and possible intervention.';
+    } else if (ratio > 1.2) {
+        developmentAssessment = 'MLU is above expected range, indicating advanced language development for chronological age.';
+    } else {
+        developmentAssessment = 'MLU is within expected range for chronological age, suggesting typical language development.';
+    }
+
+    let clinicalRecommendations = '';
+    if (mlu < 2.0) {
+        clinicalRecommendations = 'Focus on expanding vocabulary and combining words. Use modeling and expansion techniques.';
+    } else if (mlu < 3.0) {
+        clinicalRecommendations = 'Work on grammatical morphemes, sentence expansion, and complex sentence structures.';
+    } else if (mlu < 4.0) {
+        clinicalRecommendations = 'Target advanced grammar, narrative skills, and academic language development.';
+    } else {
+        clinicalRecommendations = 'Continue supporting complex language use and literacy development.';
+    }
+
+    const complexUtterances = utteranceData.filter(u => u.morphemes > mlu + 1).length;
+    const simpleUtterances = utteranceData.filter(u => u.morphemes < 2).length;
+    
+    const languageFeatures = `${complexUtterances} complex utterances, ${simpleUtterances} simple utterances. Average complexity suggests ${mlu > 3 ? 'good' : 'developing'} grammatical skills.`;
+
+    const interventionGoals = mlu < expectedMLU ? 
+        'Increase MLU through sentence expansion, grammatical morpheme training, and narrative development.' :
+        'Maintain current level while focusing on pragmatic skills and academic language.';
+
+    return {
+        developmentAssessment,
+        clinicalRecommendations,
+        languageFeatures,
+        interventionGoals
+    };
+}
+
+// Update results display
+function updateResults(mlu, totalUtterances, totalMorphemes, ageEquivalent, mean, stdDev, minLength, maxLength, utteranceData, insights) {
+    // Update summary
+    document.getElementById('mlu-result').textContent = mlu.toFixed(2);
+    document.getElementById('total-utterances').textContent = totalUtterances;
+    document.getElementById('total-morphemes').textContent = totalMorphemes;
+    document.getElementById('age-equivalent').textContent = ageEquivalent;
+
+    // Update statistics
+    document.getElementById('mean-length').textContent = mean.toFixed(2);
+    document.getElementById('std-deviation').textContent = stdDev.toFixed(2);
+    document.getElementById('length-range').textContent = `${minLength} - ${maxLength}`;
+    document.getElementById('longest-utterance').textContent = `${maxLength} morphemes`;
+    document.getElementById('shortest-utterance').textContent = `${minLength} morphemes`;
+    
+    const complexityScore = (mlu * 20).toFixed(0);
+    document.getElementById('complexity-score').textContent = `${complexityScore}/100`;
+
+    // Update utterance breakdown
+    updateUtteranceBreakdown(utteranceData);
+
+    // Update insights
+    document.getElementById('development-assessment').textContent = insights.developmentAssessment;
+    document.getElementById('clinical-recommendations').textContent = insights.clinicalRecommendations;
+    document.getElementById('language-features').textContent = insights.languageFeatures;
+    document.getElementById('intervention-goals').textContent = insights.interventionGoals;
+
+    // Update linguistics quote
+    const quote = getLinguisticsQuote(mlu);
+    document.getElementById('linguistics-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.linguistics-quote p:last-child').textContent = `- ${quote.author}`;
+
+    // Update development meter
+    updateDevelopmentMeter(mlu);
+}
+
+// Update utterance breakdown display
+function updateUtteranceBreakdown(utteranceData) {
+    const container = document.getElementById('utterance-breakdown');
+    container.innerHTML = '';
+
+    utteranceData.slice(0, 20).forEach((utterance, index) => {
+        const item = document.createElement('div');
+        item.className = 'utterance-item';
+        
+        const words = utterance.text.split(/\s+/);
+        const highlightedText = words.map(word => 
+            `<span class="morpheme-highlight">${word}</span>`
+        ).join(' ');
+        
+        item.innerHTML = `
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                        Utterance ${index + 1}: ${highlightedText}
+                    </div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">
+                        ${utterance.morphemes} morphemes • ${utterance.words} words
+                    </div>
+                </div>
+                <div class="ml-4 text-right">
+                    <div class="text-lg font-bold text-green-600 dark:text-green-400">
+                        ${utterance.morphemes}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(item);
+    });
+
+    if (utteranceData.length > 20) {
+        const moreItem = document.createElement('div');
+        moreItem.className = 'text-center text-gray-500 dark:text-gray-400 text-sm mt-4';
+        moreItem.textContent = `... and ${utteranceData.length - 20} more utterances`;
+        container.appendChild(moreItem);
+    }
+}
+
+// Get linguistics quote based on MLU
+function getLinguisticsQuote(mlu) {
+    for (const quote of linguisticsQuotes) {
+        if (mlu >= quote.min) {
+            return quote;
+        }
+    }
+    return linguisticsQuotes[linguisticsQuotes.length - 1];
+}
+
+// Create MLU distribution chart
+function createMLUChart(morphemeCounts) {
+    console.log('Creating MLU chart...');
+    try {
+        const ctx = document.getElementById('mlu-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (mluChart) {
+            mluChart.destroy();
+        }
+
+        // Create histogram data
+        const maxCount = Math.max(...morphemeCounts);
+        const bins = [];
+        for (let i = 1; i <= maxCount; i++) {
+            bins.push({
+                length: i,
+                frequency: morphemeCounts.filter(count => count === i).length
+            });
+        }
+
+        mluChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: bins.map(bin => `${bin.length} morphemes`),
+                datasets: [{
+                    label: 'Frequency',
+                    data: bins.map(bin => bin.frequency),
+                    backgroundColor: '#059669',
+                    borderColor: '#047857',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Distribution of Utterance Lengths',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.parsed.y} utterances with ${context.label}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Utterances',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Utterance Length',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('MLU chart created successfully');
+    } catch (error) {
+        console.error('Error creating MLU chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const mlu = document.getElementById('mlu-result').textContent;
+        const utterances = document.getElementById('total-utterances').textContent;
+        const morphemes = document.getElementById('total-morphemes').textContent;
+        const ageEquivalent = document.getElementById('age-equivalent').textContent;
+        const method = document.getElementById('analysis-method').value;
+        
+        const results = `
+MLU Calculator Analysis Results
+==============================
+
+Analysis Method: ${method.replace('-', ' ').toUpperCase()}
+Child Age: ${document.getElementById('child-age-years').value || 0} years, ${document.getElementById('child-age-months').value || 0} months
+
+Primary Results:
+MLU Score: ${mlu}
+Total Utterances: ${utterances}
+Total Morphemes: ${morphemes}
+Age Equivalent: ${ageEquivalent}
+
+Statistical Analysis:
+Mean Length: ${document.getElementById('mean-length').textContent}
+Standard Deviation: ${document.getElementById('std-deviation').textContent}
+Range: ${document.getElementById('length-range').textContent}
+Complexity Score: ${document.getElementById('complexity-score').textContent}
+
+Clinical Assessment:
+${document.getElementById('development-assessment').textContent}
+
+Recommendations:
+${document.getElementById('clinical-recommendations').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our MLU Calculator for more language assessments!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mlu-analysis-${mlu}-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing MLU calculator...');
+
+    // Reset inputs
+    document.getElementById('analysis-method').value = 'morphemes';
+    document.getElementById('child-age-years').value = '';
+    document.getElementById('child-age-months').value = '';
+    document.getElementById('speech-sample').value = '';
+    document.getElementById('language-select').value = 'english';
+
+    updateFormula();
+    updateVisualization();
+    updateLiveAnalysis();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (mluChart) {
+        mluChart.destroy();
+        mluChart = null;
+    }
+
+    console.log('MLU calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing MLU calculator...');
+    initCalculator();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

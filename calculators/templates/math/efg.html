@@ -1,0 +1,1246 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<!-- Math.js for calculations -->
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11.11.0/lib/browser/math.min.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.efg-display {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.physics-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #1e40af;
+    border-radius: 0 8px 8px 0;
+}
+.gradient-meter {
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #1e40af 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.gradient-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.efg-visualization {
+    width: 250px;
+    height: 250px;
+    border: 2px solid #1e40af;
+    border-radius: 20px;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(30, 64, 175, 0.1) 0%, rgba(30, 64, 175, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.field-lines {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0.6;
+}
+.field-line {
+    position: absolute;
+    background: #1e40af;
+    border-radius: 1px;
+    transition: all 0.5s ease;
+}
+.nucleus {
+    width: 20px;
+    height: 20px;
+    background: #dc2626;
+    border-radius: 50%;
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+    animation: glow 2s ease-in-out infinite alternate;
+}
+@keyframes glow {
+    from { box-shadow: 0 0 20px rgba(220, 38, 38, 0.5); }
+    to { box-shadow: 0 0 30px rgba(220, 38, 38, 0.8); }
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.tensor-matrix {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    max-width: 200px;
+    margin: 0 auto;
+}
+.tensor-element {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0.5rem;
+    text-align: center;
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+.dark .tensor-element {
+    background: #334155;
+    border-color: #475569;
+    color: #e2e8f0;
+}
+.symmetry-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.cubic { background: #22c55e; }
+.axial { background: #f59e0b; }
+.biaxial { background: #ef4444; }
+.asymmetric { background: #8b5cf6; }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="atom" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">EFG Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate Electric Field Gradient (EFG) tensors for nuclear quadrupole interactions. Essential for NMR, NQR, and solid-state physics applications!
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div class="text-blue-800 dark:text-blue-300 font-medium">
+                ⚛️ Quantum Physics • 🧲 NMR/NQR • 📊 Tensor Analysis • 🔬 Spectroscopy
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">EFG Parameters</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Calculation Method:</label>
+                        <select id="calculation-method" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="point-charges">Point Charges Model</option>
+                            <option value="tensor-components">Direct Tensor Components</option>
+                            <option value="quadrupole-coupling">Quadrupole Coupling Constants</option>
+                            <option value="crystal-field">Crystal Field Parameters</option>
+                        </select>
+                    </div>
+
+                    <!-- Point Charges Method -->
+                    <div id="point-charges-inputs" class="space-y-4">
+                        <h3 class="font-medium text-gray-900 dark:text-white">Point Charges Configuration</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Charge 1 (e):</label>
+                                <input type="number" id="charge1" step="0.01" placeholder="1.0" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Distance 1 (Å):</label>
+                                <input type="number" id="distance1" step="0.01" placeholder="2.0" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Charge 2 (e):</label>
+                                <input type="number" id="charge2" step="0.01" placeholder="-1.0" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Distance 2 (Å):</label>
+                                <input type="number" id="distance2" step="0.01" placeholder="2.5" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Symmetry:</label>
+                            <select id="symmetry-type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <option value="cubic">Cubic (Oh)</option>
+                                <option value="axial">Axial (D∞h)</option>
+                                <option value="biaxial">Biaxial (D2h)</option>
+                                <option value="asymmetric">Asymmetric (C1)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tensor Components Method -->
+                    <div id="tensor-inputs" class="space-y-4 hidden">
+                        <h3 class="font-medium text-gray-900 dark:text-white">EFG Tensor Components (V/m²)</h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <input type="number" id="vxx" step="1e15" placeholder="Vxx" class="parameter-input px-2 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs">
+                            <input type="number" id="vxy" step="1e15" placeholder="Vxy" class="parameter-input px-2 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs">
+                            <input type="number" id="vxz" step="1e15" placeholder="Vxz" class="parameter-input px-2 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs">
+                            <input type="number" id="vyx" step="1e15" placeholder="Vyx" class="parameter-input px-2 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs">
+                            <input type="number" id="vyy" step="1e15" placeholder="Vyy" class="parameter-input px-2 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs">
+                            <input type="number" id="vyz" step="1e15" placeholder="Vyz" class="parameter-input px-2 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs">
+                            <input type="number" id="vzx" step="1e15" placeholder="Vzx" class="parameter-input px-2 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs">
+                            <input type="number" id="vzy" step="1e15" placeholder="Vzy" class="parameter-input px-2 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs">
+                            <input type="number" id="vzz" step="1e15" placeholder="Vzz" class="parameter-input px-2 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs">
+                        </div>
+                    </div>
+
+                    <!-- Quadrupole Coupling Method -->
+                    <div id="quadrupole-inputs" class="space-y-4 hidden">
+                        <h3 class="font-medium text-gray-900 dark:text-white">Quadrupole Parameters</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">CQ (MHz):</label>
+                                <input type="number" id="cq-value" step="0.1" placeholder="5.0" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">η (asymmetry):</label>
+                                <input type="number" id="eta-value" step="0.01" min="0" max="1" placeholder="0.2" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nuclear Spin (I):</label>
+                                <select id="nuclear-spin" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                    <option value="1">I = 1</option>
+                                    <option value="1.5">I = 3/2</option>
+                                    <option value="2">I = 2</option>
+                                    <option value="2.5">I = 5/2</option>
+                                    <option value="3">I = 3</option>
+                                    <option value="3.5">I = 7/2</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Q (barn):</label>
+                                <input type="number" id="quadrupole-moment" step="0.01" placeholder="0.15" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Presets:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('li7')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                ⁷Li in LiCl
+                            </button>
+                            <button onclick="setPreset('na23')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                ²³Na in NaCl
+                            </button>
+                            <button onclick="setPreset('al27')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                ²⁷Al in Al₂O₃
+                            </button>
+                            <button onclick="setPreset('cu63')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                ⁶³Cu in CuO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">EFG Visualization</h3>
+                        <div class="efg-visualization" id="efg-viz">
+                            <div class="field-lines" id="field-lines">
+                                <!-- Field lines will be generated here -->
+                            </div>
+                            <div class="nucleus" id="nucleus"></div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <span id="symmetry-display" class="text-lg font-semibold text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                <span class="symmetry-indicator cubic"></span>
+                                Cubic Symmetry
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Current Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tensor Matrix Display -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">EFG Tensor Matrix</h4>
+                        <div class="tensor-matrix" id="tensor-matrix">
+                            <div class="tensor-element">Vxx</div>
+                            <div class="tensor-element">Vxy</div>
+                            <div class="tensor-element">Vxz</div>
+                            <div class="tensor-element">Vyx</div>
+                            <div class="tensor-element">Vyy</div>
+                            <div class="tensor-element">Vyz</div>
+                            <div class="tensor-element">Vzx</div>
+                            <div class="tensor-element">Vzy</div>
+                            <div class="tensor-element">Vzz</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate EFG</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Results</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- EFG Summary -->
+            <div class="efg-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>EFG Calculation Results</span>
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="vzz-result" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Vzz (V/m²)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="eta-result" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">η (asymmetry)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="cq-result" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">CQ (MHz)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="symmetry-result" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Symmetry</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Principal Components -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span>Principal Components</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Vxx:</span>
+                            <span id="vxx-principal" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Vyy:</span>
+                            <span id="vyy-principal" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Vzz:</span>
+                            <span id="vzz-principal" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">|Vxx|:</span>
+                            <span id="vxx-magnitude" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">|Vyy|:</span>
+                            <span id="vyy-magnitude" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">|Vzz|:</span>
+                            <span id="vzz-magnitude" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Trace:</span>
+                            <span id="trace-value" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Determinant:</span>
+                            <span id="determinant-value" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Max Gradient:</span>
+                            <span id="max-gradient" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EFG Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>EFG Component Analysis</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="efg-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Physics Quote -->
+            <div class="physics-quote mb-6">
+                <p id="physics-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "The electric field gradient is a window into the electronic structure around the nucleus."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Nuclear Physics Principle</p>
+            </div>
+
+            <!-- Physical Insights -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="microscope" class="w-5 h-5"></i>
+                    <span>Physical Insights</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="target" class="w-4 h-4"></i>
+                            <span>Symmetry Analysis</span>
+                        </h4>
+                        <p id="symmetry-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="radio" class="w-4 h-4"></i>
+                            <span>NMR/NQR Effects</span>
+                        </h4>
+                        <p id="nmr-effects" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="crystal" class="w-4 h-4"></i>
+                            <span>Crystal Structure</span>
+                        </h4>
+                        <p id="crystal-structure" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="activity" class="w-4 h-4"></i>
+                            <span>Applications</span>
+                        </h4>
+                        <p id="applications" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>EFG Calculator Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Electric Field Gradient (EFG)?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    The Electric Field Gradient (EFG) is a second-rank tensor that describes how the electric field varies in space around a nucleus. It's crucial for understanding nuclear quadrupole interactions in NMR, NQR, and Mössbauer spectroscopy.
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Calculation Methods</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Point Charges:</strong> Calculate EFG from surrounding point charges</li>
+                    <li><strong>Tensor Components:</strong> Direct input of EFG tensor elements</li>
+                    <li><strong>Quadrupole Coupling:</strong> From experimental NMR/NQR parameters</li>
+                    <li><strong>Crystal Field:</strong> Using crystal field theory parameters</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key Parameters</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Vzz:</strong> Principal component (largest magnitude)</li>
+                    <li><strong>η (eta):</strong> Asymmetry parameter (0 ≤ η ≤ 1)</li>
+                    <li><strong>CQ:</strong> Quadrupole coupling constant</li>
+                    <li><strong>Symmetry:</strong> Point group symmetry of the site</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Nuclear Magnetic Resonance (NMR) spectroscopy</li>
+                    <li>Nuclear Quadrupole Resonance (NQR) analysis</li>
+                    <li>Mössbauer spectroscopy interpretation</li>
+                    <li>Crystal structure determination</li>
+                    <li>Electronic structure calculations</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Physics quotes for different EFG magnitudes
+const physicsQuotes = [
+    { min: 1e21, quote: "The electric field gradient is a window into the electronic structure around the nucleus.", author: "Nuclear Physics Principle" },
+    { min: 1e20, quote: "In the quantum world, every measurement reveals the hidden symmetries of nature.", author: "Quantum Mechanics Philosophy" },
+    { min: 1e19, quote: "The nucleus feels the asymmetry of its electronic environment through the electric field gradient.", author: "Solid State Physics" },
+    { min: 1e18, quote: "Symmetry is the key to understanding the fundamental forces of nature.", author: "Physics Principle" },
+    { min: 0, quote: "Every atom is a universe in miniature, governed by quantum mechanical laws.", author: "Atomic Physics" }
+];
+
+// Preset configurations for common nuclei
+const presets = {
+    li7: {
+        method: 'quadrupole-coupling',
+        cq: 0.04,
+        eta: 0.0,
+        spin: 1.5,
+        quadrupoleMoment: -0.04,
+        name: '⁷Li in LiCl'
+    },
+    na23: {
+        method: 'quadrupole-coupling',
+        cq: 2.6,
+        eta: 0.1,
+        spin: 1.5,
+        quadrupoleMoment: 0.104,
+        name: '²³Na in NaCl'
+    },
+    al27: {
+        method: 'quadrupole-coupling',
+        cq: 11.4,
+        eta: 0.0,
+        spin: 2.5,
+        quadrupoleMoment: 0.146,
+        name: '²⁷Al in Al₂O₃'
+    },
+    cu63: {
+        method: 'quadrupole-coupling',
+        cq: 31.5,
+        eta: 0.6,
+        spin: 1.5,
+        quadrupoleMoment: -0.220,
+        name: '⁶³Cu in CuO'
+    }
+};
+
+let efgChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing EFG Calculator...');
+    setupEventListeners();
+    updateMethodInputs();
+    updateFormula();
+    updateVisualization();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const methodSelect = document.getElementById('calculation-method');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateEFG);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (methodSelect) {
+        methodSelect.addEventListener('change', () => {
+            updateMethodInputs();
+            updateFormula();
+        });
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input')) {
+            updateVisualization();
+        }
+    });
+
+    document.getElementById('symmetry-type')?.addEventListener('change', updateVisualization);
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    const preset = presets[presetKey];
+    if (!preset) return;
+
+    document.getElementById('calculation-method').value = preset.method;
+    updateMethodInputs();
+
+    if (preset.method === 'quadrupole-coupling') {
+        document.getElementById('cq-value').value = preset.cq;
+        document.getElementById('eta-value').value = preset.eta;
+        document.getElementById('nuclear-spin').value = preset.spin;
+        document.getElementById('quadrupole-moment').value = preset.quadrupoleMoment;
+    }
+
+    updateFormula();
+    updateVisualization();
+    calculateEFG();
+}
+
+// Update input sections based on method
+function updateMethodInputs() {
+    const method = document.getElementById('calculation-method').value;
+    
+    // Hide all input sections
+    document.getElementById('point-charges-inputs').classList.add('hidden');
+    document.getElementById('tensor-inputs').classList.add('hidden');
+    document.getElementById('quadrupole-inputs').classList.add('hidden');
+
+    // Show relevant section
+    switch (method) {
+        case 'point-charges':
+            document.getElementById('point-charges-inputs').classList.remove('hidden');
+            break;
+        case 'tensor-components':
+            document.getElementById('tensor-inputs').classList.remove('hidden');
+            break;
+        case 'quadrupole-coupling':
+            document.getElementById('quadrupole-inputs').classList.remove('hidden');
+            break;
+    }
+}
+
+// Update formula display using KaTeX
+function updateFormula() {
+    const method = document.getElementById('calculation-method').value;
+    const katexElement = document.getElementById('katex-formula');
+
+    let formula = '';
+    switch (method) {
+        case 'point-charges':
+            formula = 'V_{ij} = \\frac{1}{4\\pi\\epsilon_0} \\sum_k \\frac{q_k}{r_k^3}(3x_{ik}x_{jk} - r_k^2\\delta_{ij})';
+            break;
+        case 'tensor-components':
+            formula = '\\mathbf{V} = \\begin{pmatrix} V_{xx} & V_{xy} & V_{xz} \\\\ V_{yx} & V_{yy} & V_{yz} \\\\ V_{zx} & V_{zy} & V_{zz} \\end{pmatrix}';
+            break;
+        case 'quadrupole-coupling':
+            formula = 'C_Q = \\frac{eQV_{zz}}{h}, \\quad \\eta = \\frac{V_{xx} - V_{yy}}{V_{zz}}';
+            break;
+        case 'crystal-field':
+            formula = 'V_{zz} = \\frac{2}{7}\\langle r^{-3} \\rangle \\sum_m A_{2m}Y_{2m}(\\theta,\\phi)';
+            break;
+        default:
+            formula = 'V_{ij} = \\frac{\\partial^2 V}{\\partial x_i \\partial x_j}';
+    }
+
+    try {
+        katex.render(formula, katexElement, {
+            throwOnError: false,
+            displayMode: true
+        });
+    } catch (error) {
+        katexElement.textContent = formula;
+    }
+}
+
+// Update EFG visualization
+function updateVisualization() {
+    const symmetry = document.getElementById('symmetry-type')?.value || 'cubic';
+    const symmetryDisplay = document.getElementById('symmetry-display');
+    const fieldLines = document.getElementById('field-lines');
+
+    // Update symmetry indicator
+    const symmetryInfo = {
+        cubic: { name: 'Cubic Symmetry', class: 'cubic' },
+        axial: { name: 'Axial Symmetry', class: 'axial' },
+        biaxial: { name: 'Biaxial Symmetry', class: 'biaxial' },
+        asymmetric: { name: 'Asymmetric', class: 'asymmetric' }
+    };
+
+    const info = symmetryInfo[symmetry];
+    symmetryDisplay.innerHTML = `
+        <span class="symmetry-indicator ${info.class}"></span>
+        ${info.name}
+    `;
+
+    // Generate field lines based on symmetry
+    generateFieldLines(fieldLines, symmetry);
+}
+
+// Generate field lines for visualization
+function generateFieldLines(container, symmetry) {
+    container.innerHTML = '';
+    
+    const numLines = symmetry === 'cubic' ? 4 : symmetry === 'axial' ? 6 : 8;
+    
+    for (let i = 0; i < numLines; i++) {
+        const line = document.createElement('div');
+        line.className = 'field-line';
+        
+        const angle = (360 / numLines) * i;
+        const length = 80 + Math.random() * 40;
+        const width = 2;
+        
+        line.style.width = `${length}px`;
+        line.style.height = `${width}px`;
+        line.style.transform = `rotate(${angle}deg)`;
+        line.style.left = '50%';
+        line.style.top = '50%';
+        line.style.transformOrigin = '0 50%';
+        
+        container.appendChild(line);
+    }
+}
+
+// Calculate EFG based on selected method
+function calculateEFG() {
+    console.log('Calculating EFG...');
+    try {
+        const method = document.getElementById('calculation-method').value;
+        let efgTensor, vzz, eta, cq;
+
+        switch (method) {
+            case 'point-charges':
+                ({ efgTensor, vzz, eta } = calculateFromPointCharges());
+                cq = calculateCQ(vzz);
+                break;
+            case 'tensor-components':
+                ({ efgTensor, vzz, eta } = calculateFromTensorComponents());
+                cq = calculateCQ(vzz);
+                break;
+            case 'quadrupole-coupling':
+                ({ efgTensor, vzz, eta, cq } = calculateFromQuadrupoleCoupling());
+                break;
+            default:
+                throw new Error('Unknown calculation method');
+        }
+
+        if (!efgTensor) {
+            alert('Please enter valid parameters for calculation');
+            return;
+        }
+
+        // Calculate additional properties
+        const properties = calculateTensorProperties(efgTensor);
+        const insights = calculatePhysicalInsights(vzz, eta, method);
+
+        // Update display
+        updateResults(vzz, eta, cq, efgTensor, properties, insights);
+
+        // Create chart
+        createEFGChart(efgTensor);
+
+        // Update tensor matrix display
+        updateTensorMatrix(efgTensor);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('EFG calculated successfully:', { vzz, eta, cq });
+    } catch (error) {
+        console.error('Error calculating EFG:', error);
+        alert('An error occurred while calculating EFG. Please check your inputs.');
+    }
+}
+
+// Calculate EFG from point charges
+function calculateFromPointCharges() {
+    const charge1 = parseFloat(document.getElementById('charge1').value) || 0;
+    const distance1 = parseFloat(document.getElementById('distance1').value) || 0;
+    const charge2 = parseFloat(document.getElementById('charge2').value) || 0;
+    const distance2 = parseFloat(document.getElementById('distance2').value) || 0;
+
+    if (!charge1 || !distance1) return {};
+
+    // Simplified point charge calculation (assuming charges along z-axis)
+    const e = 1.602e-19; // elementary charge
+    const epsilon0 = 8.854e-12; // permittivity of free space
+    const angstromToMeter = 1e-10;
+
+    const r1 = distance1 * angstromToMeter;
+    const r2 = distance2 * angstromToMeter;
+
+    // Calculate EFG components (simplified axial case)
+    const vzz1 = (e * charge1) / (4 * Math.PI * epsilon0 * Math.pow(r1, 3)) * (-2);
+    const vzz2 = charge2 && distance2 ? (e * charge2) / (4 * Math.PI * epsilon0 * Math.pow(r2, 3)) * (-2) : 0;
+    
+    const vzz = vzz1 + vzz2;
+    const vxx = -vzz / 2;
+    const vyy = -vzz / 2;
+
+    const efgTensor = [
+        [vxx, 0, 0],
+        [0, vyy, 0],
+        [0, 0, vzz]
+    ];
+
+    const eta = Math.abs(vxx - vyy) / Math.abs(vzz);
+
+    return { efgTensor, vzz, eta };
+}
+
+// Calculate EFG from tensor components
+function calculateFromTensorComponents() {
+    const vxx = parseFloat(document.getElementById('vxx').value) || 0;
+    const vxy = parseFloat(document.getElementById('vxy').value) || 0;
+    const vxz = parseFloat(document.getElementById('vxz').value) || 0;
+    const vyy = parseFloat(document.getElementById('vyy').value) || 0;
+    const vyz = parseFloat(document.getElementById('vyz').value) || 0;
+    const vzz = parseFloat(document.getElementById('vzz').value) || 0;
+
+    if (!vzz) return {};
+
+    const efgTensor = [
+        [vxx, vxy, vxz],
+        [vxy, vyy, vyz],
+        [vxz, vyz, vzz]
+    ];
+
+    // Calculate principal components (simplified)
+    const eigenvalues = [vxx, vyy, vzz].sort((a, b) => Math.abs(b) - Math.abs(a));
+    const vzzPrincipal = eigenvalues[0];
+    const eta = Math.abs(eigenvalues[1] - eigenvalues[2]) / Math.abs(vzzPrincipal);
+
+    return { efgTensor, vzz: vzzPrincipal, eta };
+}
+
+// Calculate EFG from quadrupole coupling constants
+function calculateFromQuadrupoleCoupling() {
+    const cq = parseFloat(document.getElementById('cq-value').value) || 0;
+    const eta = parseFloat(document.getElementById('eta-value').value) || 0;
+    const spin = parseFloat(document.getElementById('nuclear-spin').value) || 1.5;
+    const Q = parseFloat(document.getElementById('quadrupole-moment').value) || 0;
+
+    if (!cq || !Q) return {};
+
+    // Convert CQ from MHz to Hz, then calculate Vzz
+    const cqHz = cq * 1e6;
+    const h = 6.626e-34; // Planck constant
+    const e = 1.602e-19; // elementary charge
+    const QSI = Q * 1e-28; // convert barn to m²
+
+    const vzz = (cqHz * h) / (e * QSI);
+
+    // Calculate other components from eta
+    const vxx = -vzz * (1 + eta) / 2;
+    const vyy = -vzz * (1 - eta) / 2;
+
+    const efgTensor = [
+        [vxx, 0, 0],
+        [0, vyy, 0],
+        [0, 0, vzz]
+    ];
+
+    return { efgTensor, vzz, eta, cq };
+}
+
+// Calculate quadrupole coupling constant
+function calculateCQ(vzz) {
+    const Q = 0.15e-28; // Default quadrupole moment in m²
+    const e = 1.602e-19;
+    const h = 6.626e-34;
+
+    return Math.abs(e * Q * vzz / h) / 1e6; // Convert to MHz
+}
+
+// Calculate tensor properties
+function calculateTensorProperties(tensor) {
+    const vxx = tensor[0][0];
+    const vyy = tensor[1][1];
+    const vzz = tensor[2][2];
+
+    const trace = vxx + vyy + vzz;
+    const determinant = vxx * vyy * vzz; // Simplified for diagonal tensor
+    const maxGradient = Math.max(Math.abs(vxx), Math.abs(vyy), Math.abs(vzz));
+
+    return {
+        trace,
+        determinant,
+        maxGradient,
+        vxx,
+        vyy,
+        vzz
+    };
+}
+
+// Calculate physical insights
+function calculatePhysicalInsights(vzz, eta, method) {
+    let symmetryAnalysis = '';
+    if (eta < 0.1) {
+        symmetryAnalysis = 'High symmetry environment with axial EFG. Indicates cubic or axial crystal field.';
+    } else if (eta < 0.5) {
+        symmetryAnalysis = 'Moderate asymmetry. Suggests distorted coordination environment.';
+    } else {
+        symmetryAnalysis = 'High asymmetry. Indicates low-symmetry crystal site with significant distortion.';
+    }
+
+    let nmrEffects = '';
+    const vzzMagnitude = Math.abs(vzz);
+    if (vzzMagnitude > 1e21) {
+        nmrEffects = 'Large EFG will cause significant quadrupolar broadening in NMR spectra.';
+    } else if (vzzMagnitude > 1e20) {
+        nmrEffects = 'Moderate quadrupolar effects. May observe satellite transitions in NMR.';
+    } else {
+        nmrEffects = 'Small quadrupolar effects. Sharp NMR lines expected for high-spin nuclei.';
+    }
+
+    const crystalStructure = 'EFG reflects local electronic environment and coordination geometry around the nucleus.';
+    const applications = 'Useful for NMR/NQR spectroscopy, crystal structure analysis, and electronic structure studies.';
+
+    return {
+        symmetryAnalysis,
+        nmrEffects,
+        crystalStructure,
+        applications
+    };
+}
+
+// Update results display
+function updateResults(vzz, eta, cq, efgTensor, properties, insights) {
+    // Update summary
+    document.getElementById('vzz-result').textContent = (vzz / 1e21).toFixed(2);
+    document.getElementById('eta-result').textContent = eta.toFixed(3);
+    document.getElementById('cq-result').textContent = cq.toFixed(2);
+    document.getElementById('symmetry-result').textContent = eta < 0.1 ? 'High' : eta < 0.5 ? 'Med' : 'Low';
+
+    // Update principal components
+    document.getElementById('vxx-principal').textContent = `${(properties.vxx / 1e21).toFixed(2)} × 10²¹`;
+    document.getElementById('vyy-principal').textContent = `${(properties.vyy / 1e21).toFixed(2)} × 10²¹`;
+    document.getElementById('vzz-principal').textContent = `${(properties.vzz / 1e21).toFixed(2)} × 10²¹`;
+
+    document.getElementById('vxx-magnitude').textContent = `${(Math.abs(properties.vxx) / 1e21).toFixed(2)} × 10²¹`;
+    document.getElementById('vyy-magnitude').textContent = `${(Math.abs(properties.vyy) / 1e21).toFixed(2)} × 10²¹`;
+    document.getElementById('vzz-magnitude').textContent = `${(Math.abs(properties.vzz) / 1e21).toFixed(2)} × 10²¹`;
+
+    document.getElementById('trace-value').textContent = `${(properties.trace / 1e21).toFixed(2)} × 10²¹`;
+    document.getElementById('determinant-value').textContent = `${(properties.determinant / 1e63).toFixed(2)} × 10⁶³`;
+    document.getElementById('max-gradient').textContent = `${(properties.maxGradient / 1e21).toFixed(2)} × 10²¹`;
+
+    // Update insights
+    document.getElementById('symmetry-analysis').textContent = insights.symmetryAnalysis;
+    document.getElementById('nmr-effects').textContent = insights.nmrEffects;
+    document.getElementById('crystal-structure').textContent = insights.crystalStructure;
+    document.getElementById('applications').textContent = insights.applications;
+
+    // Update physics quote
+    const quote = getPhysicsQuote(Math.abs(vzz));
+    document.getElementById('physics-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.physics-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get physics quote based on EFG magnitude
+function getPhysicsQuote(vzz) {
+    for (const quote of physicsQuotes) {
+        if (vzz >= quote.min) {
+            return quote;
+        }
+    }
+    return physicsQuotes[physicsQuotes.length - 1];
+}
+
+// Update tensor matrix display
+function updateTensorMatrix(tensor) {
+    const elements = document.querySelectorAll('.tensor-element');
+    const labels = ['Vxx', 'Vxy', 'Vxz', 'Vyx', 'Vyy', 'Vyz', 'Vzx', 'Vzy', 'Vzz'];
+    
+    elements.forEach((element, index) => {
+        const i = Math.floor(index / 3);
+        const j = index % 3;
+        const value = tensor[i][j];
+        
+        if (Math.abs(value) > 1e15) {
+            element.textContent = `${(value / 1e21).toFixed(1)}e21`;
+        } else {
+            element.textContent = value.toExponential(1);
+        }
+    });
+}
+
+// Create EFG component chart
+function createEFGChart(efgTensor) {
+    console.log('Creating EFG chart...');
+    try {
+        const ctx = document.getElementById('efg-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (efgChart) {
+            efgChart.destroy();
+        }
+
+        const vxx = efgTensor[0][0];
+        const vyy = efgTensor[1][1];
+        const vzz = efgTensor[2][2];
+
+        efgChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Vxx', 'Vyy', 'Vzz'],
+                datasets: [{
+                    label: 'EFG Components (×10²¹ V/m²)',
+                    data: [vxx / 1e21, vyy / 1e21, vzz / 1e21],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
+                    borderColor: ['#1d4ed8', '#059669', '#d97706'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'EFG Principal Components',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed.y.toFixed(2)} × 10²¹ V/m²`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'EFG Component (×10²¹ V/m²)',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Principal Axis',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('EFG chart created successfully');
+    } catch (error) {
+        console.error('Error creating EFG chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const method = document.getElementById('calculation-method').value;
+        const vzz = document.getElementById('vzz-result').textContent;
+        const eta = document.getElementById('eta-result').textContent;
+        const cq = document.getElementById('cq-result').textContent;
+        
+        const results = `
+EFG Calculator Results
+=====================
+
+Calculation Method: ${method.replace('-', ' ').toUpperCase()}
+
+Primary Results:
+Vzz: ${vzz} × 10²¹ V/m²
+η (asymmetry): ${eta}
+CQ: ${cq} MHz
+
+Principal Components:
+Vxx: ${document.getElementById('vxx-principal').textContent} V/m²
+Vyy: ${document.getElementById('vyy-principal').textContent} V/m²
+Vzz: ${document.getElementById('vzz-principal').textContent} V/m²
+
+Tensor Properties:
+Trace: ${document.getElementById('trace-value').textContent} V/m²
+Determinant: ${document.getElementById('determinant-value').textContent} V³/m⁶
+Max Gradient: ${document.getElementById('max-gradient').textContent} V/m²
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our EFG Calculator for more quantum calculations!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `efg-calculation-${method}-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing EFG calculator...');
+
+    // Reset method and inputs
+    document.getElementById('calculation-method').value = 'point-charges';
+    
+    // Clear point charges inputs
+    document.getElementById('charge1').value = '';
+    document.getElementById('distance1').value = '';
+    document.getElementById('charge2').value = '';
+    document.getElementById('distance2').value = '';
+    document.getElementById('symmetry-type').value = 'cubic';
+
+    // Clear tensor inputs
+    ['vxx', 'vxy', 'vxz', 'vyy', 'vyz', 'vzz'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.value = '';
+    });
+
+    // Clear quadrupole inputs
+    document.getElementById('cq-value').value = '';
+    document.getElementById('eta-value').value = '';
+    document.getElementById('nuclear-spin').value = '1.5';
+    document.getElementById('quadrupole-moment').value = '';
+
+    updateMethodInputs();
+    updateFormula();
+    updateVisualization();
+
+    // Reset tensor matrix display
+    const elements = document.querySelectorAll('.tensor-element');
+    const labels = ['Vxx', 'Vxy', 'Vxz', 'Vyx', 'Vyy', 'Vyz', 'Vzx', 'Vzy', 'Vzz'];
+    elements.forEach((element, index) => {
+        element.textContent = labels[index];
+    });
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (efgChart) {
+        efgChart.destroy();
+        efgChart = null;
+    }
+
+    console.log('EFG calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing EFG calculator...');
+    initCalculator();
+    lucide.createIcons();
+    
+    // Render initial formula
+    setTimeout(() => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ]
+        });
+    }, 100);
+});
+</script>
+{% endblock %}

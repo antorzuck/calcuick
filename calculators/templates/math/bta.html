@@ -1,0 +1,1052 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.navigation-card {
+    transition: all 0.3s ease;
+}
+.compass-display {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.bearing-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .bearing-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.navigation-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #dc2626;
+    border-radius: 0 8px 8px 0;
+}
+.compass-rose {
+    width: 300px;
+    height: 300px;
+    border: 3px solid #dc2626;
+    border-radius: 50%;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+}
+.compass-needle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120px;
+    height: 4px;
+    background: linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #fca5a5 100%);
+    transform-origin: left center;
+    transition: transform 0.5s ease;
+    border-radius: 2px;
+}
+.compass-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    background: #dc2626;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+.compass-direction {
+    position: absolute;
+    font-weight: bold;
+    font-size: 18px;
+    color: #dc2626;
+}
+.compass-direction.north {
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.compass-direction.east {
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.compass-direction.south {
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.compass-direction.west {
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.bearing-format {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .bearing-format {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.quadrant-indicator {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border: 2px dashed #f59e0b;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.7;
+}
+.bearing-line {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100px;
+    height: 2px;
+    background: #f59e0b;
+    transform-origin: left center;
+    transition: transform 0.5s ease;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+<!-- Back Button -->
+<div class="mb-6">
+    <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        <span>Back to Calculators</span>
+    </button>
+</div>
+
+<!-- Header -->
+<div class="text-center mb-12">
+    <div class="w-16 h-16 bg-red-50 dark:bg-red-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+        <i data-lucide="navigation" class="w-8 h-8 text-red-600 dark:text-red-400"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Bearing to Azimuth Calculator</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Convert between bearing and azimuth formats for navigation, surveying, and engineering applications with precision!
+    </p>
+    <div class="mt-4 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg inline-block">
+        <div class="text-red-800 dark:text-red-300 font-medium">
+            🧭 Navigation Tools • 📐 Surveying • 🗺️ Mapping • 📊 Direction Analysis
+        </div>
+    </div>
+</div>
+
+<!-- Calculator -->
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+    <!-- Input Section -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Direction Input</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Input Controls -->
+            <div class="space-y-6">
+                <!-- Conversion Direction -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Conversion Type:</label>
+                    <select id="conversion-direction" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                        <option value="bearing-to-azimuth">Bearing to Azimuth</option>
+                        <option value="azimuth-to-bearing">Azimuth to Bearing</option>
+                    </select>
+                </div>
+
+                <!-- Bearing Input Section -->
+                <div id="bearing-input-section">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Bearing Input</h3>
+                    
+                    <!-- Bearing Format Selection -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bearing Format:</label>
+                        <select id="bearing-format" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="quadrant">Quadrant Bearing (N 45° E)</option>
+                            <option value="whole-circle">Whole Circle Bearing (045°)</option>
+                        </select>
+                    </div>
+
+                    <!-- Quadrant Bearing Inputs -->
+                    <div id="quadrant-inputs" class="space-y-4">
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Direction 1:</label>
+                                <select id="direction1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    <option value="N">N (North)</option>
+                                    <option value="S">S (South)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Angle:</label>
+                                <input type="number" id="bearing-angle" step="0.01" min="0" max="90" placeholder="0-90°" 
+                                       class="bearing-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Direction 2:</label>
+                                <select id="direction2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    <option value="E">E (East)</option>
+                                    <option value="W">W (West)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                            Example: N 45° E means 45 degrees east of north
+                        </div>
+                    </div>
+
+                    <!-- Whole Circle Bearing Input -->
+                    <div id="whole-circle-inputs" class="hidden space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bearing (0-360°):</label>
+                            <input type="number" id="whole-circle-bearing" step="0.01" min="0" max="360" placeholder="0-360°" 
+                                   class="bearing-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                Measured clockwise from north (0° = North, 90° = East, 180° = South, 270° = West)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Azimuth Input Section -->
+                <div id="azimuth-input-section" class="hidden">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Azimuth Input</h3>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Azimuth (0-360°):</label>
+                        <input type="number" id="azimuth-input" step="0.01" min="0" max="360" placeholder="0-360°" 
+                               class="bearing-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Measured clockwise from north (0° = North, 90° = East, 180° = South, 270° = West)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Presets -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Presets:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setPreset('N', 45, 'E')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                            N 45° E
+                        </button>
+                        <button onclick="setPreset('S', 30, 'W')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                            S 30° W
+                        </button>
+                        <button onclick="setPreset('N', 60, 'W')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                            N 60° W
+                        </button>
+                        <button onclick="setPreset('S', 75, 'E')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                            S 75° E
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compass Visualization -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Compass Visualization</h3>
+                    <div class="compass-rose" id="compass-rose">
+                        <!-- Cardinal Directions -->
+                        <div class="compass-direction north">N</div>
+                        <div class="compass-direction east">E</div>
+                        <div class="compass-direction south">S</div>
+                        <div class="compass-direction west">W</div>
+                        
+                        <!-- Compass Needle (Azimuth) -->
+                        <div class="compass-needle" id="compass-needle"></div>
+                        
+                        <!-- Bearing Line -->
+                        <div class="bearing-line" id="bearing-line"></div>
+                        
+                        <!-- Quadrant Indicator -->
+                        <div class="quadrant-indicator" id="quadrant-indicator"></div>
+                        
+                        <!-- Center Point -->
+                        <div class="compass-center"></div>
+                    </div>
+                    <div class="text-center mt-4 space-y-2">
+                        <div>
+                            <span class="text-sm text-red-600 dark:text-red-400">Red Line: Azimuth Direction</span>
+                        </div>
+                        <div>
+                            <span class="text-sm text-yellow-600 dark:text-yellow-400">Yellow Line: Bearing Direction</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Format Examples -->
+                <div class="bearing-format">
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Format Examples:</h4>
+                    <div class="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                        <div><strong>Quadrant Bearing:</strong> N 45° E, S 30° W</div>
+                        <div><strong>Whole Circle:</strong> 045°, 210°</div>
+                        <div><strong>Azimuth:</strong> 045°, 210°</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <button id="calculate-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="compass" class="w-5 h-5"></i>
+            <span>Calculate Conversion</span>
+        </button>
+        <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            <span>Clear</span>
+        </button>
+        <button id="save-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            <span>Save Results</span>
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-container" class="hidden">
+        <!-- Conversion Summary -->
+        <div class="compass-display text-white rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                <span>Conversion Results</span>
+                <i data-lucide="navigation-2" class="w-5 h-5"></i>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div id="input-bearing" class="text-2xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Input Bearing</div>
+                </div>
+                <div class="text-center">
+                    <div id="output-azimuth" class="text-2xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Azimuth</div>
+                </div>
+                <div class="text-center">
+                    <div id="quadrant-result" class="text-2xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Quadrant</div>
+                </div>
+                <div class="text-center">
+                    <div id="back-bearing" class="text-2xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Back Bearing</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Conversions -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="map" class="w-5 h-5"></i>
+                <span>All Format Conversions</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Quadrant Bearing:</span>
+                        <span id="quadrant-bearing-result" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Whole Circle Bearing:</span>
+                        <span id="whole-circle-result" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">True Azimuth:</span>
+                        <span id="true-azimuth-result" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Magnetic Bearing:</span>
+                        <span id="magnetic-bearing-result" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direction Analysis Chart -->
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                <span>Direction Analysis</span>
+            </h3>
+            <div class="h-64">
+                <canvas id="direction-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Navigation Quote -->
+        <div class="navigation-quote mb-6">
+            <p id="navigation-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                "The compass always points to magnetic north, but true direction comes from understanding."
+            </p>
+            <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Navigation Wisdom</p>
+        </div>
+
+        <!-- Navigation Insights -->
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="map-pin" class="w-5 h-5"></i>
+                <span>Navigation Insights</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="compass" class="w-4 h-4"></i>
+                        <span>Direction Properties</span>
+                    </h4>
+                    <p id="direction-properties" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="map" class="w-4 h-4"></i>
+                        <span>Survey Applications</span>
+                    </h4>
+                    <p id="survey-applications" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="navigation" class="w-4 h-4"></i>
+                        <span>Navigation Notes</span>
+                    </h4>
+                    <p id="navigation-notes" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="globe" class="w-4 h-4"></i>
+                        <span>Coordinate Systems</span>
+                    </h4>
+                    <p id="coordinate-systems" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational Content -->
+<div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+        <i data-lucide="book-open" class="w-6 h-6"></i>
+        <span>Bearing & Azimuth Guide</span>
+    </h2>
+    <div class="space-y-6">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What are Bearings and Azimuths?</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                Bearings and azimuths are two different systems for expressing direction. Bearings use quadrant notation (N 45° E), while azimuths use whole circle notation (045°) measured clockwise from north. Both are essential in navigation, surveying, and engineering.
+            </p>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Bearing Systems</h3>
+            <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                <li><strong>Quadrant Bearing:</strong> Uses cardinal directions with angles 0-90° (N 45° E)</li>
+                <li><strong>Whole Circle Bearing:</strong> 0-360° measured clockwise from north</li>
+                <li><strong>True Bearing:</strong> Referenced to true north (geographic north pole)</li>
+                <li><strong>Magnetic Bearing:</strong> Referenced to magnetic north</li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Common Applications</h3>
+            <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                <li>Land surveying and property boundary mapping</li>
+                <li>Marine and aviation navigation</li>
+                <li>Military and tactical operations</li>
+                <li>Construction and civil engineering</li>
+                <li>GPS and GIS applications</li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                <li>Choose conversion direction (bearing to azimuth or vice versa)</li>
+                <li>Select the appropriate bearing format</li>
+                <li>Enter your direction values</li>
+                <li>View the compass visualization to verify</li>
+                <li>Get all format conversions and navigation insights</li>
+            </ol>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Navigation quotes for different quadrants
+const navigationQuotes = [
+    { quadrant: 'NE', quote: "The compass always points to magnetic north, but true direction comes from understanding.", author: "Navigation Wisdom" },
+    { quadrant: 'SE', quote: "A ship in harbor is safe, but that is not what ships are built for.", author: "John A. Shedd" },
+    { quadrant: 'SW', quote: "The pessimist sees difficulty in every opportunity. The optimist sees opportunity in every difficulty.", author: "Winston Churchill" },
+    { quadrant: 'NW', quote: "Not all those who wander are lost.", author: "J.R.R. Tolkien" }
+];
+
+let directionChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Bearing to Azimuth Calculator...');
+    setupEventListeners();
+    updateInputSections();
+    updateCompassVisualization();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const conversionDirection = document.getElementById('conversion-direction');
+    const bearingFormat = document.getElementById('bearing-format');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateConversion);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (conversionDirection) {
+        conversionDirection.addEventListener('change', updateInputSections);
+    }
+
+    if (bearingFormat) {
+        bearingFormat.addEventListener('change', updateBearingInputs);
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('#bearing-angle, #whole-circle-bearing, #azimuth-input, #direction1, #direction2')) {
+            updateCompassVisualization();
+            if (hasValidInput()) {
+                calculateConversion();
+            }
+        }
+    });
+
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('#direction1, #direction2')) {
+            updateCompassVisualization();
+            if (hasValidInput()) {
+                calculateConversion();
+            }
+        }
+    });
+}
+
+// Update input sections based on conversion direction
+function updateInputSections() {
+    const conversionDirection = document.getElementById('conversion-direction').value;
+    const bearingSection = document.getElementById('bearing-input-section');
+    const azimuthSection = document.getElementById('azimuth-input-section');
+
+    if (conversionDirection === 'bearing-to-azimuth') {
+        bearingSection.classList.remove('hidden');
+        azimuthSection.classList.add('hidden');
+    } else {
+        bearingSection.classList.add('hidden');
+        azimuthSection.classList.remove('hidden');
+    }
+
+    updateBearingInputs();
+}
+
+// Update bearing input format
+function updateBearingInputs() {
+    const bearingFormat = document.getElementById('bearing-format').value;
+    const quadrantInputs = document.getElementById('quadrant-inputs');
+    const wholeCircleInputs = document.getElementById('whole-circle-inputs');
+
+    if (bearingFormat === 'quadrant') {
+        quadrantInputs.classList.remove('hidden');
+        wholeCircleInputs.classList.add('hidden');
+    } else {
+        quadrantInputs.classList.add('hidden');
+        wholeCircleInputs.classList.remove('hidden');
+    }
+}
+
+// Set preset values
+function setPreset(dir1, angle, dir2) {
+    document.getElementById('conversion-direction').value = 'bearing-to-azimuth';
+    document.getElementById('bearing-format').value = 'quadrant';
+    updateInputSections();
+    
+    document.getElementById('direction1').value = dir1;
+    document.getElementById('bearing-angle').value = angle;
+    document.getElementById('direction2').value = dir2;
+    
+    updateCompassVisualization();
+    calculateConversion();
+}
+
+// Check if we have valid input
+function hasValidInput() {
+    const conversionDirection = document.getElementById('conversion-direction').value;
+    
+    if (conversionDirection === 'bearing-to-azimuth') {
+        const bearingFormat = document.getElementById('bearing-format').value;
+        if (bearingFormat === 'quadrant') {
+            const angle = document.getElementById('bearing-angle').value;
+            return angle !== '' && !isNaN(parseFloat(angle));
+        } else {
+            const bearing = document.getElementById('whole-circle-bearing').value;
+            return bearing !== '' && !isNaN(parseFloat(bearing));
+        }
+    } else {
+        const azimuth = document.getElementById('azimuth-input').value;
+        return azimuth !== '' && !isNaN(parseFloat(azimuth));
+    }
+}
+
+// Update compass visualization
+function updateCompassVisualization() {
+    const conversionDirection = document.getElementById('conversion-direction').value;
+    let azimuth = 0;
+    let bearing = 0;
+
+    if (conversionDirection === 'bearing-to-azimuth') {
+        const bearingFormat = document.getElementById('bearing-format').value;
+        
+        if (bearingFormat === 'quadrant') {
+            const dir1 = document.getElementById('direction1').value;
+            const angle = parseFloat(document.getElementById('bearing-angle').value) || 0;
+            const dir2 = document.getElementById('direction2').value;
+            
+            azimuth = quadrantBearingToAzimuth(dir1, angle, dir2);
+            bearing = azimuth;
+        } else {
+            bearing = parseFloat(document.getElementById('whole-circle-bearing').value) || 0;
+            azimuth = bearing;
+        }
+    } else {
+        azimuth = parseFloat(document.getElementById('azimuth-input').value) || 0;
+        bearing = azimuth;
+    }
+
+    // Update compass needle (azimuth - red line)
+    const compassNeedle = document.getElementById('compass-needle');
+    if (compassNeedle) {
+        compassNeedle.style.transform = `rotate(${azimuth}deg)`;
+    }
+
+    // Update bearing line (yellow line)
+    const bearingLine = document.getElementById('bearing-line');
+    if (bearingLine) {
+        bearingLine.style.transform = `rotate(${bearing}deg)`;
+    }
+}
+
+// Convert quadrant bearing to azimuth
+function quadrantBearingToAzimuth(dir1, angle, dir2) {
+    let azimuth = 0;
+    
+    if (dir1 === 'N' && dir2 === 'E') {
+        azimuth = angle;
+    } else if (dir1 === 'S' && dir2 === 'E') {
+        azimuth = 180 - angle;
+    } else if (dir1 === 'S' && dir2 === 'W') {
+        azimuth = 180 + angle;
+    } else if (dir1 === 'N' && dir2 === 'W') {
+        azimuth = 360 - angle;
+    }
+    
+    return azimuth;
+}
+
+// Convert azimuth to quadrant bearing
+function azimuthToQuadrantBearing(azimuth) {
+    let dir1, angle, dir2;
+    
+    if (azimuth >= 0 && azimuth <= 90) {
+        dir1 = 'N';
+        angle = azimuth;
+        dir2 = 'E';
+    } else if (azimuth > 90 && azimuth <= 180) {
+        dir1 = 'S';
+        angle = 180 - azimuth;
+        dir2 = 'E';
+    } else if (azimuth > 180 && azimuth <= 270) {
+        dir1 = 'S';
+        angle = azimuth - 180;
+        dir2 = 'W';
+    } else {
+        dir1 = 'N';
+        angle = 360 - azimuth;
+        dir2 = 'W';
+    }
+    
+    return { dir1, angle, dir2 };
+}
+
+// Get quadrant from azimuth
+function getQuadrant(azimuth) {
+    if (azimuth >= 0 && azimuth < 90) return 'NE';
+    if (azimuth >= 90 && azimuth < 180) return 'SE';
+    if (azimuth >= 180 && azimuth < 270) return 'SW';
+    return 'NW';
+}
+
+// Calculate back bearing
+function calculateBackBearing(azimuth) {
+    return (azimuth + 180) % 360;
+}
+
+// Calculate conversion
+function calculateConversion() {
+    console.log('Calculating bearing to azimuth conversion...');
+    try {
+        const conversionDirection = document.getElementById('conversion-direction').value;
+        let inputBearing, outputAzimuth, quadrantBearing, wholeBearing;
+
+        if (conversionDirection === 'bearing-to-azimuth') {
+            const bearingFormat = document.getElementById('bearing-format').value;
+            
+            if (bearingFormat === 'quadrant') {
+                const dir1 = document.getElementById('direction1').value;
+                const angle = parseFloat(document.getElementById('bearing-angle').value);
+                const dir2 = document.getElementById('direction2').value;
+                
+                if (isNaN(angle) || angle < 0 || angle > 90) {
+                    console.log('Please enter a valid angle between 0° and 90°');
+                    return;
+                }
+                
+                inputBearing = `${dir1} ${angle.toFixed(2)}° ${dir2}`;
+                outputAzimuth = quadrantBearingToAzimuth(dir1, angle, dir2);
+                quadrantBearing = inputBearing;
+                wholeBearing = outputAzimuth.toFixed(2) + '°';
+            } else {
+                const bearing = parseFloat(document.getElementById('whole-circle-bearing').value);
+                
+                if (isNaN(bearing) || bearing < 0 || bearing >= 360) {
+                    console.log('Please enter a valid bearing between 0° and 360°');
+                    return;
+                }
+                
+                inputBearing = bearing.toFixed(2) + '°';
+                outputAzimuth = bearing;
+                wholeBearing = inputBearing;
+                
+                const quadrant = azimuthToQuadrantBearing(bearing);
+                quadrantBearing = `${quadrant.dir1} ${quadrant.angle.toFixed(2)}° ${quadrant.dir2}`;
+            }
+        } else {
+            const azimuth = parseFloat(document.getElementById('azimuth-input').value);
+            
+            if (isNaN(azimuth) || azimuth < 0 || azimuth >= 360) {
+                alert('Please enter a valid azimuth between 0° and 360°');
+                return;
+            }
+            
+            inputBearing = azimuth.toFixed(2) + '° (Azimuth)';
+            outputAzimuth = azimuth;
+            wholeBearing = azimuth.toFixed(2) + '°';
+            
+            const quadrant = azimuthToQuadrantBearing(azimuth);
+            quadrantBearing = `${quadrant.dir1} ${quadrant.angle.toFixed(2)}° ${quadrant.dir2}`;
+        }
+
+        // Calculate additional values
+        const quadrant = getQuadrant(outputAzimuth);
+        const backBearing = calculateBackBearing(outputAzimuth);
+        const backBearingQuadrant = azimuthToQuadrantBearing(backBearing);
+        const backBearingString = `${backBearingQuadrant.dir1} ${backBearingQuadrant.angle.toFixed(2)}° ${backBearingQuadrant.dir2}`;
+
+        // Calculate insights
+        const insights = calculateNavigationInsights(outputAzimuth, quadrant);
+
+        // Update display
+        updateResults(inputBearing, outputAzimuth, quadrant, backBearingString, quadrantBearing, wholeBearing, insights);
+
+        // Create chart
+        createDirectionChart(outputAzimuth, backBearing);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('Conversion calculated successfully:', { inputBearing, outputAzimuth, quadrant });
+    } catch (error) {
+        console.error('Error calculating conversion:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Calculate navigation insights
+function calculateNavigationInsights(azimuth, quadrant) {
+    // Direction properties
+    let directionProperties = '';
+    if (azimuth === 0 || azimuth === 360) {
+        directionProperties = 'True North - Primary reference direction for navigation.';
+    } else if (azimuth === 90) {
+        directionProperties = 'Due East - Perpendicular to north-south meridian.';
+    } else if (azimuth === 180) {
+        directionProperties = 'Due South - Opposite to true north.';
+    } else if (azimuth === 270) {
+        directionProperties = 'Due West - Perpendicular to north-south meridian.';
+    } else {
+        directionProperties = `${quadrant} quadrant direction - ${azimuth.toFixed(1)}° clockwise from north.`;
+    }
+
+    // Survey applications
+    let surveyApplications = '';
+    if (quadrant === 'NE') {
+        surveyApplications = 'Northeast quadrant - Common for property boundaries and road layouts.';
+    } else if (quadrant === 'SE') {
+        surveyApplications = 'Southeast quadrant - Often used in coastal and urban surveying.';
+    } else if (quadrant === 'SW') {
+        surveyApplications = 'Southwest quadrant - Typical for mountain and rural property lines.';
+    } else {
+        surveyApplications = 'Northwest quadrant - Frequently seen in forest and agricultural surveys.';
+    }
+
+    // Navigation notes
+    const magneticDeclination = 'Consider magnetic declination when converting between true and magnetic bearings.';
+    
+    // Coordinate systems
+    const coordinateSystems = 'Compatible with UTM, State Plane, and Geographic coordinate systems.';
+
+    return {
+        directionProperties,
+        surveyApplications,
+        navigationNotes: magneticDeclination,
+        coordinateSystems
+    };
+}
+
+// Update results display
+function updateResults(inputBearing, outputAzimuth, quadrant, backBearing, quadrantBearing, wholeBearing, insights) {
+    // Update summary
+    document.getElementById('input-bearing').textContent = inputBearing;
+    document.getElementById('output-azimuth').textContent = outputAzimuth.toFixed(2) + '°';
+    document.getElementById('quadrant-result').textContent = quadrant;
+    document.getElementById('back-bearing').textContent = backBearing;
+
+    // Update detailed conversions
+    document.getElementById('quadrant-bearing-result').textContent = quadrantBearing;
+    document.getElementById('whole-circle-result').textContent = wholeBearing;
+    document.getElementById('true-azimuth-result').textContent = outputAzimuth.toFixed(2) + '°';
+    document.getElementById('magnetic-bearing-result').textContent = `${outputAzimuth.toFixed(2)}° ± declination`;
+
+    // Update insights
+    document.getElementById('direction-properties').textContent = insights.directionProperties;
+    document.getElementById('survey-applications').textContent = insights.surveyApplications;
+    document.getElementById('navigation-notes').textContent = insights.navigationNotes;
+    document.getElementById('coordinate-systems').textContent = insights.coordinateSystems;
+
+    // Update navigation quote
+    const quote = getNavigationQuote(quadrant);
+    document.getElementById('navigation-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.navigation-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get navigation quote based on quadrant
+function getNavigationQuote(quadrant) {
+    const quote = navigationQuotes.find(q => q.quadrant === quadrant);
+    return quote || navigationQuotes[0];
+}
+
+// Create direction analysis chart
+function createDirectionChart(azimuth, backBearing) {
+    console.log('Creating direction chart...');
+    try {
+        const ctx = document.getElementById('direction-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (directionChart) {
+            directionChart.destroy();
+        }
+
+        // Create polar area chart showing direction
+        directionChart = new Chart(ctx, {
+            type: 'polarArea',
+            data: {
+                labels: ['Forward Bearing', 'Back Bearing', 'Perpendicular 1', 'Perpendicular 2'],
+                datasets: [{
+                    data: [100, 80, 60, 60],
+                    backgroundColor: [
+                        'rgba(220, 38, 38, 0.8)',
+                        'rgba(239, 68, 68, 0.6)',
+                        'rgba(245, 158, 11, 0.4)',
+                        'rgba(245, 158, 11, 0.4)'
+                    ],
+                    borderColor: [
+                        '#dc2626',
+                        '#ef4444',
+                        '#f59e0b',
+                        '#f59e0b'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Direction Analysis',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#374151',
+                            font: { size: 12 },
+                            padding: 15
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const labels = [
+                                    `Forward: ${azimuth.toFixed(1)}°`,
+                                    `Back: ${backBearing.toFixed(1)}°`,
+                                    `Perp 1: ${((azimuth + 90) % 360).toFixed(1)}°`,
+                                    `Perp 2: ${((azimuth + 270) % 360).toFixed(1)}°`
+                                ];
+                                return labels[context.dataIndex];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            display: false
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        },
+                        angleLines: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Direction chart created successfully');
+    } catch (error) {
+        console.error('Error creating direction chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const inputBearing = document.getElementById('input-bearing').textContent;
+        const outputAzimuth = document.getElementById('output-azimuth').textContent;
+        const quadrant = document.getElementById('quadrant-result').textContent;
+        const backBearing = document.getElementById('back-bearing').textContent;
+        
+        const results = `
+Bearing to Azimuth Calculator Results
+====================================
+
+Input: ${inputBearing}
+Output Azimuth: ${outputAzimuth}
+Quadrant: ${quadrant}
+Back Bearing: ${backBearing}
+
+All Format Conversions:
+Quadrant Bearing: ${document.getElementById('quadrant-bearing-result').textContent}
+Whole Circle Bearing: ${document.getElementById('whole-circle-result').textContent}
+True Azimuth: ${document.getElementById('true-azimuth-result').textContent}
+Magnetic Bearing: ${document.getElementById('magnetic-bearing-result').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Bearing to Azimuth Calculator for more conversions!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bearing-azimuth-conversion-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing bearing to azimuth calculator...');
+    
+    document.getElementById('conversion-direction').value = 'bearing-to-azimuth';
+    document.getElementById('bearing-format').value = 'quadrant';
+    document.getElementById('direction1').value = 'N';
+    document.getElementById('bearing-angle').value = '';
+    document.getElementById('direction2').value = 'E';
+    document.getElementById('whole-circle-bearing').value = '';
+    document.getElementById('azimuth-input').value = '';
+    
+    updateInputSections();
+    updateCompassVisualization();
+    
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+    
+    // Destroy chart
+    if (directionChart) {
+        directionChart.destroy();
+        directionChart = null;
+    }
+    
+    console.log('Bearing to azimuth calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing bearing to azimuth calculator...');
+    initCalculator();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

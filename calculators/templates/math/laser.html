@@ -1,0 +1,1119 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+.pricing-card {
+    transition: all 0.3s ease;
+}
+.price-display {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.business-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #dc2626;
+    border-radius: 0 8px 8px 0;
+}
+.cost-meter {
+    background: linear-gradient(90deg, #22c55e 0%, #eab308 25%, #f59e0b 50%, #ef4444 75%, #dc2626 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.cost-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.laser-visualization {
+    width: 250px;
+    height: 250px;
+    border: 2px solid #dc2626;
+    border-radius: 20px;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.laser-beam {
+    position: absolute;
+    width: 2px;
+    height: 100px;
+    background: linear-gradient(to bottom, #dc2626, transparent);
+    left: 50%;
+    top: 20%;
+    transform: translateX(-50%);
+    animation: laser-pulse 2s ease-in-out infinite;
+}
+@keyframes laser-pulse {
+    0%, 100% { opacity: 0.3; height: 100px; }
+    50% { opacity: 1; height: 120px; }
+}
+.workpiece {
+    width: 80px;
+    height: 60px;
+    background: #8b5cf6;
+    border-radius: 8px;
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.material-card {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border: 1px solid #fecaca;
+    transition: all 0.3s ease;
+}
+.dark .material-card {
+    background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+    border-color: #991b1b;
+}
+.material-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+}
+.complexity-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.simple { background: #22c55e; }
+.moderate { background: #f59e0b; }
+.complex { background: #ef4444; }
+.intricate { background: #8b5cf6; }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-red-50 dark:bg-red-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="zap" class="w-8 h-8 text-red-600 dark:text-red-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Laser Engraving Price Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate accurate pricing for laser engraving projects. Essential for businesses, freelancers, and custom manufacturing!
+        </p>
+        <div class="mt-4 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg inline-block">
+            <div class="text-red-800 dark:text-red-300 font-medium">
+                <span class="katex-formula">P = (M_c + T_c + L_c) \times (1 + \mu)</span> • 💰 Cost Analysis • ⚡ Laser Processing • 📊 Business Planning
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Project Parameters</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Material Type:</label>
+                        <select id="material-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="wood">🪵 Wood (Plywood, MDF, Hardwood)</option>
+                            <option value="acrylic">🔷 Acrylic (Clear, Colored)</option>
+                            <option value="leather">🐄 Leather (Natural, Synthetic)</option>
+                            <option value="metal">🔩 Metal (Aluminum, Steel, Brass)</option>
+                            <option value="fabric">🧵 Fabric (Cotton, Polyester)</option>
+                            <option value="paper">📄 Paper/Cardboard</option>
+                            <option value="glass">🪟 Glass/Mirror</option>
+                            <option value="stone">🪨 Stone/Marble</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Length (mm):</label>
+                            <input type="number" id="length" step="0.1" placeholder="100" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 text-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Width (mm):</label>
+                            <input type="number" id="width" step="0.1" placeholder="100" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 text-lg">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Engraving Complexity:</label>
+                        <select id="complexity" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="simple">Simple Text/Basic Shapes (1x speed)</option>
+                            <option value="moderate">Moderate Detail/Logo (1.5x speed)</option>
+                            <option value="complex">Complex Design/Photo (2x speed)</option>
+                            <option value="intricate">Intricate Detail/3D (3x speed)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quantity:</label>
+                            <input type="number" id="quantity" min="1" placeholder="1" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 text-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Engraving Type:</label>
+                            <select id="engraving-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <option value="surface">Surface Engraving</option>
+                                <option value="deep">Deep Engraving</option>
+                                <option value="cutting">Cutting</option>
+                                <option value="marking">Marking Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Machine Rate ($/hr):</label>
+                            <input type="number" id="machine-rate" step="0.01" placeholder="60.00" 
+                                   class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Labor Rate ($/hr):</label>
+                            <input type="number" id="labor-rate" step="0.01" placeholder="25.00" 
+                                   class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Markup (%):</label>
+                            <input type="number" id="markup" step="1" min="0" placeholder="50" 
+                                   class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Presets:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('business-card')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                                Business Card
+                            </button>
+                            <button onclick="setPreset('phone-case')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                                Phone Case
+                            </button>
+                            <button onclick="setPreset('trophy-plate')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                                Trophy Plate
+                            </button>
+                            <button onclick="setPreset('custom-sign')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                                Custom Sign
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Laser Engraving Process</h3>
+                        <div class="laser-visualization" id="laser-viz">
+                            <div class="laser-beam"></div>
+                            <div class="workpiece" id="workpiece">WOOD</div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <span id="complexity-display" class="text-lg font-semibold text-red-600 dark:text-red-400 flex items-center justify-center">
+                                <span class="complexity-indicator simple"></span>
+                                Simple Complexity
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Pricing Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Material Info -->
+                    <div class="material-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Material Properties:</h4>
+                        <div id="material-info" class="text-sm text-gray-700 dark:text-gray-300">
+                            Cost: $2.50/sq ft • Speed: 100 mm/min • Power: 80%
+                        </div>
+                    </div>
+
+                    <!-- Time Estimation -->
+                    <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Time Estimation:</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Setup Time:</span>
+                                <span id="setup-time" class="text-sm font-medium">5 min</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Engraving Time:</span>
+                                <span id="engraving-time" class="text-sm font-medium">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Total Time:</span>
+                                <span id="total-time" class="text-sm font-medium">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate Price</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Quote</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- Price Summary -->
+            <div class="price-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>Pricing Breakdown</span>
+                    <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="total-price" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Total Price</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="unit-price" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Per Unit</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="material-cost" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Material Cost</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="processing-time" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Total Time</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Breakdown -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                    <span>Cost Analysis</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Material Cost:</span>
+                            <span id="material-cost-detail" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Machine Time:</span>
+                            <span id="machine-cost-detail" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Labor Cost:</span>
+                            <span id="labor-cost-detail" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Subtotal:</span>
+                            <span id="subtotal-detail" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Markup:</span>
+                            <span id="markup-detail" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Final Price:</span>
+                            <span id="final-price-detail" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Cost Distribution</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="pricing-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Business Quote -->
+            <div class="business-quote mb-6">
+                <p id="business-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "Price is what you pay. Value is what you get."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Warren Buffett</p>
+            </div>
+
+            <!-- Business Insights -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="lightbulb" class="w-5 h-5"></i>
+                    <span>Business Insights</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span>Profitability</span>
+                        </h4>
+                        <p id="profitability-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            <span>Efficiency</span>
+                        </h4>
+                        <p id="efficiency-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="users" class="w-4 h-4"></i>
+                            <span>Market Position</span>
+                        </h4>
+                        <p id="market-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="target" class="w-4 h-4"></i>
+                            <span>Recommendations</span>
+                        </h4>
+                        <p id="recommendations" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>Laser Engraving Pricing Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Pricing Formula</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    The total price is calculated using: <span class="katex-formula">P = (M_c + T_c + L_c) \times (1 + \mu)</span>
+                </p>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>P:</strong> Total Price</li>
+                    <li><strong>M_c:</strong> Material Cost = <span class="katex-formula">A \times C_{mat}</span> (Area × Material cost per unit)</li>
+                    <li><strong>T_c:</strong> Machine Time Cost = <span class="katex-formula">t \times R_{machine}</span> (Time × Machine rate)</li>
+                    <li><strong>L_c:</strong> Labor Cost = <span class="katex-formula">t \times R_{labor}</span> (Time × Labor rate)</li>
+                    <li><strong>μ:</strong> Markup percentage (as decimal)</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Time Calculation</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    Processing time: <span class="katex-formula">t = t_{setup} + \frac{A \times C_f}{S}</span>
+                </p>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>t_setup:</strong> Setup time (typically 5-15 minutes)</li>
+                    <li><strong>A:</strong> Engraving area (length × width)</li>
+                    <li><strong>C_f:</strong> Complexity factor (1x to 3x)</li>
+                    <li><strong>S:</strong> Machine speed (mm/min, material dependent)</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Material Considerations</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Wood:</strong> Fast cutting, moderate cost, natural variations</li>
+                    <li><strong>Acrylic:</strong> Clean edges, higher cost, excellent detail</li>
+                    <li><strong>Metal:</strong> Slow processing, high power, premium pricing</li>
+                    <li><strong>Leather:</strong> Medium speed, natural material, unique results</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Business Tips</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Include setup time in all quotes</li>
+                    <li>Factor in material waste (5-10%)</li>
+                    <li>Consider batch processing for efficiency</li>
+                    <li>Account for design time separately</li>
+                    <li>Adjust markup based on market conditions</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Material data with properties and costs
+const materials = {
+    wood: {
+        name: 'Wood',
+        icon: '🪵',
+        costPerSqFt: 2.50,
+        speed: 100, // mm/min
+        power: 80,
+        info: 'Cost: $2.50/sq ft • Speed: 100 mm/min • Power: 80%'
+    },
+    acrylic: {
+        name: 'Acrylic',
+        icon: '🔷',
+        costPerSqFt: 4.00,
+        speed: 80,
+        power: 60,
+        info: 'Cost: $4.00/sq ft • Speed: 80 mm/min • Power: 60%'
+    },
+    leather: {
+        name: 'Leather',
+        icon: '🐄',
+        costPerSqFt: 6.00,
+        speed: 120,
+        power: 70,
+        info: 'Cost: $6.00/sq ft • Speed: 120 mm/min • Power: 70%'
+    },
+    metal: {
+        name: 'Metal',
+        icon: '🔩',
+        costPerSqFt: 8.00,
+        speed: 30,
+        power: 100,
+        info: 'Cost: $8.00/sq ft • Speed: 30 mm/min • Power: 100%'
+    },
+    fabric: {
+        name: 'Fabric',
+        icon: '🧵',
+        costPerSqFt: 3.00,
+        speed: 150,
+        power: 40,
+        info: 'Cost: $3.00/sq ft • Speed: 150 mm/min • Power: 40%'
+    },
+    paper: {
+        name: 'Paper',
+        icon: '📄',
+        costPerSqFt: 0.50,
+        speed: 200,
+        power: 30,
+        info: 'Cost: $0.50/sq ft • Speed: 200 mm/min • Power: 30%'
+    },
+    glass: {
+        name: 'Glass',
+        icon: '🪟',
+        costPerSqFt: 5.00,
+        speed: 50,
+        power: 90,
+        info: 'Cost: $5.00/sq ft • Speed: 50 mm/min • Power: 90%'
+    },
+    stone: {
+        name: 'Stone',
+        icon: '🪨',
+        costPerSqFt: 10.00,
+        speed: 25,
+        power: 100,
+        info: 'Cost: $10.00/sq ft • Speed: 25 mm/min • Power: 100%'
+    }
+};
+
+// Complexity factors
+const complexityFactors = {
+    simple: { factor: 1.0, name: 'Simple Complexity', class: 'simple' },
+    moderate: { factor: 1.5, name: 'Moderate Complexity', class: 'moderate' },
+    complex: { factor: 2.0, name: 'Complex Complexity', class: 'complex' },
+    intricate: { factor: 3.0, name: 'Intricate Complexity', class: 'intricate' }
+};
+
+// Business quotes for different price ranges
+const businessQuotes = [
+    { min: 500, quote: "Price is what you pay. Value is what you get.", author: "Warren Buffett" },
+    { min: 100, quote: "Quality is remembered long after price is forgotten.", author: "Gucci Family Motto" },
+    { min: 50, quote: "The bitterness of poor quality remains long after the sweetness of low price is forgotten.", author: "Benjamin Franklin" },
+    { min: 20, quote: "If you think it's expensive to hire a professional, wait until you hire an amateur.", author: "Red Adair" },
+    { min: 0, quote: "Good design is good business.", author: "Thomas Watson Jr." }
+];
+
+// Preset configurations
+const presets = {
+    'business-card': {
+        material: 'wood',
+        length: 89,
+        width: 51,
+        complexity: 'simple',
+        quantity: 50,
+        type: 'surface'
+    },
+    'phone-case': {
+        material: 'acrylic',
+        length: 150,
+        width: 75,
+        complexity: 'moderate',
+        quantity: 1,
+        type: 'surface'
+    },
+    'trophy-plate': {
+        material: 'metal',
+        length: 100,
+        width: 50,
+        complexity: 'complex',
+        quantity: 1,
+        type: 'deep'
+    },
+    'custom-sign': {
+        material: 'wood',
+        length: 300,
+        width: 200,
+        complexity: 'moderate',
+        quantity: 1,
+        type: 'cutting'
+    }
+};
+
+let pricingChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Laser Engraving Price Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    updateFormula();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const materialSelect = document.getElementById('material-type');
+    const complexitySelect = document.getElementById('complexity');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculatePrice);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (materialSelect) {
+        materialSelect.addEventListener('change', () => {
+            updateVisualization();
+            if (hasValidInputs()) {
+                calculatePrice();
+            }
+        });
+    }
+
+    if (complexitySelect) {
+        complexitySelect.addEventListener('change', () => {
+            updateVisualization();
+            if (hasValidInputs()) {
+                calculatePrice();
+            }
+        });
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input')) {
+            if (hasValidInputs()) {
+                calculatePrice();
+            }
+        }
+    });
+}
+
+// Check if we have valid inputs
+function hasValidInputs() {
+    const length = parseFloat(document.getElementById('length').value);
+    const width = parseFloat(document.getElementById('width').value);
+    const quantity = parseInt(document.getElementById('quantity').value);
+    
+    return length > 0 && width > 0 && quantity > 0;
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    const preset = presets[presetKey];
+    if (!preset) return;
+
+    document.getElementById('material-type').value = preset.material;
+    document.getElementById('length').value = preset.length;
+    document.getElementById('width').value = preset.width;
+    document.getElementById('complexity').value = preset.complexity;
+    document.getElementById('quantity').value = preset.quantity;
+    document.getElementById('engraving-type').value = preset.type;
+
+    updateVisualization();
+    calculatePrice();
+}
+
+// Update visualization
+function updateVisualization() {
+    const materialKey = document.getElementById('material-type').value;
+    const complexityKey = document.getElementById('complexity').value;
+    
+    const material = materials[materialKey];
+    const complexity = complexityFactors[complexityKey];
+
+    // Update workpiece display
+    const workpiece = document.getElementById('workpiece');
+    if (workpiece) {
+        workpiece.textContent = material.name.toUpperCase();
+    }
+
+    // Update complexity display
+    const complexityDisplay = document.getElementById('complexity-display');
+    if (complexityDisplay) {
+        complexityDisplay.innerHTML = `
+            <span class="complexity-indicator ${complexity.class}"></span>
+            ${complexity.name}
+        `;
+    }
+
+    // Update material info
+    const materialInfo = document.getElementById('material-info');
+    if (materialInfo) {
+        materialInfo.textContent = material.info;
+    }
+}
+
+// Update formula display
+function updateFormula() {
+    const katexElement = document.getElementById('katex-formula');
+    const formula = 'P = (M_c + T_c + L_c) \\times (1 + \\mu)';
+    
+    try {
+        katex.render(formula, katexElement, {
+            throwOnError: false,
+            displayMode: false
+        });
+    } catch (error) {
+        katexElement.textContent = 'P = (Mc + Tc + Lc) × (1 + μ)';
+    }
+}
+
+// Calculate pricing
+function calculatePrice() {
+    console.log('Calculating laser engraving price...');
+    try {
+        const length = parseFloat(document.getElementById('length').value) || 0;
+        const width = parseFloat(document.getElementById('width').value) || 0;
+        const quantity = parseInt(document.getElementById('quantity').value) || 1;
+        const materialKey = document.getElementById('material-type').value;
+        const complexityKey = document.getElementById('complexity').value;
+        const engravingType = document.getElementById('engraving-type').value;
+        const machineRate = parseFloat(document.getElementById('machine-rate').value) || 60;
+        const laborRate = parseFloat(document.getElementById('labor-rate').value) || 25;
+        const markup = parseFloat(document.getElementById('markup').value) || 50;
+
+        if (length <= 0 || width <= 0 || quantity <= 0) {
+            console.log('Please enter valid dimensions and quantity');
+            return;
+        }
+
+        const material = materials[materialKey];
+        const complexity = complexityFactors[complexityKey];
+
+        // Calculate area in square feet
+        const areaInches = (length * width) / (25.4 * 25.4); // Convert mm² to in²
+        const areaSqFt = areaInches / 144; // Convert in² to ft²
+
+        // Calculate material cost
+        const materialCost = areaSqFt * material.costPerSqFt * quantity;
+
+        // Calculate processing time
+        const setupTime = 5; // minutes
+        const engravingAreaMm = length * width;
+        const baseSpeed = material.speed; // mm/min
+        const adjustedSpeed = baseSpeed / complexity.factor;
+        
+        // Adjust for engraving type
+        let typeMultiplier = 1;
+        switch (engravingType) {
+            case 'deep': typeMultiplier = 1.5; break;
+            case 'cutting': typeMultiplier = 0.8; break;
+            case 'marking': typeMultiplier = 0.6; break;
+        }
+        
+        const engravingTimePerUnit = (engravingAreaMm / adjustedSpeed) * typeMultiplier;
+        const totalEngravingTime = engravingTimePerUnit * quantity;
+        const totalTime = setupTime + totalEngravingTime; // minutes
+        const totalTimeHours = totalTime / 60;
+
+        // Calculate costs
+        const machineTimeCost = totalTimeHours * machineRate;
+        const laborCost = totalTimeHours * laborRate;
+        const subtotal = materialCost + machineTimeCost + laborCost;
+        const markupAmount = subtotal * (markup / 100);
+        const totalPrice = subtotal + markupAmount;
+        const unitPrice = totalPrice / quantity;
+
+        // Calculate insights
+        const insights = calculateBusinessInsights(totalPrice, totalTime, materialCost, subtotal);
+
+        // Update display
+        updateResults(totalPrice, unitPrice, materialCost, totalTime, machineTimeCost, laborCost, subtotal, markupAmount, insights);
+
+        // Update time estimates
+        updateTimeEstimates(setupTime, totalEngravingTime, totalTime);
+
+        // Create chart
+        createPricingChart(materialCost, machineTimeCost, laborCost, markupAmount);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('Price calculated successfully:', { totalPrice, unitPrice, totalTime });
+    } catch (error) {
+        console.error('Error calculating price:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Calculate business insights
+function calculateBusinessInsights(totalPrice, totalTime, materialCost, subtotal) {
+    let profitability = '';
+    const profitMargin = ((totalPrice - subtotal) / totalPrice) * 100;
+    if (profitMargin > 40) {
+        profitability = 'Excellent profit margin. This project offers strong profitability.';
+    } else if (profitMargin > 25) {
+        profitability = 'Good profit margin. Healthy business opportunity.';
+    } else if (profitMargin > 15) {
+        profitability = 'Moderate profit margin. Consider optimizing costs or pricing.';
+    } else {
+        profitability = 'Low profit margin. Review pricing strategy and costs.';
+    }
+
+    let efficiency = '';
+    const timeHours = totalTime / 60;
+    const hourlyRevenue = totalPrice / timeHours;
+    if (hourlyRevenue > 150) {
+        efficiency = 'Excellent time efficiency. High revenue per hour.';
+    } else if (hourlyRevenue > 100) {
+        efficiency = 'Good time efficiency. Solid hourly revenue.';
+    } else if (hourlyRevenue > 60) {
+        efficiency = 'Moderate efficiency. Consider batch processing.';
+    } else {
+        efficiency = 'Low efficiency. Optimize workflow or increase pricing.';
+    }
+
+    let market = '';
+    if (totalPrice > 200) {
+        market = 'Premium pricing tier. Target high-end customers.';
+    } else if (totalPrice > 50) {
+        market = 'Mid-market pricing. Good for general customers.';
+    } else {
+        market = 'Budget pricing. Focus on volume and efficiency.';
+    }
+
+    let recommendations = '';
+    if (materialCost / subtotal > 0.6) {
+        recommendations = 'Material costs are high. Consider bulk purchasing or alternative materials.';
+    } else if (totalTime > 120) {
+        recommendations = 'Long processing time. Consider batch processing or design optimization.';
+    } else {
+        recommendations = 'Well-balanced project. Good profit potential with reasonable time investment.';
+    }
+
+    return {
+        profitability,
+        efficiency,
+        market,
+        recommendations
+    };
+}
+
+// Update time estimates
+function updateTimeEstimates(setupTime, engravingTime, totalTime) {
+    document.getElementById('setup-time').textContent = `${setupTime} min`;
+    document.getElementById('engraving-time').textContent = `${engravingTime.toFixed(1)} min`;
+    document.getElementById('total-time').textContent = `${totalTime.toFixed(1)} min`;
+}
+
+// Update results display
+function updateResults(totalPrice, unitPrice, materialCost, totalTime, machineTimeCost, laborCost, subtotal, markupAmount, insights) {
+    // Update summary
+    document.getElementById('total-price').textContent = `$${totalPrice.toFixed(2)}`;
+    document.getElementById('unit-price').textContent = `$${unitPrice.toFixed(2)}`;
+    document.getElementById('material-cost').textContent = `$${materialCost.toFixed(2)}`;
+    document.getElementById('processing-time').textContent = `${(totalTime / 60).toFixed(1)}h`;
+
+    // Update detailed breakdown
+    document.getElementById('material-cost-detail').textContent = `$${materialCost.toFixed(2)}`;
+    document.getElementById('machine-cost-detail').textContent = `$${machineTimeCost.toFixed(2)}`;
+    document.getElementById('labor-cost-detail').textContent = `$${laborCost.toFixed(2)}`;
+    document.getElementById('subtotal-detail').textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById('markup-detail').textContent = `$${markupAmount.toFixed(2)}`;
+    document.getElementById('final-price-detail').textContent = `$${totalPrice.toFixed(2)}`;
+
+    // Update insights
+    document.getElementById('profitability-analysis').textContent = insights.profitability;
+    document.getElementById('efficiency-analysis').textContent = insights.efficiency;
+    document.getElementById('market-analysis').textContent = insights.market;
+    document.getElementById('recommendations').textContent = insights.recommendations;
+
+    // Update business quote
+    const quote = getBusinessQuote(totalPrice);
+    document.getElementById('business-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.business-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get business quote based on price
+function getBusinessQuote(price) {
+    for (const quote of businessQuotes) {
+        if (price >= quote.min) {
+            return quote;
+        }
+    }
+    return businessQuotes[businessQuotes.length - 1];
+}
+
+// Create pricing chart
+function createPricingChart(materialCost, machineTimeCost, laborCost, markupAmount) {
+    console.log('Creating pricing chart...');
+    try {
+        const ctx = document.getElementById('pricing-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (pricingChart) {
+            pricingChart.destroy();
+        }
+
+        pricingChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Material Cost', 'Machine Time', 'Labor Cost', 'Markup'],
+                datasets: [{
+                    data: [materialCost, machineTimeCost, laborCost, markupAmount],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+                    borderColor: ['#1d4ed8', '#059669', '#d97706', '#dc2626'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Cost Distribution Breakdown',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#374151',
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return `${context.label}: $${context.parsed.toFixed(2)} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Pricing chart created successfully');
+    } catch (error) {
+        console.error('Error creating pricing chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const totalPrice = document.getElementById('total-price').textContent;
+        const unitPrice = document.getElementById('unit-price').textContent;
+        const material = document.getElementById('material-type').selectedOptions[0].text;
+        const length = document.getElementById('length').value;
+        const width = document.getElementById('width').value;
+        const quantity = document.getElementById('quantity').value;
+        
+        const results = `
+Laser Engraving Price Quote
+==========================
+
+Project Details:
+Material: ${material}
+Dimensions: ${length}mm × ${width}mm
+Quantity: ${quantity} pieces
+Complexity: ${document.getElementById('complexity').selectedOptions[0].text}
+Engraving Type: ${document.getElementById('engraving-type').selectedOptions[0].text}
+
+Pricing Breakdown:
+Material Cost: ${document.getElementById('material-cost-detail').textContent}
+Machine Time: ${document.getElementById('machine-cost-detail').textContent}
+Labor Cost: ${document.getElementById('labor-cost-detail').textContent}
+Subtotal: ${document.getElementById('subtotal-detail').textContent}
+Markup: ${document.getElementById('markup-detail').textContent}
+
+Total Price: ${totalPrice}
+Price Per Unit: ${unitPrice}
+
+Processing Time: ${document.getElementById('processing-time').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+Valid for: 30 days
+
+Visit our Laser Engraving Calculator for more quotes!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `laser-engraving-quote-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Quote saved successfully');
+    } catch (error) {
+        console.error('Error saving quote:', error);
+        alert('Failed to save quote. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing laser engraving calculator...');
+
+    document.getElementById('material-type').value = 'wood';
+    document.getElementById('length').value = '';
+    document.getElementById('width').value = '';
+    document.getElementById('complexity').value = 'simple';
+    document.getElementById('quantity').value = '';
+    document.getElementById('engraving-type').value = 'surface';
+    document.getElementById('machine-rate').value = '60.00';
+    document.getElementById('labor-rate').value = '25.00';
+    document.getElementById('markup').value = '50';
+
+    updateVisualization();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (pricingChart) {
+        pricingChart.destroy();
+        pricingChart = null;
+    }
+
+    console.log('Laser engraving calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing laser engraving calculator...');
+    initCalculator();
+    lucide.createIcons();
+
+    // Render KaTeX formulas
+    setTimeout(() => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ]
+        });
+    }, 100);
+});
+</script>
+{% endblock %}

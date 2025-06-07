@@ -1,0 +1,941 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.conversion-card {
+    transition: all 0.3s ease;
+}
+.measurement-display {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.weight-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .weight-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.measurement-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #dc2626;
+    border-radius: 0 8px 8px 0;
+}
+.conversion-meter {
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #dc2626 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.conversion-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.commodity-visualization {
+    width: 200px;
+    height: 200px;
+    border: 2px solid #dc2626;
+    border-radius: 20px;
+    position: relative;
+    margin: 0 auto;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.commodity-icon {
+    font-size: 4rem;
+    transition: transform 0.5s ease;
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.commodity-card {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border: 1px solid #fecaca;
+    transition: all 0.3s ease;
+}
+.dark .commodity-card {
+    background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+    border-color: #991b1b;
+}
+.commodity-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-red-50 dark:bg-red-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="wheat" class="w-8 h-8 text-red-600 dark:text-red-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Tonnes to Bushels Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Convert metric tonnes to bushels for various agricultural commodities. Essential for farming, trading, and agricultural planning!
+        </p>
+        <div class="mt-4 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg inline-block">
+            <div class="text-red-800 dark:text-red-300 font-medium">
+                🌾 Agricultural Conversion • ⚖️ Weight to Volume • 📊 Commodity Trading • 🚜 Farm Planning
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Conversion Parameters</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Weight (Tonnes):</label>
+                        <input type="number" id="tonnes-input" step="0.001" placeholder="Enter weight in tonnes" 
+                               class="weight-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Metric tonnes (1000 kg)</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Commodity:</label>
+                        <select id="commodity-select" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="wheat">🌾 Wheat (60 lbs/bushel)</option>
+                            <option value="corn">🌽 Corn (56 lbs/bushel)</option>
+                            <option value="soybeans">🫘 Soybeans (60 lbs/bushel)</option>
+                            <option value="barley">🌾 Barley (48 lbs/bushel)</option>
+                            <option value="oats">🌾 Oats (32 lbs/bushel)</option>
+                            <option value="rice">🍚 Rice (45 lbs/bushel)</option>
+                            <option value="rye">🌾 Rye (56 lbs/bushel)</option>
+                            <option value="sorghum">🌾 Sorghum (56 lbs/bushel)</option>
+                            <option value="canola">🌻 Canola (50 lbs/bushel)</option>
+                            <option value="sunflower">🌻 Sunflower (25 lbs/bushel)</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Conversion Direction:</label>
+                        <select id="conversion-direction" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="tonnes-to-bushels">Tonnes to Bushels</option>
+                            <option value="bushels-to-tonnes">Bushels to Tonnes</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Presets:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset(1, 'wheat')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                                1 Tonne Wheat
+                            </button>
+                            <button onclick="setPreset(5, 'corn')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                                5 Tonnes Corn
+                            </button>
+                            <button onclick="setPreset(10, 'soybeans')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                                10 Tonnes Soybeans
+                            </button>
+                            <button onclick="setPreset(25, 'barley')" class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                                25 Tonnes Barley
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Commodity Visualization</h3>
+                        <div class="commodity-visualization" id="commodity-viz">
+                            <div class="commodity-icon" id="commodity-icon">🌾</div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <span id="commodity-display" class="text-lg font-semibold text-red-600 dark:text-red-400">Wheat</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            Bushels = (Tonnes × 2204.62) ÷ Weight per Bushel (lbs)
+                        </div>
+                    </div>
+                    
+                    <!-- Commodity Info -->
+                    <div class="commodity-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Commodity Info:</h4>
+                        <div id="commodity-info" class="text-sm text-gray-700 dark:text-gray-300">
+                            Standard weight: 60 lbs per bushel
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate Conversion</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Results</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- Conversion Summary -->
+            <div class="measurement-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>Conversion Results</span>
+                    <i data-lucide="scale" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="primary-result" class="text-3xl font-bold mb-2">-</div>
+                        <div id="primary-unit" class="text-sm opacity-90">Bushels</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="input-value" class="text-3xl font-bold mb-2">-</div>
+                        <div id="input-unit" class="text-sm opacity-90">Tonnes</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="commodity-result" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Commodity</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="weight-per-bushel" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">lbs/bushel</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Conversions -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="scale-3d" class="w-5 h-5"></i>
+                    <span>Alternative Units</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Kilograms:</span>
+                            <span id="kilograms-value" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Pounds:</span>
+                            <span id="pounds-value" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Short Tons (US):</span>
+                            <span id="short-tons-value" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Long Tons (UK):</span>
+                            <span id="long-tons-value" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversion Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Commodity Comparison</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="commodity-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Measurement Quote -->
+            <div class="measurement-quote mb-6">
+                <p id="measurement-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "Agriculture is the most healthful, most useful, and most noble employment of man."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- George Washington</p>
+            </div>
+
+            <!-- Agricultural Insights -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="sprout" class="w-5 h-5"></i>
+                    <span>Agricultural Insights</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span>Market Information</span>
+                        </h4>
+                        <p id="market-info" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="truck" class="w-4 h-4"></i>
+                            <span>Storage & Transport</span>
+                        </h4>
+                        <p id="storage-transport" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span>Seasonal Notes</span>
+                        </h4>
+                        <p id="seasonal-notes" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="globe" class="w-4 h-4"></i>
+                            <span>Global Production</span>
+                        </h4>
+                        <p id="global-production" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>Tonnes to Bushels Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Tonnes to Bushels Conversion?</h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    This conversion translates metric weight measurements (tonnes) into volume measurements (bushels) for agricultural commodities. Each commodity has a different weight per bushel, making this conversion essential for farming, trading, and storage planning.
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Standard Bushel Weights</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Wheat & Soybeans:</strong> 60 lbs per bushel</li>
+                    <li><strong>Corn, Rye & Sorghum:</strong> 56 lbs per bushel</li>
+                    <li><strong>Canola:</strong> 50 lbs per bushel</li>
+                    <li><strong>Barley:</strong> 48 lbs per bushel</li>
+                    <li><strong>Rice:</strong> 45 lbs per bushel</li>
+                    <li><strong>Oats:</strong> 32 lbs per bushel</li>
+                    <li><strong>Sunflower:</strong> 25 lbs per bushel</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Common Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Commodity trading and pricing</li>
+                    <li>Farm yield calculations</li>
+                    <li>Storage facility planning</li>
+                    <li>Transportation logistics</li>
+                    <li>Agricultural insurance assessments</li>
+                    <li>Export/import documentation</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                    <li>Enter the weight in metric tonnes</li>
+                    <li>Select the commodity type from the dropdown</li>
+                    <li>Choose conversion direction (tonnes to bushels or vice versa)</li>
+                    <li>Click "Calculate Conversion" to see results</li>
+                    <li>View alternative units and agricultural insights</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Commodity data with weights and information
+const commodities = {
+    wheat: {
+        name: 'Wheat',
+        icon: '🌾',
+        weightPerBushel: 60,
+        info: 'Standard weight: 60 lbs per bushel. Major staple grain crop.',
+        market: 'Wheat is one of the most traded commodities globally, with prices influenced by weather, demand, and global supply.',
+        storage: 'Requires dry storage conditions. Typical moisture content for storage is 13.5% or less.',
+        seasonal: 'Winter wheat planted in fall, harvested in summer. Spring wheat planted in spring.',
+        production: 'Top producers: China, India, Russia, USA, France. Global production ~750 million tonnes annually.'
+    },
+    corn: {
+        name: 'Corn',
+        icon: '🌽',
+        weightPerBushel: 56,
+        info: 'Standard weight: 56 lbs per bushel. Also known as maize.',
+        market: 'Corn is heavily traded for food, feed, and ethanol production. Prices correlate with energy markets.',
+        storage: 'Store at 15% moisture or less. Requires good ventilation to prevent spoilage.',
+        seasonal: 'Planted in spring (April-June), harvested in fall (September-November) in Northern Hemisphere.',
+        production: 'Top producers: USA, China, Brazil, Argentina. Global production ~1.1 billion tonnes annually.'
+    },
+    soybeans: {
+        name: 'Soybeans',
+        icon: '🫘',
+        weightPerBushel: 60,
+        info: 'Standard weight: 60 lbs per bushel. Important protein and oil source.',
+        market: 'Soybean prices driven by protein meal demand and oil markets. Major export commodity.',
+        storage: 'Store at 13% moisture or less. Sensitive to temperature and humidity changes.',
+        seasonal: 'Planted in late spring, harvested in fall. Growing season 100-150 days.',
+        production: 'Top producers: USA, Brazil, Argentina, China. Global production ~350 million tonnes annually.'
+    },
+    barley: {
+        name: 'Barley',
+        icon: '🌾',
+        weightPerBushel: 48,
+        info: 'Standard weight: 48 lbs per bushel. Used for malting and animal feed.',
+        market: 'Barley prices influenced by brewing industry demand and feed grain markets.',
+        storage: 'Store at 14.5% moisture or less. Quality important for malting applications.',
+        seasonal: 'Spring barley planted in spring, winter barley in fall. Shorter growing season than wheat.',
+        production: 'Top producers: Russia, Germany, France, Ukraine, Turkey. Global production ~150 million tonnes annually.'
+    },
+    oats: {
+        name: 'Oats',
+        icon: '🌾',
+        weightPerBushel: 32,
+        info: 'Standard weight: 32 lbs per bushel. Lightest of major grains.',
+        market: 'Oat prices driven by human consumption and horse feed demand. Smaller market than other grains.',
+        storage: 'Store at 14% moisture or less. Hull protects grain during storage.',
+        seasonal: 'Cool season crop. Spring oats common, some winter varieties in mild climates.',
+        production: 'Top producers: Russia, Canada, Poland, Finland, Australia. Global production ~25 million tonnes annually.'
+    },
+    rice: {
+        name: 'Rice',
+        icon: '🍚',
+        weightPerBushel: 45,
+        info: 'Standard weight: 45 lbs per bushel. World\'s most important food crop.',
+        market: 'Rice markets are often regional with government intervention. Export markets concentrated.',
+        storage: 'Store at 14% moisture or less. Requires careful handling to maintain quality.',
+        seasonal: 'Multiple crops per year possible in tropical regions. Single crop in temperate zones.',
+        production: 'Top producers: China, India, Indonesia, Bangladesh, Vietnam. Global production ~750 million tonnes annually.'
+    },
+    rye: {
+        name: 'Rye',
+        icon: '🌾',
+        weightPerBushel: 56,
+        info: 'Standard weight: 56 lbs per bushel. Hardy grain crop.',
+        market: 'Smaller market than wheat. Used for bread, whiskey, and animal feed.',
+        storage: 'Store at 14% moisture or less. More resistant to storage pests than wheat.',
+        seasonal: 'Winter rye most common. Very cold hardy, can survive harsh winters.',
+        production: 'Top producers: Germany, Poland, Russia, Denmark, Belarus. Global production ~12 million tonnes annually.'
+    },
+    sorghum: {
+        name: 'Sorghum',
+        icon: '🌾',
+        weightPerBushel: 56,
+        info: 'Standard weight: 56 lbs per bushel. Drought-tolerant grain.',
+        market: 'Sorghum prices often follow corn markets. Important in arid regions.',
+        storage: 'Store at 14% moisture or less. Good storage characteristics.',
+        seasonal: 'Warm season crop. Planted after soil warms, harvested in fall.',
+        production: 'Top producers: USA, Nigeria, India, Mexico, Sudan. Global production ~60 million tonnes annually.'
+    },
+    canola: {
+        name: 'Canola',
+        icon: '🌻',
+        weightPerBushel: 50,
+        info: 'Standard weight: 50 lbs per bushel. Oilseed crop.',
+        market: 'Canola prices driven by vegetable oil markets and protein meal demand.',
+        storage: 'Store at 10% moisture or less. High oil content requires careful storage.',
+        seasonal: 'Cool season crop. Spring canola most common, some winter varieties.',
+        production: 'Top producers: Canada, China, India, Germany, France. Global production ~75 million tonnes annually.'
+    },
+    sunflower: {
+        name: 'Sunflower',
+        icon: '🌻',
+        weightPerBushel: 25,
+        info: 'Standard weight: 25 lbs per bushel. Oilseed with large, light seeds.',
+        market: 'Sunflower prices follow vegetable oil markets. Regional production patterns.',
+        storage: 'Store at 10% moisture or less. Large seeds require good ventilation.',
+        seasonal: 'Warm season crop. Long growing season, harvested in fall.',
+        production: 'Top producers: Russia, Ukraine, Argentina, Romania, Bulgaria. Global production ~50 million tonnes annually.'
+    }
+};
+
+// Agricultural quotes for different weight ranges
+const agriculturalQuotes = [
+    { min: 50, quote: "Agriculture is the most healthful, most useful, and most noble employment of man.", author: "George Washington" },
+    { min: 25, quote: "The farmer is the only man in our economy who buys everything at retail, sells everything at wholesale, and pays the freight both ways.", author: "John F. Kennedy" },
+    { min: 10, quote: "Agriculture not only gives riches to a nation, but the only riches she can call her own.", author: "Samuel Johnson" },
+    { min: 5, quote: "The ultimate goal of farming is not the growing of crops, but the cultivation and perfection of human beings.", author: "Masanobu Fukuoka" },
+    { min: 0, quote: "Agriculture is our wisest pursuit, because it will in the end contribute most to real wealth, good morals, and happiness.", author: "Thomas Jefferson" }
+];
+
+let commodityChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Tonnes to Bushels Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    updateFormula();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const tonnesInput = document.getElementById('tonnes-input');
+    const commoditySelect = document.getElementById('commodity-select');
+    const conversionDirection = document.getElementById('conversion-direction');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateConversion);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (tonnesInput) {
+        tonnesInput.addEventListener('input', () => {
+            if (tonnesInput.value) {
+                calculateConversion();
+            }
+        });
+    }
+
+    if (commoditySelect) {
+        commoditySelect.addEventListener('change', () => {
+            updateVisualization();
+            updateFormula();
+            if (tonnesInput.value) {
+                calculateConversion();
+            }
+        });
+    }
+
+    if (conversionDirection) {
+        conversionDirection.addEventListener('change', () => {
+            updateInputLabel();
+            updateFormula();
+            if (tonnesInput.value) {
+                calculateConversion();
+            }
+        });
+    }
+}
+
+// Set preset values
+function setPreset(weight, commodity) {
+    document.getElementById('tonnes-input').value = weight;
+    document.getElementById('commodity-select').value = commodity;
+    updateVisualization();
+    updateFormula();
+    calculateConversion();
+}
+
+// Update commodity visualization
+function updateVisualization() {
+    const commoditySelect = document.getElementById('commodity-select');
+    const selectedCommodity = commoditySelect.value;
+    const commodity = commodities[selectedCommodity];
+
+    const commodityIcon = document.getElementById('commodity-icon');
+    const commodityDisplay = document.getElementById('commodity-display');
+    const commodityInfo = document.getElementById('commodity-info');
+
+    if (commodityIcon) {
+        commodityIcon.textContent = commodity.icon;
+    }
+
+    if (commodityDisplay) {
+        commodityDisplay.textContent = commodity.name;
+    }
+
+    if (commodityInfo) {
+        commodityInfo.textContent = commodity.info;
+    }
+}
+
+// Update input label based on conversion direction
+function updateInputLabel() {
+    const direction = document.getElementById('conversion-direction').value;
+    const input = document.getElementById('tonnes-input');
+    const label = input.previousElementSibling;
+
+    if (direction === 'tonnes-to-bushels') {
+        label.textContent = 'Weight (Tonnes):';
+        input.placeholder = 'Enter weight in tonnes';
+    } else {
+        label.textContent = 'Volume (Bushels):';
+        input.placeholder = 'Enter volume in bushels';
+    }
+}
+
+// Update formula display
+function updateFormula() {
+    const direction = document.getElementById('conversion-direction').value;
+    const formulaDisplay = document.getElementById('formula-display');
+
+    if (direction === 'tonnes-to-bushels') {
+        formulaDisplay.textContent = 'Bushels = (Tonnes × 2204.62) ÷ Weight per Bushel (lbs)';
+    } else {
+        formulaDisplay.textContent = 'Tonnes = (Bushels × Weight per Bushel (lbs)) ÷ 2204.62';
+    }
+}
+
+// Calculate conversion
+function calculateConversion() {
+    console.log('Calculating tonnes to bushels conversion...');
+    try {
+        const inputValue = parseFloat(document.getElementById('tonnes-input').value);
+        const commodityKey = document.getElementById('commodity-select').value;
+        const direction = document.getElementById('conversion-direction').value;
+
+        if (!inputValue && inputValue !== 0) {
+            console.log('Please enter a value');
+            return;
+        }
+
+        if (inputValue < 0) {
+            alert('Please enter a positive value');
+            return;
+        }
+
+        const commodity = commodities[commodityKey];
+        const weightPerBushel = commodity.weightPerBushel;
+
+        let tonnes, bushels;
+
+        if (direction === 'tonnes-to-bushels') {
+            tonnes = inputValue;
+            // Convert tonnes to pounds, then to bushels
+            const pounds = tonnes * 2204.62; // 1 tonne = 2204.62 lbs
+            bushels = pounds / weightPerBushel;
+        } else {
+            bushels = inputValue;
+            // Convert bushels to pounds, then to tonnes
+            const pounds = bushels * weightPerBushel;
+            tonnes = pounds / 2204.62;
+        }
+
+        // Calculate alternative units
+        const kilograms = tonnes * 1000;
+        const pounds = tonnes * 2204.62;
+        const shortTons = tonnes * 1.10231; // US short tons
+        const longTons = tonnes * 0.984207; // UK long tons
+
+        // Calculate insights
+        const insights = calculateInsights(tonnes, commodity);
+
+        // Update display
+        updateResults(tonnes, bushels, commodity, kilograms, pounds, shortTons, longTons, insights, direction, inputValue);
+
+        // Create chart
+        createCommodityChart(tonnes, commodity);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('Conversion calculated successfully:', { tonnes, bushels, commodity: commodity.name });
+    } catch (error) {
+        console.error('Error calculating conversion:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Calculate agricultural insights
+function calculateInsights(tonnes, commodity) {
+    return {
+        marketInfo: commodity.market,
+        storageTransport: commodity.storage,
+        seasonalNotes: commodity.seasonal,
+        globalProduction: commodity.production
+    };
+}
+
+// Update results display
+function updateResults(tonnes, bushels, commodity, kilograms, pounds, shortTons, longTons, insights, direction, inputValue) {
+    const primaryResult = direction === 'tonnes-to-bushels' ? bushels : tonnes;
+    const primaryUnit = direction === 'tonnes-to-bushels' ? 'Bushels' : 'Tonnes';
+    const inputUnit = direction === 'tonnes-to-bushels' ? 'Tonnes' : 'Bushels';
+
+    // Update summary
+    document.getElementById('primary-result').textContent = primaryResult.toFixed(3);
+    document.getElementById('primary-unit').textContent = primaryUnit;
+    document.getElementById('input-value').textContent = inputValue.toFixed(3);
+    document.getElementById('input-unit').textContent = inputUnit;
+    document.getElementById('commodity-result').textContent = commodity.icon;
+    document.getElementById('weight-per-bushel').textContent = commodity.weightPerBushel;
+
+    // Update alternative units
+    document.getElementById('kilograms-value').textContent = `${kilograms.toFixed(2)} kg`;
+    document.getElementById('pounds-value').textContent = `${pounds.toFixed(2)} lbs`;
+    document.getElementById('short-tons-value').textContent = `${shortTons.toFixed(4)} tons`;
+    document.getElementById('long-tons-value').textContent = `${longTons.toFixed(4)} tons`;
+
+    // Update insights
+    document.getElementById('market-info').textContent = insights.marketInfo;
+    document.getElementById('storage-transport').textContent = insights.storageTransport;
+    document.getElementById('seasonal-notes').textContent = insights.seasonalNotes;
+    document.getElementById('global-production').textContent = insights.globalProduction;
+
+    // Update agricultural quote
+    const quote = getAgriculturalQuote(tonnes);
+    document.getElementById('measurement-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.measurement-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get agricultural quote based on tonnage
+function getAgriculturalQuote(tonnes) {
+    for (const quote of agriculturalQuotes) {
+        if (tonnes >= quote.min) {
+            return quote;
+        }
+    }
+    return agriculturalQuotes[agriculturalQuotes.length - 1];
+}
+
+// Create commodity comparison chart
+function createCommodityChart(tonnes, selectedCommodity) {
+    console.log('Creating commodity chart...');
+    try {
+        const ctx = document.getElementById('commodity-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (commodityChart) {
+            commodityChart.destroy();
+        }
+
+        // Calculate bushels for all commodities with the same tonnage
+        const commodityData = Object.entries(commodities).map(([key, commodity]) => {
+            const pounds = tonnes * 2204.62;
+            const bushels = pounds / commodity.weightPerBushel;
+            return {
+                name: commodity.name,
+                bushels: bushels,
+                isSelected: key === document.getElementById('commodity-select').value
+            };
+        });
+
+        const labels = commodityData.map(item => item.name);
+        const data = commodityData.map(item => item.bushels);
+        const colors = commodityData.map(item => item.isSelected ? '#dc2626' : '#6b7280');
+
+        commodityChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Bushels',
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: colors.map(color => color === '#dc2626' ? '#991b1b' : '#4b5563'),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${tonnes} Tonnes Converted to Bushels by Commodity`,
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed.y.toFixed(2)} bushels`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Bushels',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Commodity Type',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            maxRotation: 45
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Commodity chart created successfully');
+    } catch (error) {
+        console.error('Error creating commodity chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const inputValue = document.getElementById('tonnes-input').value;
+        const direction = document.getElementById('conversion-direction').value;
+        const commodity = document.getElementById('commodity-select').selectedOptions[0].text;
+        const primaryResult = document.getElementById('primary-result').textContent;
+        const primaryUnit = document.getElementById('primary-unit').textContent;
+        
+        const results = `
+Tonnes to Bushels Calculator Results
+===================================
+
+Input: ${inputValue} ${direction === 'tonnes-to-bushels' ? 'Tonnes' : 'Bushels'}
+Commodity: ${commodity}
+Conversion Direction: ${direction.replace('-', ' to ').toUpperCase()}
+
+Primary Result: ${primaryResult} ${primaryUnit}
+
+Alternative Units:
+Kilograms: ${document.getElementById('kilograms-value').textContent}
+Pounds: ${document.getElementById('pounds-value').textContent}
+Short Tons (US): ${document.getElementById('short-tons-value').textContent}
+Long Tons (UK): ${document.getElementById('long-tons-value').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Tonnes to Bushels Calculator for more conversions!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tonnes-bushels-conversion-${inputValue}-${commodity.split(' ')[1]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing tonnes to bushels calculator...');
+
+    document.getElementById('tonnes-input').value = '';
+    document.getElementById('commodity-select').value = 'wheat';
+    document.getElementById('conversion-direction').value = 'tonnes-to-bushels';
+
+    updateVisualization();
+    updateInputLabel();
+    updateFormula();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (commodityChart) {
+        commodityChart.destroy();
+        commodityChart = null;
+    }
+
+    console.log('Tonnes to bushels calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing tonnes to bushels calculator...');
+    initCalculator();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

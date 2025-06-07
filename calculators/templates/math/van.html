@@ -1,0 +1,1186 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.vant-hoff-display {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.chemistry-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #1e40af;
+    border-radius: 0 8px 8px 0;
+}
+.dissociation-meter {
+    background: linear-gradient(90deg, #22c55e 0%, #eab308 25%, #f59e0b 50%, #ef4444 75%, #1e40af 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.dissociation-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.solution-visualization {
+    width: 250px;
+    height: 250px;
+    border: 2px solid #1e40af;
+    border-radius: 20px;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(30, 64, 175, 0.1) 0%, rgba(30, 64, 175, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.ion-particle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    animation: float 3s ease-in-out infinite;
+}
+.cation {
+    background: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+.anion {
+    background: #3b82f6;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+.molecule {
+    background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px) translateX(0px); }
+    25% { transform: translateY(-10px) translateX(5px); }
+    50% { transform: translateY(0px) translateX(-5px); }
+    75% { transform: translateY(10px) translateX(3px); }
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.solute-card {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+    transition: all 0.3s ease;
+}
+.dark .solute-card {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    border-color: #3b82f6;
+}
+.solute-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15);
+}
+.electrolyte-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.strong { background: #ef4444; }
+.weak { background: #f59e0b; }
+.non-electrolyte { background: #10b981; }
+.temperature-scale {
+    background: linear-gradient(90deg, #3b82f6 0%, #1e40af 50%, #1e3a8a 100%);
+    height: 6px;
+    border-radius: 3px;
+    position: relative;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="flask-conical" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">van't Hoff Factor Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate van't Hoff factors and colligative properties for electrolyte and non-electrolyte solutions. Essential for physical chemistry and solution studies!
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div class="text-blue-800 dark:text-blue-300 font-medium">
+                <span class="katex-formula">i = \frac{\Delta T_{observed}}{\Delta T_{expected}}</span> • 🧪 Colligative Properties • ⚗️ Solution Chemistry • 📊 Physical Chemistry
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Solution Parameters</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Calculation Method:</label>
+                        <select id="calculation-method" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="freezing-point">Freezing Point Depression</option>
+                            <option value="boiling-point">Boiling Point Elevation</option>
+                            <option value="osmotic-pressure">Osmotic Pressure</option>
+                            <option value="vapor-pressure">Vapor Pressure Lowering</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Solute Type:</label>
+                        <select id="solute-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="nacl">NaCl (Sodium Chloride)</option>
+                            <option value="cacl2">CaCl₂ (Calcium Chloride)</option>
+                            <option value="mgso4">MgSO₄ (Magnesium Sulfate)</option>
+                            <option value="glucose">C₆H₁₂O₆ (Glucose)</option>
+                            <option value="sucrose">C₁₂H₂₂O₁₁ (Sucrose)</option>
+                            <option value="urea">CO(NH₂)₂ (Urea)</option>
+                            <option value="hcl">HCl (Hydrochloric Acid)</option>
+                            <option value="h2so4">H₂SO₄ (Sulfuric Acid)</option>
+                            <option value="ch3cooh">CH₃COOH (Acetic Acid)</option>
+                            <option value="custom">Custom Solute</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Molality (m):</label>
+                            <input type="number" id="molality" step="0.001" placeholder="0.100" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">mol solute / kg solvent</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Temperature (°C):</label>
+                            <input type="number" id="temperature" step="0.1" placeholder="25.0" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                        </div>
+                    </div>
+
+                    <!-- Experimental Data Section -->
+                    <div id="experimental-section">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Experimental Data</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Observed ΔT (°C):</label>
+                                <input type="number" id="observed-delta-t" step="0.001" placeholder="0.372" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Expected ΔT (°C):</label>
+                                <input type="number" id="expected-delta-t" step="0.001" placeholder="0.186" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Solute Section -->
+                    <div id="custom-solute-section" class="hidden">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Custom Solute Properties</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Theoretical i:</label>
+                                <input type="number" id="theoretical-i" step="0.1" placeholder="2.0" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Degree of Dissociation (α):</label>
+                                <input type="number" id="dissociation-degree" step="0.01" min="0" max="1" placeholder="0.85" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Presets:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('nacl-dilute')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                0.1 M NaCl
+                            </button>
+                            <button onclick="setPreset('cacl2-concentrated')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                0.5 M CaCl₂
+                            </button>
+                            <button onclick="setPreset('glucose-solution')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                0.2 M Glucose
+                            </button>
+                            <button onclick="setPreset('weak-acid')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                0.1 M CH₃COOH
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Solution Visualization</h3>
+                        <div class="solution-visualization" id="solution-viz">
+                            <!-- Particles will be generated here -->
+                        </div>
+                        <div class="text-center mt-4">
+                            <span id="electrolyte-display" class="text-lg font-semibold text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                <span class="electrolyte-indicator strong"></span>
+                                Strong Electrolyte
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Current Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Solute Properties -->
+                    <div class="solute-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Solute Properties:</h4>
+                        <div id="solute-info" class="text-sm text-gray-700 dark:text-gray-300">
+                            Theoretical i: 2.0 • Type: Strong electrolyte • Dissociation: Complete
+                        </div>
+                    </div>
+
+                    <!-- Constants Display -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Physical Constants</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Kf (H₂O):</span>
+                                <span class="font-medium">1.86 °C·kg/mol</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Kb (H₂O):</span>
+                                <span class="font-medium">0.512 °C·kg/mol</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">R:</span>
+                                <span class="font-medium">0.0821 L·atm/(mol·K)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate van't Hoff Factor</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Results</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- van't Hoff Factor Summary -->
+            <div class="vant-hoff-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>van't Hoff Factor Results</span>
+                    <i data-lucide="beaker" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="vant-hoff-factor" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">van't Hoff Factor (i)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="dissociation-percent" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Dissociation (%)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="colligative-effect" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">ΔT (°C)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="particle-count" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Particle Ratio</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colligative Properties -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="thermometer" class="w-5 h-5"></i>
+                    <span>Colligative Properties</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Freezing Point Depression:</span>
+                            <span id="freezing-depression" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Boiling Point Elevation:</span>
+                            <span id="boiling-elevation" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Osmotic Pressure:</span>
+                            <span id="osmotic-pressure" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Vapor Pressure Lowering:</span>
+                            <span id="vapor-pressure" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Theoretical vs Experimental</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="vant-hoff-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chemistry Quote -->
+            <div class="chemistry-quote mb-6">
+                <p id="chemistry-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "The van't Hoff factor reveals the true nature of electrolyte dissociation in solution."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Physical Chemistry Principle</p>
+            </div>
+
+            <!-- Chemical Insights -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="microscope" class="w-5 h-5"></i>
+                    <span>Chemical Insights</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="zap" class="w-4 h-4"></i>
+                            <span>Electrolyte Behavior</span>
+                        </h4>
+                        <p id="electrolyte-behavior" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="activity" class="w-4 h-4"></i>
+                            <span>Solution Effects</span>
+                        </h4>
+                        <p id="solution-effects" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span>Concentration Effects</span>
+                        </h4>
+                        <p id="concentration-effects" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="flask-round" class="w-4 h-4"></i>
+                            <span>Applications</span>
+                        </h4>
+                        <p id="applications" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>van't Hoff Factor Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is the van't Hoff Factor?</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    The van't Hoff factor (i) represents the ratio of observed colligative property to the expected property for a non-electrolyte: <span class="katex-formula">i = \frac{\Delta T_{observed}}{\Delta T_{expected}}</span>
+                </p>
+                <p class="text-gray-600 dark:text-gray-300">
+                    It indicates how many particles a solute produces when it dissolves in solution.
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Colligative Property Formulas</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>Freezing Point Depression:</strong> <span class="katex-formula">\Delta T_f = i \cdot K_f \cdot m</span></li>
+                    <li><strong>Boiling Point Elevation:</strong> <span class="katex-formula">\Delta T_b = i \cdot K_b \cdot m</span></li>
+                    <li><strong>Osmotic Pressure:</strong> <span class="katex-formula">\pi = i \cdot M \cdot R \cdot T</span></li>
+                    <li><strong>Vapor Pressure Lowering:</strong> <span class="katex-formula">\Delta P = i \cdot X_{solute} \cdot P^0_{solvent}</span></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Typical van't Hoff Factors</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Non-electrolytes (glucose, sucrose):</strong> i ≈ 1.0</li>
+                    <li><strong>Strong 1:1 electrolytes (NaCl, HCl):</strong> i ≈ 1.8-2.0</li>
+                    <li><strong>Strong 1:2 electrolytes (CaCl₂, MgSO₄):</strong> i ≈ 2.7-3.0</li>
+                    <li><strong>Weak electrolytes (CH₃COOH):</strong> i ≈ 1.0-1.3</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Factors Affecting van't Hoff Factor</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Degree of dissociation/ionization</li>
+                    <li>Ion pairing at high concentrations</li>
+                    <li>Temperature effects</li>
+                    <li>Solvent interactions</li>
+                    <li>Activity coefficients</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Solute data with properties
+const solutes = {
+    nacl: {
+        name: 'NaCl',
+        formula: 'NaCl',
+        theoreticalI: 2.0,
+        actualI: 1.9,
+        type: 'strong',
+        dissociation: 0.95,
+        info: 'Theoretical i: 2.0 • Type: Strong electrolyte • Dissociation: ~95%'
+    },
+    cacl2: {
+        name: 'CaCl₂',
+        formula: 'CaCl₂',
+        theoreticalI: 3.0,
+        actualI: 2.7,
+        type: 'strong',
+        dissociation: 0.90,
+        info: 'Theoretical i: 3.0 • Type: Strong electrolyte • Dissociation: ~90%'
+    },
+    mgso4: {
+        name: 'MgSO₄',
+        formula: 'MgSO₄',
+        theoreticalI: 2.0,
+        actualI: 1.3,
+        type: 'weak',
+        dissociation: 0.65,
+        info: 'Theoretical i: 2.0 • Type: Weak electrolyte • Dissociation: ~65%'
+    },
+    glucose: {
+        name: 'Glucose',
+        formula: 'C₆H₁₂O₆',
+        theoreticalI: 1.0,
+        actualI: 1.0,
+        type: 'non-electrolyte',
+        dissociation: 0.0,
+        info: 'Theoretical i: 1.0 • Type: Non-electrolyte • No dissociation'
+    },
+    sucrose: {
+        name: 'Sucrose',
+        formula: 'C₁₂H₂₂O₁₁',
+        theoreticalI: 1.0,
+        actualI: 1.0,
+        type: 'non-electrolyte',
+        dissociation: 0.0,
+        info: 'Theoretical i: 1.0 • Type: Non-electrolyte • No dissociation'
+    },
+    urea: {
+        name: 'Urea',
+        formula: 'CO(NH₂)₂',
+        theoreticalI: 1.0,
+        actualI: 1.0,
+        type: 'non-electrolyte',
+        dissociation: 0.0,
+        info: 'Theoretical i: 1.0 • Type: Non-electrolyte • No dissociation'
+    },
+    hcl: {
+        name: 'HCl',
+        formula: 'HCl',
+        theoreticalI: 2.0,
+        actualI: 1.9,
+        type: 'strong',
+        dissociation: 0.95,
+        info: 'Theoretical i: 2.0 • Type: Strong acid • Dissociation: ~95%'
+    },
+    h2so4: {
+        name: 'H₂SO₄',
+        formula: 'H₂SO₄',
+        theoreticalI: 3.0,
+        actualI: 2.8,
+        type: 'strong',
+        dissociation: 0.90,
+        info: 'Theoretical i: 3.0 • Type: Strong acid • Dissociation: ~90%'
+    },
+    ch3cooh: {
+        name: 'Acetic Acid',
+        formula: 'CH₃COOH',
+        theoreticalI: 2.0,
+        actualI: 1.05,
+        type: 'weak',
+        dissociation: 0.025,
+        info: 'Theoretical i: 2.0 • Type: Weak acid • Dissociation: ~2.5%'
+    },
+    custom: {
+        name: 'Custom',
+        formula: 'Custom',
+        theoreticalI: 2.0,
+        actualI: 1.8,
+        type: 'strong',
+        dissociation: 0.80,
+        info: 'Custom solute properties'
+    }
+};
+
+// Chemistry quotes for different van't Hoff factors
+const chemistryQuotes = [
+    { min: 2.5, quote: "The van't Hoff factor reveals the true nature of electrolyte dissociation in solution.", author: "Physical Chemistry Principle" },
+    { min: 1.5, quote: "Colligative properties depend only on the number of particles, not their identity.", author: "Solution Chemistry" },
+    { min: 1.1, quote: "Even weak electrolytes show measurable deviations from ideal behavior.", author: "Electrochemistry" },
+    { min: 0, quote: "Non-electrolytes maintain their molecular integrity in solution.", author: "Solution Theory" }
+];
+
+// Preset configurations
+const presets = {
+    'nacl-dilute': {
+        method: 'freezing-point',
+        solute: 'nacl',
+        molality: 0.1,
+        temperature: 0,
+        observedDeltaT: 0.372,
+        expectedDeltaT: 0.186
+    },
+    'cacl2-concentrated': {
+        method: 'freezing-point',
+        solute: 'cacl2',
+        molality: 0.5,
+        temperature: 0,
+        observedDeltaT: 2.51,
+        expectedDeltaT: 0.93
+    },
+    'glucose-solution': {
+        method: 'osmotic-pressure',
+        solute: 'glucose',
+        molality: 0.2,
+        temperature: 25,
+        observedDeltaT: 4.89,
+        expectedDeltaT: 4.89
+    },
+    'weak-acid': {
+        method: 'freezing-point',
+        solute: 'ch3cooh',
+        molality: 0.1,
+        temperature: 0,
+        observedDeltaT: 0.195,
+        expectedDeltaT: 0.186
+    }
+};
+
+let vantHoffChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing van\'t Hoff Factor Calculator...');
+    setupEventListeners();
+    updateMethodInputs();
+    updateVisualization();
+    updateFormula();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const methodSelect = document.getElementById('calculation-method');
+    const soluteSelect = document.getElementById('solute-type');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateVantHoff);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (methodSelect) {
+        methodSelect.addEventListener('change', () => {
+            updateFormula();
+        });
+    }
+
+    if (soluteSelect) {
+        soluteSelect.addEventListener('change', () => {
+            updateMethodInputs();
+            updateVisualization();
+            if (hasValidInputs()) {
+                calculateVantHoff();
+            }
+        });
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input')) {
+            if (hasValidInputs()) {
+                calculateVantHoff();
+            }
+        }
+    });
+}
+
+// Check if we have valid inputs
+function hasValidInputs() {
+    const molality = parseFloat(document.getElementById('molality').value);
+    const observedDeltaT = parseFloat(document.getElementById('observed-delta-t').value);
+    const expectedDeltaT = parseFloat(document.getElementById('expected-delta-t').value);
+    
+    return molality > 0 && observedDeltaT > 0 && expectedDeltaT > 0;
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    const preset = presets[presetKey];
+    if (!preset) return;
+
+    document.getElementById('calculation-method').value = preset.method;
+    document.getElementById('solute-type').value = preset.solute;
+    document.getElementById('molality').value = preset.molality;
+    document.getElementById('temperature').value = preset.temperature;
+    document.getElementById('observed-delta-t').value = preset.observedDeltaT;
+    document.getElementById('expected-delta-t').value = preset.expectedDeltaT;
+
+    updateMethodInputs();
+    updateVisualization();
+    updateFormula();
+    calculateVantHoff();
+}
+
+// Update input sections based on solute type
+function updateMethodInputs() {
+    const soluteType = document.getElementById('solute-type').value;
+    const customSection = document.getElementById('custom-solute-section');
+
+    if (soluteType === 'custom') {
+        customSection.classList.remove('hidden');
+    } else {
+        customSection.classList.add('hidden');
+    }
+}
+
+// Update visualization
+function updateVisualization() {
+    const soluteKey = document.getElementById('solute-type').value;
+    const solute = solutes[soluteKey];
+    
+    // Update electrolyte display
+    const electrolyteDisplay = document.getElementById('electrolyte-display');
+    const typeInfo = {
+        'strong': { name: 'Strong Electrolyte', class: 'strong' },
+        'weak': { name: 'Weak Electrolyte', class: 'weak' },
+        'non-electrolyte': { name: 'Non-Electrolyte', class: 'non-electrolyte' }
+    };
+    
+    const info = typeInfo[solute.type];
+    electrolyteDisplay.innerHTML = `
+        <span class="electrolyte-indicator ${info.class}"></span>
+        ${info.name}
+    `;
+
+    // Update solute info
+    const soluteInfo = document.getElementById('solute-info');
+    soluteInfo.textContent = solute.info;
+
+    // Generate particles in solution
+    generateParticles(solute);
+}
+
+// Generate particles for visualization
+function generateParticles(solute) {
+    const container = document.getElementById('solution-viz');
+    container.innerHTML = '';
+
+    const numParticles = Math.min(20, Math.max(5, Math.floor(solute.actualI * 8)));
+
+    for (let i = 0; i < numParticles; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'ion-particle';
+        
+        // Determine particle type based on solute
+        if (solute.type === 'non-electrolyte') {
+            particle.classList.add('molecule');
+        } else {
+            particle.classList.add(i % 2 === 0 ? 'cation' : 'anion');
+        }
+        
+        // Random position
+        const x = Math.random() * 220 + 15;
+        const y = Math.random() * 220 + 15;
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        
+        // Random animation delay
+        particle.style.animationDelay = `${Math.random() * 3}s`;
+        
+        container.appendChild(particle);
+    }
+}
+
+// Update formula display
+function updateFormula() {
+    const method = document.getElementById('calculation-method').value;
+    const katexElement = document.getElementById('katex-formula');
+
+    let formula = '';
+    switch (method) {
+        case 'freezing-point':
+            formula = '\\Delta T_f = i \\cdot K_f \\cdot m';
+            break;
+        case 'boiling-point':
+            formula = '\\Delta T_b = i \\cdot K_b \\cdot m';
+            break;
+        case 'osmotic-pressure':
+            formula = '\\pi = i \\cdot M \\cdot R \\cdot T';
+            break;
+        case 'vapor-pressure':
+            formula = '\\Delta P = i \\cdot X_{solute} \\cdot P^0_{solvent}';
+            break;
+        default:
+            formula = 'i = \\frac{\\Delta T_{observed}}{\\Delta T_{expected}}';
+    }
+
+    try {
+        katex.render(formula, katexElement, {
+            throwOnError: false,
+            displayMode: false
+        });
+    } catch (error) {
+        katexElement.textContent = formula;
+    }
+}
+
+// Calculate van't Hoff factor
+function calculateVantHoff() {
+    console.log('Calculating van\'t Hoff factor...');
+    try {
+        const molality = parseFloat(document.getElementById('molality').value) || 0;
+        const temperature = parseFloat(document.getElementById('temperature').value) || 25;
+        const observedDeltaT = parseFloat(document.getElementById('observed-delta-t').value) || 0;
+        const expectedDeltaT = parseFloat(document.getElementById('expected-delta-t').value) || 0;
+        const soluteKey = document.getElementById('solute-type').value;
+        const method = document.getElementById('calculation-method').value;
+
+        if (molality <= 0) {
+            console.log('Please enter valid molality');
+            return;
+        }
+
+        let solute = solutes[soluteKey];
+        
+        // Handle custom solute
+        if (soluteKey === 'custom') {
+            const theoreticalI = parseFloat(document.getElementById('theoretical-i').value) || 2.0;
+            const dissociationDegree = parseFloat(document.getElementById('dissociation-degree').value) || 0.8;
+            
+            solute = {
+                ...solute,
+                theoreticalI: theoreticalI,
+                actualI: 1 + (theoreticalI - 1) * dissociationDegree,
+                dissociation: dissociationDegree
+            };
+        }
+
+        // Calculate van't Hoff factor
+        let vantHoffFactor;
+        if (observedDeltaT > 0 && expectedDeltaT > 0) {
+            vantHoffFactor = observedDeltaT / expectedDeltaT;
+        } else {
+            vantHoffFactor = solute.actualI;
+        }
+
+        // Calculate colligative properties
+        const colligativeProps = calculateColligativeProperties(vantHoffFactor, molality, temperature, method);
+        
+        // Calculate insights
+        const insights = calculateChemicalInsights(vantHoffFactor, solute, molality);
+
+        // Update display
+        updateResults(vantHoffFactor, solute, colligativeProps, insights);
+
+        // Create chart
+        createVantHoffChart(vantHoffFactor, solute.theoreticalI, solute.actualI);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('van\'t Hoff factor calculated successfully:', vantHoffFactor);
+    } catch (error) {
+        console.error('Error calculating van\'t Hoff factor:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Calculate colligative properties
+function calculateColligativeProperties(i, molality, temperature, method) {
+    const Kf = 1.86; // °C·kg/mol for water
+    const Kb = 0.512; // °C·kg/mol for water
+    const R = 0.0821; // L·atm/(mol·K)
+    const tempK = temperature + 273.15;
+
+    const freezingDepression = i * Kf * molality;
+    const boilingElevation = i * Kb * molality;
+    const osmoticPressure = i * molality * R * tempK; // Assuming molality ≈ molarity for dilute solutions
+    const vaporPressureLowering = i * molality * 0.018; // Simplified calculation
+
+    return {
+        freezingDepression,
+        boilingElevation,
+        osmoticPressure,
+        vaporPressureLowering
+    };
+}
+
+// Calculate chemical insights
+function calculateChemicalInsights(vantHoffFactor, solute, molality) {
+    let electrolyteBehavior = '';
+    if (solute.type === 'non-electrolyte') {
+        electrolyteBehavior = 'Non-electrolyte behavior: molecules remain intact in solution.';
+    } else if (vantHoffFactor > solute.theoreticalI * 0.9) {
+        electrolyteBehavior = 'Strong electrolyte behavior: nearly complete dissociation.';
+    } else if (vantHoffFactor > 1.2) {
+        electrolyteBehavior = 'Partial dissociation: intermediate electrolyte strength.';
+    } else {
+        electrolyteBehavior = 'Weak electrolyte behavior: limited dissociation.';
+    }
+
+    let solutionEffects = '';
+    if (vantHoffFactor > 2.5) {
+        solutionEffects = 'Strong colligative effects: significant freezing point depression and boiling point elevation.';
+    } else if (vantHoffFactor > 1.5) {
+        solutionEffects = 'Moderate colligative effects: noticeable changes in solution properties.';
+    } else {
+        solutionEffects = 'Minimal colligative effects: small changes in solution properties.';
+    }
+
+    let concentrationEffects = '';
+    if (molality > 1.0) {
+        concentrationEffects = 'High concentration: ion pairing may reduce effective van\'t Hoff factor.';
+    } else if (molality > 0.1) {
+        concentrationEffects = 'Moderate concentration: good agreement with theoretical predictions.';
+    } else {
+        concentrationEffects = 'Dilute solution: ideal behavior expected.';
+    }
+
+    const applications = 'Applications: antifreeze solutions, osmotic pressure calculations, molecular weight determination.';
+
+    return {
+        electrolyteBehavior,
+        solutionEffects,
+        concentrationEffects,
+        applications
+    };
+}
+
+// Update results display
+function updateResults(vantHoffFactor, solute, colligativeProps, insights) {
+    // Update summary
+    document.getElementById('vant-hoff-factor').textContent = vantHoffFactor.toFixed(3);
+    document.getElementById('dissociation-percent').textContent = `${(solute.dissociation * 100).toFixed(1)}%`;
+    document.getElementById('colligative-effect').textContent = colligativeProps.freezingDepression.toFixed(3);
+    document.getElementById('particle-count').textContent = `${vantHoffFactor.toFixed(1)}:1`;
+
+    // Update colligative properties
+    document.getElementById('freezing-depression').textContent = `${colligativeProps.freezingDepression.toFixed(3)} °C`;
+    document.getElementById('boiling-elevation').textContent = `${colligativeProps.boilingElevation.toFixed(3)} °C`;
+    document.getElementById('osmotic-pressure').textContent = `${colligativeProps.osmoticPressure.toFixed(2)} atm`;
+    document.getElementById('vapor-pressure').textContent = `${colligativeProps.vaporPressureLowering.toFixed(4)} atm`;
+
+    // Update insights
+    document.getElementById('electrolyte-behavior').textContent = insights.electrolyteBehavior;
+    document.getElementById('solution-effects').textContent = insights.solutionEffects;
+    document.getElementById('concentration-effects').textContent = insights.concentrationEffects;
+    document.getElementById('applications').textContent = insights.applications;
+
+    // Update chemistry quote
+    const quote = getChemistryQuote(vantHoffFactor);
+    document.getElementById('chemistry-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.chemistry-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get chemistry quote based on van't Hoff factor
+function getChemistryQuote(vantHoffFactor) {
+    for (const quote of chemistryQuotes) {
+        if (vantHoffFactor >= quote.min) {
+            return quote;
+        }
+    }
+    return chemistryQuotes[chemistryQuotes.length - 1];
+}
+
+// Create van't Hoff comparison chart
+function createVantHoffChart(experimental, theoretical, actual) {
+    console.log('Creating van\'t Hoff chart...');
+    try {
+        const ctx = document.getElementById('vant-hoff-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (vantHoffChart) {
+            vantHoffChart.destroy();
+        }
+
+        vantHoffChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Theoretical', 'Literature', 'Experimental'],
+                datasets: [{
+                    label: 'van\'t Hoff Factor',
+                    data: [theoretical, actual, experimental],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
+                    borderColor: ['#1d4ed8', '#059669', '#d97706'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'van\'t Hoff Factor Comparison',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed.y.toFixed(3)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'van\'t Hoff Factor (i)',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Factor Type',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('van\'t Hoff chart created successfully');
+    } catch (error) {
+        console.error('Error creating van\'t Hoff chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const vantHoffFactor = document.getElementById('vant-hoff-factor').textContent;
+        const solute = document.getElementById('solute-type').selectedOptions[0].text;
+        const molality = document.getElementById('molality').value;
+        const method = document.getElementById('calculation-method').selectedOptions[0].text;
+        
+        const results = `
+van't Hoff Factor Calculator Results
+===================================
+
+Solution Parameters:
+Solute: ${solute}
+Molality: ${molality} mol/kg
+Calculation Method: ${method}
+Temperature: ${document.getElementById('temperature').value}°C
+
+Results:
+van't Hoff Factor (i): ${vantHoffFactor}
+Dissociation: ${document.getElementById('dissociation-percent').textContent}
+
+Colligative Properties:
+Freezing Point Depression: ${document.getElementById('freezing-depression').textContent}
+Boiling Point Elevation: ${document.getElementById('boiling-elevation').textContent}
+Osmotic Pressure: ${document.getElementById('osmotic-pressure').textContent}
+Vapor Pressure Lowering: ${document.getElementById('vapor-pressure').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our van't Hoff Factor Calculator for more calculations!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vant-hoff-calculation-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing van\'t Hoff calculator...');
+
+    document.getElementById('calculation-method').value = 'freezing-point';
+    document.getElementById('solute-type').value = 'nacl';
+    document.getElementById('molality').value = '';
+    document.getElementById('temperature').value = '25.0';
+    document.getElementById('observed-delta-t').value = '';
+    document.getElementById('expected-delta-t').value = '';
+    document.getElementById('theoretical-i').value = '';
+    document.getElementById('dissociation-degree').value = '';
+
+    updateMethodInputs();
+    updateVisualization();
+    updateFormula();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (vantHoffChart) {
+        vantHoffChart.destroy();
+        vantHoffChart = null;
+    }
+
+    console.log('van\'t Hoff calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing van\'t Hoff calculator...');
+    initCalculator();
+    lucide.createIcons();
+
+    // Render KaTeX formulas
+    setTimeout(() => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ]
+        });
+    }, 100);
+});
+</script>
+{% endblock %}

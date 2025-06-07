@@ -1,0 +1,871 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.conversion-card {
+    transition: all 0.3s ease;
+}
+.measurement-display {
+    background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.angle-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .angle-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.measurement-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #7c3aed;
+    border-radius: 0 8px 8px 0;
+}
+.conversion-meter {
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #7c3aed 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.conversion-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.angle-visualization {
+    width: 200px;
+    height: 200px;
+    border: 2px solid #7c3aed;
+    border-radius: 50%;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.1) 0%, rgba(124, 58, 237, 0.05) 100%);
+}
+.angle-line {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 90px;
+    height: 2px;
+    background: #7c3aed;
+    transform-origin: left center;
+    transition: transform 0.5s ease;
+}
+.angle-arc {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    border: 2px solid #f59e0b;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    clip-path: polygon(50% 50%, 100% 50%, 100% 0%, 50% 0%);
+    transition: clip-path 0.5s ease;
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+<!-- Back Button -->
+<div class="mb-6">
+    <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        <span>Back to Calculators</span>
+    </button>
+</div>
+
+<!-- Header -->
+<div class="text-center mb-12">
+    <div class="w-16 h-16 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+        <i data-lucide="compass" class="w-8 h-8 text-purple-600 dark:text-purple-400"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Degrees to Inches Calculator</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        Convert angular measurements to linear distances with precision. Perfect for engineering, construction, and design applications!
+    </p>
+    <div class="mt-4 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg inline-block">
+        <div class="text-purple-800 dark:text-purple-300 font-medium">
+            📐 Angular Conversion • 📏 Linear Measurement • 🔧 Engineering Tools • 📊 Visual Analysis
+        </div>
+    </div>
+</div>
+
+<!-- Calculator -->
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+    <!-- Input Section -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Conversion Parameters</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Input Controls -->
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Angle (Degrees):</label>
+                    <input type="number" id="angle-input" step="0.01" placeholder="Enter angle in degrees" 
+                           class="angle-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Range: 0° to 360°</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Radius (Inches):</label>
+                    <input type="number" id="radius-input" step="0.01" placeholder="Enter radius in inches" 
+                           class="angle-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Distance from center to arc</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Conversion Type:</label>
+                    <select id="conversion-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <option value="arc-length">Arc Length (along curve)</option>
+                        <option value="chord-length">Chord Length (straight line)</option>
+                        <option value="rise">Rise (height of arc)</option>
+                        <option value="sector-area">Sector Area</option>
+                    </select>
+                </div>
+                
+                <!-- Quick Presets -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Presets:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setPreset(90, 12)" class="px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                            90° @ 12"
+                        </button>
+                        <button onclick="setPreset(45, 24)" class="px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                            45° @ 24"
+                        </button>
+                        <button onclick="setPreset(30, 36)" class="px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                            30° @ 36"
+                        </button>
+                        <button onclick="setPreset(60, 18)" class="px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                            60° @ 18"
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Visual Representation -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Angle Visualization</h3>
+                    <div class="angle-visualization" id="angle-viz">
+                        <div class="angle-line" id="angle-line"></div>
+                        <div class="angle-arc" id="angle-arc"></div>
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-purple-600 rounded-full"></div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <span id="angle-display" class="text-lg font-semibold text-purple-600 dark:text-purple-400">0°</span>
+                    </div>
+                </div>
+                
+                <!-- Formula Display -->
+                <div class="formula-box">
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Formula:</h4>
+                    <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                        Arc Length = (θ × π × r) / 180°
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <button id="calculate-btn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="calculator" class="w-5 h-5"></i>
+            <span>Calculate Conversion</span>
+        </button>
+        <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            <span>Clear</span>
+        </button>
+        <button id="save-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            <span>Save Results</span>
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-container" class="hidden">
+        <!-- Conversion Summary -->
+        <div class="measurement-display text-white rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                <span>Conversion Results</span>
+                <i data-lucide="ruler" class="w-5 h-5"></i>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div id="primary-result" class="text-3xl font-bold mb-2">-</div>
+                    <div id="primary-unit" class="text-sm opacity-90">Inches</div>
+                </div>
+                <div class="text-center">
+                    <div id="angle-result" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Degrees</div>
+                </div>
+                <div class="text-center">
+                    <div id="radius-result" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Radius (in)</div>
+                </div>
+                <div class="text-center">
+                    <div id="conversion-type-result" class="text-3xl font-bold mb-2">-</div>
+                    <div class="text-sm opacity-90">Measurement Type</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Measurements -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="ruler" class="w-5 h-5"></i>
+                <span>All Measurements</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Arc Length:</span>
+                        <span id="arc-length-value" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Chord Length:</span>
+                        <span id="chord-length-value" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Rise (Height):</span>
+                        <span id="rise-value" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Sector Area:</span>
+                        <span id="sector-area-value" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversion Chart -->
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                <span>Measurement Comparison</span>
+            </h3>
+            <div class="h-64">
+                <canvas id="measurement-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Measurement Quote -->
+        <div class="measurement-quote mb-6">
+            <p id="measurement-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                "Measure twice, cut once."
+            </p>
+            <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Carpenter's Proverb</p>
+        </div>
+
+        <!-- Engineering Insights -->
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                <i data-lucide="cog" class="w-5 h-5"></i>
+                <span>Engineering Insights</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="triangle" class="w-4 h-4"></i>
+                        <span>Geometric Properties</span>
+                    </h4>
+                    <p id="geometric-properties" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="wrench" class="w-4 h-4"></i>
+                        <span>Practical Applications</span>
+                    </h4>
+                    <p id="practical-applications" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                        <span>Precision Notes</span>
+                    </h4>
+                    <p id="precision-notes" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+                <div class="insight-card p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <i data-lucide="calculator" class="w-4 h-4"></i>
+                        <span>Alternative Units</span>
+                    </h4>
+                    <p id="alternative-units" class="text-gray-800 dark:text-gray-200">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Educational Content -->
+<div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+        <i data-lucide="book-open" class="w-6 h-6"></i>
+        <span>Degrees to Inches Guide</span>
+    </h2>
+    <div class="space-y-6">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Degrees to Inches Conversion?</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+                This conversion translates angular measurements (degrees) into linear measurements (inches) based on a specified radius. It's essential for engineering, construction, machining, and design work where you need to know the actual distance an angle represents.
+            </p>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Conversion Types</h3>
+            <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                <li><strong>Arc Length:</strong> Distance along the curved path of the angle</li>
+                <li><strong>Chord Length:</strong> Straight-line distance between the angle's endpoints</li>
+                <li><strong>Rise:</strong> Height of the arc from the chord to the highest point</li>
+                <li><strong>Sector Area:</strong> Area of the pie-slice shaped region</li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Common Applications</h3>
+            <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                <li>Machining and CNC programming</li>
+                <li>Architectural design and construction</li>
+                <li>Pipe bending and metalworking</li>
+                <li>Surveying and civil engineering</li>
+                <li>Mechanical design and robotics</li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2">How to Use</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                <li>Enter the angle in degrees (0° to 360°)</li>
+                <li>Specify the radius in inches</li>
+                <li>Choose the type of measurement you need</li>
+                <li>Click "Calculate Conversion" to see all results</li>
+                <li>Use the visual representation to verify your measurements</li>
+            </ol>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Measurement quotes for different angle ranges
+const measurementQuotes = [
+    { min: 270, quote: "In the world of engineering, precision is not just a goal, it's a necessity.", author: "Unknown Engineer" },
+    { min: 180, quote: "Measure twice, cut once.", author: "Carpenter's Proverb" },
+    { min: 90, quote: "The right angle is the foundation of all construction.", author: "Ancient Wisdom" },
+    { min: 45, quote: "Accuracy is the twin brother of honesty; inexactness is a form of falsehood.", author: "Nathaniel Hawthorne" },
+    { min: 0, quote: "Every angle tells a story, every measurement matters.", author: "Design Philosophy" }
+];
+
+let measurementChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Degrees to Inches Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const angleInput = document.getElementById('angle-input');
+    const radiusInput = document.getElementById('radius-input');
+    const conversionType = document.getElementById('conversion-type');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateConversion);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (angleInput) {
+        angleInput.addEventListener('input', () => {
+            updateVisualization();
+            if (angleInput.value && radiusInput.value) {
+                calculateConversion();
+            }
+        });
+    }
+
+    if (radiusInput) {
+        radiusInput.addEventListener('input', () => {
+            if (angleInput.value && radiusInput.value) {
+                calculateConversion();
+            }
+        });
+    }
+
+    if (conversionType) {
+        conversionType.addEventListener('change', () => {
+            updateFormula();
+            if (angleInput.value && radiusInput.value) {
+                calculateConversion();
+            }
+        });
+    }
+}
+
+// Set preset values
+function setPreset(angle, radius) {
+    document.getElementById('angle-input').value = angle;
+    document.getElementById('radius-input').value = radius;
+    updateVisualization();
+    calculateConversion();
+}
+
+// Update angle visualization
+function updateVisualization() {
+    const angleInput = document.getElementById('angle-input');
+    const angle = parseFloat(angleInput.value) || 0;
+    
+    // Clamp angle to 0-360 range
+    const clampedAngle = Math.max(0, Math.min(360, angle));
+    
+    // Update visual elements
+    const angleLine = document.getElementById('angle-line');
+    const angleArc = document.getElementById('angle-arc');
+    const angleDisplay = document.getElementById('angle-display');
+    
+    if (angleLine) {
+        angleLine.style.transform = `rotate(${clampedAngle}deg)`;
+    }
+    
+    if (angleArc) {
+        const arcPercentage = clampedAngle / 360 * 100;
+        if (clampedAngle <= 90) {
+            angleArc.style.clipPath = `polygon(50% 50%, 100% 50%, 100% ${50 - arcPercentage/2}%, 50% 0%)`;
+        } else if (clampedAngle <= 180) {
+            angleArc.style.clipPath = `polygon(50% 50%, 100% 50%, 100% 0%, ${100 - (arcPercentage-25)/2}% 0%, 50% 0%)`;
+        } else if (clampedAngle <= 270) {
+            angleArc.style.clipPath = `polygon(50% 50%, 100% 50%, 100% 0%, 0% 0%, 0% ${(arcPercentage-50)/2}%, 50% 0%)`;
+        } else {
+            angleArc.style.clipPath = `polygon(50% 50%, 100% 50%, 100% 0%, 0% 0%, 0% 100%, ${(arcPercentage-75)/2}% 100%, 50% 0%)`;
+        }
+    }
+    
+    if (angleDisplay) {
+        angleDisplay.textContent = `${clampedAngle.toFixed(1)}°`;
+    }
+}
+
+// Update formula display
+function updateFormula() {
+    const conversionType = document.getElementById('conversion-type').value;
+    const formulaDisplay = document.getElementById('formula-display');
+    
+    const formulas = {
+        'arc-length': 'Arc Length = (θ × π × r) / 180°',
+        'chord-length': 'Chord Length = 2 × r × sin(θ/2)',
+        'rise': 'Rise = r × (1 - cos(θ/2))',
+        'sector-area': 'Sector Area = (θ × π × r²) / 360°'
+    };
+    
+    if (formulaDisplay) {
+        formulaDisplay.textContent = formulas[conversionType] || formulas['arc-length'];
+    }
+}
+
+// Calculate all conversions
+function calculateConversion() {
+    console.log('Calculating degrees to inches conversion...');
+    try {
+        const angle = parseFloat(document.getElementById('angle-input').value);
+        const radius = parseFloat(document.getElementById('radius-input').value);
+        const conversionType = document.getElementById('conversion-type').value;
+
+        if (!angle && angle !== 0) {
+            console.log('Please enter an angle');
+            return;
+        }
+
+        if (!radius) {
+            console.log('Please enter a radius');
+            return;
+        }
+
+        if (angle < 0 || angle > 360) {
+            alert('Please enter an angle between 0° and 360°');
+            return;
+        }
+
+        if (radius <= 0) {
+            alert('Please enter a positive radius value');
+            return;
+        }
+
+        // Convert angle to radians
+        const angleRad = (angle * Math.PI) / 180;
+
+        // Calculate all measurements
+        const arcLength = (angle * Math.PI * radius) / 180;
+        const chordLength = 2 * radius * Math.sin(angleRad / 2);
+        const rise = radius * (1 - Math.cos(angleRad / 2));
+        const sectorArea = (angle * Math.PI * radius * radius) / 360;
+
+        // Determine primary result based on conversion type
+        let primaryResult, primaryUnit;
+        switch (conversionType) {
+            case 'arc-length':
+                primaryResult = arcLength;
+                primaryUnit = 'Arc Length (in)';
+                break;
+            case 'chord-length':
+                primaryResult = chordLength;
+                primaryUnit = 'Chord Length (in)';
+                break;
+            case 'rise':
+                primaryResult = rise;
+                primaryUnit = 'Rise (in)';
+                break;
+            case 'sector-area':
+                primaryResult = sectorArea;
+                primaryUnit = 'Sector Area (in²)';
+                break;
+            default:
+                primaryResult = arcLength;
+                primaryUnit = 'Arc Length (in)';
+        }
+
+        // Calculate insights
+        const insights = calculateInsights(angle, radius, arcLength, chordLength, rise, sectorArea);
+
+        // Update display
+        updateResults(angle, radius, primaryResult, primaryUnit, arcLength, chordLength, rise, sectorArea, insights);
+
+        // Create chart
+        createMeasurementChart(arcLength, chordLength, rise, sectorArea);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('Conversion calculated successfully:', { angle, radius, primaryResult });
+    } catch (error) {
+        console.error('Error calculating conversion:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Calculate engineering insights
+function calculateInsights(angle, radius, arcLength, chordLength, rise, sectorArea) {
+    // Geometric properties
+    let geometricProperties = '';
+    if (angle === 90) {
+        geometricProperties = 'Perfect right angle - fundamental in construction and design.';
+    } else if (angle === 180) {
+        geometricProperties = 'Straight line - chord equals diameter, rise equals radius.';
+    } else if (angle === 360) {
+        geometricProperties = 'Complete circle - arc length equals circumference.';
+    } else if (angle < 90) {
+        geometricProperties = 'Acute angle - commonly used in precision machining.';
+    } else if (angle > 90 && angle < 180) {
+        geometricProperties = 'Obtuse angle - often seen in architectural arches.';
+    } else {
+        geometricProperties = 'Reflex angle - useful for large radius bends.';
+    }
+
+    // Practical applications
+    let practicalApplications = '';
+    if (radius < 6) {
+        practicalApplications = 'Small radius - ideal for detailed work, jewelry, or precision parts.';
+    } else if (radius < 24) {
+        practicalApplications = 'Medium radius - suitable for furniture, cabinetry, or mechanical parts.';
+    } else {
+        practicalApplications = 'Large radius - perfect for architectural elements or structural components.';
+    }
+
+    // Precision notes
+    const precision = Math.abs(arcLength - chordLength);
+    let precisionNotes = '';
+    if (precision < 0.1) {
+        precisionNotes = 'Arc and chord lengths are very close - minimal curvature effect.';
+    } else if (precision < 1) {
+        precisionNotes = 'Moderate difference between arc and chord - consider curvature in design.';
+    } else {
+        precisionNotes = 'Significant curvature - arc length notably exceeds chord length.';
+    }
+
+    // Alternative units
+    const arcLengthMm = arcLength * 25.4;
+    const arcLengthCm = arcLength * 2.54;
+    const alternativeUnits = `Arc length: ${arcLengthMm.toFixed(2)} mm, ${arcLengthCm.toFixed(2)} cm`;
+
+    return {
+        geometricProperties,
+        practicalApplications,
+        precisionNotes,
+        alternativeUnits
+    };
+}
+
+// Update results display
+function updateResults(angle, radius, primaryResult, primaryUnit, arcLength, chordLength, rise, sectorArea, insights) {
+    // Update summary
+    document.getElementById('primary-result').textContent = primaryResult.toFixed(3);
+    document.getElementById('primary-unit').textContent = primaryUnit;
+    document.getElementById('angle-result').textContent = angle.toFixed(1);
+    document.getElementById('radius-result').textContent = radius.toFixed(2);
+    document.getElementById('conversion-type-result').textContent = document.getElementById('conversion-type').selectedOptions[0].text.split(' ')[0];
+
+    // Update detailed measurements
+    document.getElementById('arc-length-value').textContent = `${arcLength.toFixed(3)} in`;
+    document.getElementById('chord-length-value').textContent = `${chordLength.toFixed(3)} in`;
+    document.getElementById('rise-value').textContent = `${rise.toFixed(3)} in`;
+    document.getElementById('sector-area-value').textContent = `${sectorArea.toFixed(3)} in²`;
+
+    // Update insights
+    document.getElementById('geometric-properties').textContent = insights.geometricProperties;
+    document.getElementById('practical-applications').textContent = insights.practicalApplications;
+    document.getElementById('precision-notes').textContent = insights.precisionNotes;
+    document.getElementById('alternative-units').textContent = insights.alternativeUnits;
+
+    // Update measurement quote
+    const quote = getMeasurementQuote(angle);
+    document.getElementById('measurement-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.measurement-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get measurement quote based on angle
+function getMeasurementQuote(angle) {
+    for (const quote of measurementQuotes) {
+        if (angle >= quote.min) {
+            return quote;
+        }
+    }
+    return measurementQuotes[measurementQuotes.length - 1];
+}
+
+// Create measurement comparison chart
+function createMeasurementChart(arcLength, chordLength, rise, sectorArea) {
+    console.log('Creating measurement chart...');
+    try {
+        const ctx = document.getElementById('measurement-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (measurementChart) {
+            measurementChart.destroy();
+        }
+
+        measurementChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Arc Length', 'Chord Length', 'Rise', 'Sector Area'],
+                datasets: [{
+                    label: 'Measurements',
+                    data: [arcLength, chordLength, rise, sectorArea],
+                    backgroundColor: [
+                        '#7c3aed',
+                        '#3b82f6',
+                        '#f59e0b',
+                        '#ef4444'
+                    ],
+                    borderColor: [
+                        '#5b21b6',
+                        '#1d4ed8',
+                        '#d97706',
+                        '#dc2626'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Measurement Comparison',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const unit = context.label === 'Sector Area' ? 'in²' : 'in';
+                                return `${context.label}: ${context.parsed.y.toFixed(3)} ${unit}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Measurement Value',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Measurement Type',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Measurement chart created successfully');
+    } catch (error) {
+        console.error('Error creating measurement chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const angle = document.getElementById('angle-input').value;
+        const radius = document.getElementById('radius-input').value;
+        const primaryResult = document.getElementById('primary-result').textContent;
+        const primaryUnit = document.getElementById('primary-unit').textContent;
+        
+        const results = `
+Degrees to Inches Calculator Results
+===================================
+
+Input Parameters:
+Angle: ${angle}°
+Radius: ${radius} inches
+Conversion Type: ${document.getElementById('conversion-type').selectedOptions[0].text}
+
+Primary Result: ${primaryResult} ${primaryUnit}
+
+All Measurements:
+Arc Length: ${document.getElementById('arc-length-value').textContent}
+Chord Length: ${document.getElementById('chord-length-value').textContent}
+Rise: ${document.getElementById('rise-value').textContent}
+Sector Area: ${document.getElementById('sector-area-value').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Degrees to Inches Calculator for more conversions!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `degrees-inches-conversion-${angle}deg-${radius}in.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing degrees to inches calculator...');
+    
+    document.getElementById('angle-input').value = '';
+    document.getElementById('radius-input').value = '';
+    document.getElementById('conversion-type').value = 'arc-length';
+    
+    updateVisualization();
+    updateFormula();
+    
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+    
+    // Destroy chart
+    if (measurementChart) {
+        measurementChart.destroy();
+        measurementChart = null;
+    }
+    
+    console.log('Degrees to inches calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing degrees to inches calculator...');
+    initCalculator();
+    updateFormula();
+    lucide.createIcons();
+});
+</script>
+{% endblock %}
