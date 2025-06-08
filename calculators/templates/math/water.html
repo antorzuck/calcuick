@@ -1,0 +1,1240 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.potential-display {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.chemistry-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #1e40af;
+    border-radius: 0 8px 8px 0;
+}
+.potential-meter {
+    background: linear-gradient(90deg, #dc2626 0%, #ef4444 25%, #f59e0b 50%, #22c55e 75%, #16a34a 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.potential-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.cell-visualization {
+    width: 280px;
+    height: 200px;
+    border: 3px solid #1e40af;
+    border-radius: 15px;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.cell-wall {
+    position: absolute;
+    width: 260px;
+    height: 180px;
+    border: 2px solid #059669;
+    border-radius: 10px;
+    background: rgba(34, 197, 94, 0.1);
+}
+.cell-membrane {
+    position: absolute;
+    width: 220px;
+    height: 140px;
+    border: 2px dashed #3b82f6;
+    border-radius: 8px;
+    background: rgba(59, 130, 246, 0.1);
+}
+.water-molecule {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #3b82f6;
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
+    animation: waterFlow 3s ease-in-out infinite;
+}
+.high-potential {
+    animation-direction: normal;
+}
+.low-potential {
+    animation-direction: reverse;
+}
+@keyframes waterFlow {
+    0%, 100% { transform: translateX(0px) translateY(0px); }
+    25% { transform: translateX(10px) translateY(-5px); }
+    50% { transform: translateX(20px) translateY(0px); }
+    75% { transform: translateX(10px) translateY(5px); }
+}
+.pressure-gauge {
+    width: 120px;
+    height: 120px;
+    border: 4px solid #1e40af;
+    border-radius: 50%;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(30, 64, 175, 0.1) 0%, rgba(30, 64, 175, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.gauge-needle {
+    position: absolute;
+    width: 2px;
+    height: 40px;
+    background: #ef4444;
+    transform-origin: bottom center;
+    transition: transform 0.5s ease;
+    border-radius: 1px;
+}
+.gauge-center {
+    width: 8px;
+    height: 8px;
+    background: #1e40af;
+    border-radius: 50%;
+    z-index: 10;
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.cell-card {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 1px solid #a7f3d0;
+    transition: all 0.3s ease;
+}
+.dark .cell-card {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+    border-color: #059669;
+}
+.cell-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+}
+.potential-indicator-label {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.negative { background: #ef4444; }
+.neutral { background: #6b7280; }
+.positive { background: #22c55e; }
+.component-bar {
+    height: 20px;
+    border-radius: 10px;
+    position: relative;
+    margin: 0.5rem 0;
+    overflow: hidden;
+}
+.solute-bar { background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%); }
+.pressure-bar { background: linear-gradient(90deg, #059669 0%, #22c55e 100%); }
+.matric-bar { background: linear-gradient(90deg, #7c3aed 0%, #a855f7 100%); }
+.gravity-bar { background: linear-gradient(90deg, #ea580c 0%, #f97316 100%); }
+.slider-container {
+    position: relative;
+    margin: 1rem 0;
+}
+.range-slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #e5e7eb;
+    outline: none;
+    -webkit-appearance: none;
+}
+.range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #1e40af;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.range-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #1e40af;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="droplets" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Water Potential Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate water potential and predict water movement in plant cells. Essential for understanding plant physiology, osmosis, and cellular water relations!
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div class="text-blue-800 dark:text-blue-300 font-medium">
+                <span class="katex-formula">\Psi = \Psi_s + \Psi_p + \Psi_m + \Psi_g</span> • 🌱 Plant Physiology • 💧 Water Relations • 📊 Osmotic Analysis
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Water Potential Components</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cell Type:</label>
+                        <select id="cell-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="custom">Custom Cell</option>
+                            <option value="guard-cell">Guard Cell</option>
+                            <option value="root-cell">Root Cell</option>
+                            <option value="leaf-cell">Leaf Cell</option>
+                            <option value="stem-cell">Stem Cell</option>
+                            <option value="xylem-cell">Xylem Cell</option>
+                            <option value="phloem-cell">Phloem Cell</option>
+                        </select>
+                    </div>
+
+                    <!-- Solute Potential -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Solute Potential (Ψs):
+                            <span class="text-xs text-gray-500">Always negative</span>
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" id="solute-potential" min="-3.0" max="0" step="0.1" value="-0.5" 
+                                   class="range-slider">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>-3.0 MPa</span>
+                                <span id="solute-value" class="font-medium">-0.5 MPa</span>
+                                <span>0 MPa</span>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Or calculate from concentration:</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <input type="number" id="molarity" step="0.01" placeholder="0.1" 
+                                       class="parameter-input px-3 py-2 border border-gray-300 dark:border-gray-600 rounded text-sm">
+                                <input type="number" id="ionization" step="0.1" placeholder="1.0" 
+                                       class="parameter-input px-3 py-2 border border-gray-300 dark:border-gray-600 rounded text-sm">
+                                <input type="number" id="temperature" step="1" placeholder="25" 
+                                       class="parameter-input px-3 py-2 border border-gray-300 dark:border-gray-600 rounded text-sm">
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Molarity (M)</span>
+                                <span>i-factor</span>
+                                <span>Temp (°C)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pressure Potential -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Pressure Potential (Ψp):
+                            <span class="text-xs text-gray-500">Turgor pressure</span>
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" id="pressure-potential" min="0" max="2.0" step="0.1" value="0.3" 
+                                   class="range-slider">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>0 MPa</span>
+                                <span id="pressure-value" class="font-medium">0.3 MPa</span>
+                                <span>2.0 MPa</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Matric Potential -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Matric Potential (Ψm):
+                            <span class="text-xs text-gray-500">Surface tension effects</span>
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" id="matric-potential" min="-0.5" max="0" step="0.01" value="-0.1" 
+                                   class="range-slider">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>-0.5 MPa</span>
+                                <span id="matric-value" class="font-medium">-0.1 MPa</span>
+                                <span>0 MPa</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gravitational Potential -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Gravitational Potential (Ψg):
+                            <span class="text-xs text-gray-500">Height effects</span>
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" id="gravity-potential" min="-0.1" max="0.1" step="0.001" value="0" 
+                                   class="range-slider">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>-0.1 MPa</span>
+                                <span id="gravity-value" class="font-medium">0.000 MPa</span>
+                                <span>0.1 MPa</span>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Height difference (m):</label>
+                            <input type="number" id="height" step="0.1" placeholder="0" 
+                                   class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Environmental Conditions -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Environmental Conditions</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Humidity (%):</label>
+                                <input type="number" id="humidity" step="1" min="0" max="100" placeholder="60" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Light Intensity (%):</label>
+                                <input type="number" id="light-intensity" step="1" min="0" max="100" placeholder="75" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Presets:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('turgid')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Turgid Cell
+                            </button>
+                            <button onclick="setPreset('plasmolyzed')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Plasmolyzed Cell
+                            </button>
+                            <button onclick="setPreset('guard-open')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Open Stomata
+                            </button>
+                            <button onclick="setPreset('drought-stress')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Drought Stress
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Cell Water Relations</h3>
+                        <div class="cell-visualization" id="cell-viz">
+                            <div class="cell-wall"></div>
+                            <div class="cell-membrane"></div>
+                            <!-- Water molecules will be generated here -->
+                        </div>
+                        <div class="text-center mt-4">
+                            <span id="cell-status" class="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                                Normal Turgor
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Water Potential Meter -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Water Potential (MPa)</h4>
+                        <div class="potential-meter">
+                            <div class="potential-indicator" id="potential-indicator" style="left: 50%;"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <span>-3.0</span>
+                            <span>-1.5</span>
+                            <span>0</span>
+                            <span>+1.5</span>
+                            <span>+3.0</span>
+                        </div>
+                    </div>
+
+                    <!-- Pressure Gauge -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Turgor Pressure</h4>
+                        <div class="pressure-gauge">
+                            <div class="gauge-needle" id="pressure-needle"></div>
+                            <div class="gauge-center"></div>
+                        </div>
+                        <div class="text-center mt-2 text-sm text-gray-600 dark:text-gray-400">
+                            <span id="pressure-reading">0.3 MPa</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Water Potential Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                            <div class="mt-2 text-xs">
+                                Ψs = -iMRT (Van't Hoff equation)
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Component Breakdown -->
+                    <div class="cell-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3">Component Contributions:</h4>
+                        <div class="space-y-2">
+                            <div>
+                                <div class="flex justify-between text-xs">
+                                    <span>Solute (Ψs)</span>
+                                    <span id="solute-contribution">-0.5 MPa</span>
+                                </div>
+                                <div class="component-bar solute-bar" style="width: 50%;"></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs">
+                                    <span>Pressure (Ψp)</span>
+                                    <span id="pressure-contribution">+0.3 MPa</span>
+                                </div>
+                                <div class="component-bar pressure-bar" style="width: 30%;"></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs">
+                                    <span>Matric (Ψm)</span>
+                                    <span id="matric-contribution">-0.1 MPa</span>
+                                </div>
+                                <div class="component-bar matric-bar" style="width: 10%;"></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs">
+                                    <span>Gravity (Ψg)</span>
+                                    <span id="gravity-contribution">0.0 MPa</span>
+                                </div>
+                                <div class="component-bar gravity-bar" style="width: 1%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Water Movement Prediction -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Water Movement</h4>
+                        <div class="text-center">
+                            <div id="water-direction" class="text-2xl mb-2">⇌</div>
+                            <div id="movement-description" class="text-sm text-gray-600 dark:text-gray-400">
+                                Equilibrium
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate Water Potential</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Analysis</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- Water Potential Summary -->
+            <div class="potential-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>Water Potential Analysis</span>
+                    <i data-lucide="droplets" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="total-potential" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Total Ψ (MPa)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="osmotic-pressure" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Osmotic Pressure</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="turgor-status" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Turgor Status</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="water-status" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Water Status</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Analysis -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="activity" class="w-5 h-5"></i>
+                    <span>Physiological Analysis</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Solute Potential:</span>
+                            <span id="display-solute" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Pressure Potential:</span>
+                            <span id="display-pressure" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Matric Potential:</span>
+                            <span id="display-matric" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Gravitational Potential:</span>
+                            <span id="display-gravity" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Water Potential Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Component Analysis</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="potential-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chemistry Quote -->
+            <div class="chemistry-quote mb-6">
+                <p id="chemistry-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "Water potential determines the direction and rate of water movement in plant cells."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Plant Physiology</p>
+            </div>
+
+            <!-- Physiological Insights -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="leaf" class="w-5 h-5"></i>
+                    <span>Physiological Insights</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="droplets" class="w-4 h-4"></i>
+                            <span>Water Movement</span>
+                        </h4>
+                        <p id="water-movement-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="gauge" class="w-4 h-4"></i>
+                            <span>Turgor Pressure</span>
+                        </h4>
+                        <p id="turgor-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="thermometer" class="w-4 h-4"></i>
+                            <span>Osmotic Effects</span>
+                        </h4>
+                        <p id="osmotic-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="sprout" class="w-4 h-4"></i>
+                            <span>Plant Response</span>
+                        </h4>
+                        <p id="plant-response" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>Water Potential Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Water Potential?</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    Water potential (Ψ) is calculated as: <span class="katex-formula">\Psi = \Psi_s + \Psi_p + \Psi_m + \Psi_g</span>
+                </p>
+                <p class="text-gray-600 dark:text-gray-300">
+                    It represents the potential energy of water per unit volume relative to pure water, determining the direction of water movement.
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Components of Water Potential</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>Solute Potential (Ψs):</strong> Always negative, due to dissolved solutes reducing water's free energy</li>
+                    <li><strong>Pressure Potential (Ψp):</strong> Usually positive in plant cells, represents turgor pressure</li>
+                    <li><strong>Matric Potential (Ψm):</strong> Usually negative, due to water binding to surfaces</li>
+                    <li><strong>Gravitational Potential (Ψg):</strong> Due to gravity, significant in tall plants</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Van't Hoff Equation</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    Solute potential: <span class="katex-formula">\Psi_s = -iMRT</span>
+                </p>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>i:</strong> Ionization constant (number of particles per molecule)</li>
+                    <li><strong>M:</strong> Molar concentration of solute</li>
+                    <li><strong>R:</strong> Pressure constant (0.00831 L·MPa/mol·K)</li>
+                    <li><strong>T:</strong> Temperature in Kelvin</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications in Plant Biology</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Predicting water movement between cells and tissues</li>
+                    <li>Understanding stomatal opening and closing mechanisms</li>
+                    <li>Analyzing plant responses to drought stress</li>
+                    <li>Studying root water uptake and transport</li>
+                    <li>Investigating osmotic adjustment in plants</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Cell type presets with typical values
+const cellPresets = {
+    'guard-cell': {
+        solute: -1.2,
+        pressure: 0.8,
+        matric: -0.05,
+        gravity: 0.0,
+        description: 'Guard cells with high turgor for stomatal opening'
+    },
+    'root-cell': {
+        solute: -0.6,
+        pressure: 0.2,
+        matric: -0.2,
+        gravity: 0.0,
+        description: 'Root cells for water uptake from soil'
+    },
+    'leaf-cell': {
+        solute: -0.8,
+        pressure: 0.4,
+        matric: -0.1,
+        gravity: 0.01,
+        description: 'Leaf mesophyll cells under normal conditions'
+    },
+    'stem-cell': {
+        solute: -0.5,
+        pressure: 0.3,
+        matric: -0.05,
+        gravity: 0.02,
+        description: 'Stem cells for water transport'
+    },
+    'xylem-cell': {
+        solute: -0.3,
+        pressure: -0.1,
+        matric: -0.3,
+        gravity: 0.05,
+        description: 'Xylem cells under tension for water transport'
+    },
+    'phloem-cell': {
+        solute: -2.0,
+        pressure: 0.5,
+        matric: -0.02,
+        gravity: 0.0,
+        description: 'Phloem cells with high solute concentration'
+    }
+};
+
+// Physiological presets
+const physiologicalPresets = {
+    'turgid': {
+        solute: -0.8,
+        pressure: 0.6,
+        matric: -0.05,
+        gravity: 0.0
+    },
+    'plasmolyzed': {
+        solute: -2.5,
+        pressure: 0.0,
+        matric: -0.1,
+        gravity: 0.0
+    },
+    'guard-open': {
+        solute: -1.5,
+        pressure: 1.2,
+        matric: -0.03,
+        gravity: 0.0
+    },
+    'drought-stress': {
+        solute: -3.0,
+        pressure: 0.1,
+        matric: -0.4,
+        gravity: 0.0
+    }
+};
+
+// Chemistry quotes for different water potential ranges
+const chemistryQuotes = [
+    { min: 0.5, quote: "Positive water potential indicates high turgor pressure and optimal cell function.", author: "Plant Cell Biology" },
+    { min: -0.5, quote: "Moderate negative water potential maintains normal cellular water relations.", author: "Plant Physiology" },
+    { min: -1.5, quote: "Low water potential indicates water stress and potential cellular dysfunction.", author: "Plant Water Relations" },
+    { min: -3.0, quote: "Very low water potential suggests severe drought stress and plasmolysis risk.", author: "Plant Stress Physiology" },
+    { min: -Infinity, quote: "Extremely low water potential indicates critical water deficit and cellular damage.", author: "Plant Pathophysiology" }
+];
+
+let potentialChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Water Potential Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    updateFormula();
+    updateSliderValues();
+    calculateWaterPotential();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const cellTypeSelect = document.getElementById('cell-type');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', () => calculateWaterPotential(true));
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (cellTypeSelect) {
+        cellTypeSelect.addEventListener('change', () => {
+            updateCellInputs();
+            calculateWaterPotential();
+        });
+    }
+
+    // Add slider listeners
+    const sliders = ['solute-potential', 'pressure-potential', 'matric-potential', 'gravity-potential'];
+    sliders.forEach(sliderId => {
+        const slider = document.getElementById(sliderId);
+        if (slider) {
+            slider.addEventListener('input', () => {
+                updateSliderValues();
+                calculateWaterPotential();
+            });
+        }
+    });
+
+    // Add concentration input listeners
+    const concentrationInputs = ['molarity', 'ionization', 'temperature'];
+    concentrationInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('input', () => {
+                calculateSolutePotential();
+                calculateWaterPotential();
+            });
+        }
+    });
+
+    // Add height input listener
+    const heightInput = document.getElementById('height');
+    if (heightInput) {
+        heightInput.addEventListener('input', () => {
+            calculateGravitationalPotential();
+            calculateWaterPotential();
+        });
+    }
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    const preset = physiologicalPresets[presetKey];
+    if (!preset) return;
+
+    document.getElementById('solute-potential').value = preset.solute;
+    document.getElementById('pressure-potential').value = preset.pressure;
+    document.getElementById('matric-potential').value = preset.matric;
+    document.getElementById('gravity-potential').value = preset.gravity;
+
+    updateSliderValues();
+    updateVisualization();
+    calculateWaterPotential();
+}
+
+// Calculate water potential
+function calculateWaterPotential(shouldScroll = false) {
+    console.log('Calculating water potential...');
+    try {
+        const solute = parseFloat(document.getElementById('solute-potential').value) || 0;
+        const pressure = parseFloat(document.getElementById('pressure-potential').value) || 0;
+        const matric = parseFloat(document.getElementById('matric-potential').value) || 0;
+        const gravity = parseFloat(document.getElementById('gravity-potential').value) || 0;
+
+        const totalPotential = solute + pressure + matric + gravity;
+
+        // Calculate derived values
+        const osmoticPressure = Math.abs(solute);
+        const turgorStatus = getTurgorStatus(pressure);
+        const waterStatus = getWaterStatus(totalPotential);
+
+        // Generate insights
+        const insights = generatePhysiologicalInsights(totalPotential, solute, pressure, matric, gravity);
+
+        // Update displays
+        updatePotentialMeter(totalPotential);
+        updatePressureGauge(pressure);
+        updateWaterMovement(totalPotential);
+        updateResults(totalPotential, osmoticPressure, turgorStatus, waterStatus, solute, pressure, matric, gravity, insights);
+
+        // Create chart
+        createPotentialChart(solute, pressure, matric, gravity);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        // Only scroll if this was called from the calculate button
+        if (shouldScroll) {
+            setTimeout(() => {
+                resultContainer.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 200);
+        }
+
+        console.log('Water potential calculated successfully:', totalPotential);
+    } catch (error) {
+        console.error('Error calculating water potential:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Get turgor status
+function getTurgorStatus(pressure) {
+    if (pressure > 0.8) return 'High';
+    if (pressure > 0.3) return 'Normal';
+    if (pressure > 0.0) return 'Low';
+    return 'None';
+}
+
+// Get water status
+function getWaterStatus(potential) {
+    if (potential > 0) return 'Hydrated';
+    if (potential > -1.0) return 'Normal';
+    if (potential > -2.0) return 'Stressed';
+    return 'Severe Stress';
+}
+
+// Generate physiological insights
+function generatePhysiologicalInsights(total, solute, pressure, matric, gravity) {
+    const insights = {
+        waterMovement: '',
+        turgorAnalysis: '',
+        osmoticAnalysis: '',
+        plantResponse: ''
+    };
+
+    // Water movement analysis
+    if (total > 0) {
+        insights.waterMovement = 'Water will move out of the cell due to positive water potential. Cell may lose turgor.';
+    } else if (total > -1.0) {
+        insights.waterMovement = 'Moderate water potential allows controlled water movement and maintains cellular function.';
+    } else {
+        insights.waterMovement = 'Low water potential drives water into the cell, but may indicate stress conditions.';
+    }
+
+    // Turgor analysis
+    if (pressure > 0.5) {
+        insights.turgorAnalysis = 'High turgor pressure maintains cell rigidity and supports structural functions.';
+    } else if (pressure > 0.1) {
+        insights.turgorAnalysis = 'Moderate turgor pressure provides adequate cellular support and function.';
+    } else {
+        insights.turgorAnalysis = 'Low turgor pressure may lead to wilting and reduced cellular function.';
+    }
+
+    // Osmotic analysis
+    if (Math.abs(solute) > 2.0) {
+        insights.osmoticAnalysis = 'High solute concentration creates strong osmotic gradient for water retention.';
+    } else if (Math.abs(solute) > 0.5) {
+        insights.osmoticAnalysis = 'Moderate solute concentration maintains normal osmotic balance.';
+    } else {
+        insights.osmoticAnalysis = 'Low solute concentration may indicate dilute cellular contents.';
+    }
+
+    // Plant response
+    if (total < -2.0) {
+        insights.plantResponse = 'Plant likely experiencing drought stress. May close stomata and reduce growth.';
+    } else if (total < -1.0) {
+        insights.plantResponse = 'Plant under mild stress. May adjust osmotically to maintain function.';
+    } else {
+        insights.plantResponse = 'Plant in good water status. Normal growth and physiological processes.';
+    }
+
+    return insights;
+}
+
+// Update potential meter
+function updatePotentialMeter(potential) {
+    const indicator = document.getElementById('potential-indicator');
+    
+    // Scale: -3.0 to +3.0 MPa
+    const position = ((potential + 3.0) / 6.0) * 100;
+    const clampedPosition = Math.max(0, Math.min(100, position));
+    
+    indicator.style.left = `${clampedPosition}%`;
+}
+
+// Update pressure gauge
+function updatePressureGauge(pressure) {
+    const needle = document.getElementById('pressure-needle');
+    const reading = document.getElementById('pressure-reading');
+    
+    // Rotate needle based on pressure (0-2.0 MPa = 0-180 degrees)
+    const angle = (pressure / 2.0) * 180;
+    const clampedAngle = Math.max(0, Math.min(180, angle));
+    
+    needle.style.transform = `rotate(${clampedAngle}deg)`;
+    reading.textContent = `${pressure.toFixed(1)} MPa`;
+}
+
+// Update water movement display
+function updateWaterMovement(potential) {
+    const directionElement = document.getElementById('water-direction');
+    const descriptionElement = document.getElementById('movement-description');
+    
+    if (potential > 0.1) {
+        directionElement.textContent = '→';
+        descriptionElement.textContent = 'Water moves out';
+    } else if (potential < -0.1) {
+        directionElement.textContent = '←';
+        descriptionElement.textContent = 'Water moves in';
+    } else {
+        directionElement.textContent = '⇌';
+        descriptionElement.textContent = 'Equilibrium';
+    }
+}
+
+// Update results display
+function updateResults(total, osmotic, turgor, water, solute, pressure, matric, gravity, insights) {
+    // Update summary
+    document.getElementById('total-potential').textContent = `${total.toFixed(2)} MPa`;
+    document.getElementById('osmotic-pressure').textContent = `${osmotic.toFixed(2)} MPa`;
+    document.getElementById('turgor-status').textContent = turgor;
+    document.getElementById('water-status').textContent = water;
+
+    // Update detailed analysis
+    document.getElementById('display-solute').textContent = `${solute.toFixed(2)} MPa`;
+    document.getElementById('display-pressure').textContent = `${pressure.toFixed(2)} MPa`;
+    document.getElementById('display-matric').textContent = `${matric.toFixed(3)} MPa`;
+    document.getElementById('display-gravity').textContent = `${gravity.toFixed(3)} MPa`;
+
+    // Update insights
+    document.getElementById('water-movement-analysis').textContent = insights.waterMovement;
+    document.getElementById('turgor-analysis').textContent = insights.turgorAnalysis;
+    document.getElementById('osmotic-analysis').textContent = insights.osmoticAnalysis;
+    document.getElementById('plant-response').textContent = insights.plantResponse;
+
+    // Update chemistry quote
+    const quote = getChemistryQuote(total);
+    document.getElementById('chemistry-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.chemistry-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get chemistry quote based on water potential
+function getChemistryQuote(potential) {
+    for (const quote of chemistryQuotes) {
+        if (potential >= quote.min) {
+            return quote;
+        }
+    }
+    return chemistryQuotes[chemistryQuotes.length - 1];
+}
+
+// Create water potential component chart
+function createPotentialChart(solute, pressure, matric, gravity) {
+    console.log('Creating water potential chart...');
+    try {
+        const ctx = document.getElementById('potential-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (potentialChart) {
+            potentialChart.destroy();
+        }
+
+        potentialChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Solute (Ψs)', 'Pressure (Ψp)', 'Matric (Ψm)', 'Gravity (Ψg)'],
+                datasets: [{
+                    label: 'Water Potential Components (MPa)',
+                    data: [solute, pressure, matric, gravity],
+                    backgroundColor: ['#dc2626', '#059669', '#7c3aed', '#ea580c'],
+                    borderColor: ['#b91c1c', '#047857', '#6d28d9', '#c2410c'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Water Potential Component Analysis',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed.y.toFixed(3)} MPa`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Water Potential (MPa)',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Components',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Water potential chart created successfully');
+    } catch (error) {
+        console.error('Error creating water potential chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const totalPotential = document.getElementById('total-potential').textContent;
+        const turgorStatus = document.getElementById('turgor-status').textContent;
+        const waterStatus = document.getElementById('water-status').textContent;
+        const cellType = document.getElementById('cell-type').selectedOptions[0].text;
+        
+        const results = `
+Water Potential Calculator Results
+=================================
+
+Cell Information:
+Cell Type: ${cellType}
+Temperature: ${document.getElementById('temperature').value || 'Not specified'}°C
+Humidity: ${document.getElementById('humidity').value || 'Not specified'}%
+
+Water Potential Components:
+Solute Potential (Ψs): ${document.getElementById('display-solute').textContent}
+Pressure Potential (Ψp): ${document.getElementById('display-pressure').textContent}
+Matric Potential (Ψm): ${document.getElementById('display-matric').textContent}
+Gravitational Potential (Ψg): ${document.getElementById('display-gravity').textContent}
+
+Results:
+Total Water Potential: ${totalPotential}
+Turgor Status: ${turgorStatus}
+Water Status: ${waterStatus}
+Osmotic Pressure: ${document.getElementById('osmotic-pressure').textContent}
+
+Analysis:
+${document.getElementById('water-movement-analysis').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Water Potential Calculator for more analyses!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `water-potential-analysis-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing water potential calculator...');
+
+    document.getElementById('cell-type').value = 'custom';
+    document.getElementById('solute-potential').value = '-0.5';
+    document.getElementById('pressure-potential').value = '0.3';
+    document.getElementById('matric-potential').value = '-0.1';
+    document.getElementById('gravity-potential').value = '0';
+    document.getElementById('molarity').value = '';
+    document.getElementById('ionization').value = '';
+    document.getElementById('temperature').value = '25';
+    document.getElementById('height').value = '';
+    document.getElementById('humidity').value = '';
+    document.getElementById('light-intensity').value = '';
+
+    updateSliderValues();
+    updateVisualization();
+    updateFormula();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (potentialChart) {
+        potentialChart.destroy();
+        potentialChart = null;
+    }
+
+    // Reset meters
+    updatePotentialMeter(-0.3);
+    updatePressureGauge(0.3);
+
+    console.log('Water potential calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing water potential calculator...');
+    initCalculator();
+    lucide.createIcons();
+
+    // Render KaTeX formulas
+    setTimeout(() => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ]
+        });
+    }, 100);
+});
+</script>
+{% endblock %}

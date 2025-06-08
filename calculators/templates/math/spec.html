@@ -1,0 +1,1131 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.spectator-display {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.chemistry-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #1e40af;
+    border-radius: 0 8px 8px 0;
+}
+.reaction-visualization {
+    width: 300px;
+    height: 200px;
+    border: 2px solid #1e40af;
+    border-radius: 20px;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(30, 64, 175, 0.1) 0%, rgba(30, 64, 175, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.ion-particle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    animation: float 3s ease-in-out infinite;
+    font-size: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+.participating-ion {
+    background: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    animation: react 2s ease-in-out infinite;
+}
+.spectator-ion {
+    background: #6b7280;
+    box-shadow: 0 0 8px rgba(107, 114, 128, 0.5);
+}
+.product-ion {
+    background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px) translateX(0px); }
+    25% { transform: translateY(-8px) translateX(3px); }
+    50% { transform: translateY(0px) translateX(-3px); }
+    75% { transform: translateY(8px) translateX(2px); }
+}
+@keyframes react {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+.equation-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+}
+.dark .equation-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.reaction-card {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+    transition: all 0.3s ease;
+}
+.dark .reaction-card {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    border-color: #3b82f6;
+}
+.reaction-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15);
+}
+.ion-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.participating { background: #ef4444; }
+.spectator { background: #6b7280; }
+.product { background: #10b981; }
+.soluble { background: #22c55e; }
+.insoluble { background: #ef4444; }
+.equation-step {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+}
+.dark .equation-step {
+    background: linear-gradient(135deg, #451a03 0%, #78350f 100%);
+    border-color: #d97706;
+}
+.compound-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+}
+.dark .compound-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.95) 0%, rgba(75,85,99,0.95) 100%);
+    border-color: #4b5563;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="eye-off" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Spectator Ions Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Identify spectator ions in chemical reactions and write net ionic equations. Essential for understanding precipitation, acid-base, and redox reactions!
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div class="text-blue-800 dark:text-blue-300 font-medium">
+                ⚗️ Ionic Reactions • 🧪 Solution Chemistry • 📊 Equation Analysis
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Chemical Reaction</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reaction Type:</label>
+                        <select id="reaction-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="custom">Custom Reaction</option>
+                            <option value="precipitation">Precipitation Reaction</option>
+                            <option value="acid-base">Acid-Base Neutralization</option>
+                            <option value="double-replacement">Double Replacement</option>
+                            <option value="redox">Redox Reaction</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reactants:</label>
+                        <div class="space-y-3">
+                            <input type="text" id="reactant-1" placeholder="e.g., AgNO3" 
+                                   class="compound-input w-full text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div class="text-center text-gray-500 dark:text-gray-400 font-bold">+</div>
+                            <input type="text" id="reactant-2" placeholder="e.g., NaCl" 
+                                   class="compound-input w-full text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Enter chemical formulas (e.g., AgNO3, NaCl)</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Products:</label>
+                        <div class="space-y-3">
+                            <input type="text" id="product-1" placeholder="e.g., AgCl" 
+                                   class="compound-input w-full text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div class="text-center text-gray-500 dark:text-gray-400 font-bold">+</div>
+                            <input type="text" id="product-2" placeholder="e.g., NaNO3" 
+                                   class="compound-input w-full text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Enter product formulas or leave blank for auto-prediction</p>
+                    </div>
+
+                    <!-- Reaction Conditions -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Reaction Conditions</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Temperature (°C):</label>
+                                <input type="number" id="temperature" step="1" placeholder="25" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">pH:</label>
+                                <input type="number" id="ph-value" step="0.1" min="0" max="14" placeholder="7.0" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analysis Options -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Analysis Options:</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="show-states" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Show physical states (s, l, g, aq)</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="balance-equation" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Auto-balance equation</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="check-solubility" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Apply solubility rules</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Presets:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('silver-chloride')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                AgNO₃ + NaCl
+                            </button>
+                            <button onclick="setPreset('acid-base')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                HCl + NaOH
+                            </button>
+                            <button onclick="setPreset('barium-sulfate')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                BaCl₂ + Na₂SO₄
+                            </button>
+                            <button onclick="setPreset('lead-iodide')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Pb(NO₃)₂ + KI
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Ion Visualization</h3>
+                        <div class="reaction-visualization" id="reaction-viz">
+                            <!-- Ion particles will be generated here -->
+                        </div>
+                        <div class="text-center mt-4">
+                            <div class="flex justify-center space-x-4 text-sm">
+                                <span class="flex items-center">
+                                    <span class="ion-indicator participating"></span>
+                                    Participating Ions
+                                </span>
+                                <span class="flex items-center">
+                                    <span class="ion-indicator spectator"></span>
+                                    Spectator Ions
+                                </span>
+                                <span class="flex items-center">
+                                    <span class="ion-indicator product"></span>
+                                    Product Ions
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Molecular Equation -->
+                    <div class="equation-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Molecular Equation:</h4>
+                        <div id="molecular-equation" class="text-gray-700 dark:text-gray-300">
+                            Enter reactants to see equation
+                        </div>
+                    </div>
+                    
+                    <!-- Solubility Guide -->
+                    <div class="reaction-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Solubility Rules:</h4>
+                        <div class="space-y-1 text-xs text-gray-700 dark:text-gray-300">
+                            <div class="flex items-center">
+                                <span class="ion-indicator soluble"></span>
+                                <span>All nitrates (NO₃⁻) are soluble</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="ion-indicator soluble"></span>
+                                <span>Most chlorides (Cl⁻) are soluble</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="ion-indicator insoluble"></span>
+                                <span>Most carbonates (CO₃²⁻) are insoluble</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="ion-indicator insoluble"></span>
+                                <span>Most sulfides (S²⁻) are insoluble</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Common Ions Reference -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Common Ions</h4>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <div class="font-medium text-gray-700 dark:text-gray-300">Cations:</div>
+                                <div class="text-gray-600 dark:text-gray-400">Na⁺, K⁺, Ca²⁺, Mg²⁺</div>
+                                <div class="text-gray-600 dark:text-gray-400">Al³⁺, Fe²⁺, Fe³⁺, Cu²⁺</div>
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-700 dark:text-gray-300">Anions:</div>
+                                <div class="text-gray-600 dark:text-gray-400">Cl⁻, Br⁻, I⁻, NO₃⁻</div>
+                                <div class="text-gray-600 dark:text-gray-400">SO₄²⁻, CO₃²⁻, PO₄³⁻, OH⁻</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="analyze-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="search" class="w-5 h-5"></i>
+                <span>Analyze Reaction</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Analysis</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- Reaction Analysis Summary -->
+            <div class="spectator-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>Reaction Analysis Results</span>
+                    <i data-lucide="eye-off" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="spectator-count" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Spectator Ions</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="participating-count" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Participating Ions</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="reaction-classification" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Reaction Type</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="precipitation-status" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Precipitation</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equation Steps -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="list-ordered" class="w-5 h-5"></i>
+                    <span>Step-by-Step Analysis</span>
+                </h3>
+                
+                <div class="space-y-4">
+                    <div class="equation-step">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">1. Balanced Molecular Equation:</h4>
+                        <div id="balanced-molecular" class="font-mono text-gray-800 dark:text-gray-200">-</div>
+                    </div>
+                    
+                    <div class="equation-step">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">2. Complete Ionic Equation:</h4>
+                        <div id="complete-ionic" class="font-mono text-gray-800 dark:text-gray-200">-</div>
+                    </div>
+                    
+                    <div class="equation-step">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">3. Net Ionic Equation:</h4>
+                        <div id="net-ionic" class="font-mono text-gray-800 dark:text-gray-200">-</div>
+                    </div>
+                    
+                    <div class="equation-step">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">4. Spectator Ions:</h4>
+                        <div id="spectator-list" class="font-mono text-gray-800 dark:text-gray-200">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ion Analysis Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                    <span>Ion Distribution</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="ion-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chemistry Quote -->
+            <div class="chemistry-quote mb-6">
+                <p id="chemistry-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "Spectator ions are present but do not participate in the actual chemical reaction."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Solution Chemistry</p>
+            </div>
+
+            <!-- Chemical Insights -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="lightbulb" class="w-5 h-5"></i>
+                    <span>Chemical Insights</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                            <span>Participating Ions</span>
+                        </h4>
+                        <p id="participating-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="eye-off" class="w-4 h-4"></i>
+                            <span>Spectator Ions</span>
+                        </h4>
+                        <p id="spectator-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="droplets" class="w-4 h-4"></i>
+                            <span>Solubility Analysis</span>
+                        </h4>
+                        <p id="solubility-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="beaker" class="w-4 h-4"></i>
+                            <span>Reaction Mechanism</span>
+                        </h4>
+                        <p id="mechanism-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>Spectator Ions Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What are Spectator Ions?</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    Spectator ions are ions that are present in solution but do not participate in the actual chemical reaction. They appear unchanged on both sides of the complete ionic equation.
+                </p>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Net ionic equation: <span class="katex-formula">\text{Complete Ionic} - \text{Spectator Ions} = \text{Net Ionic}</span>
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Types of Ionic Reactions</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>Precipitation:</strong> Formation of an insoluble solid from soluble reactants</li>
+                    <li><strong>Acid-Base:</strong> Transfer of protons (H⁺) between acids and bases</li>
+                    <li><strong>Double Replacement:</strong> Exchange of ions between two ionic compounds</li>
+                    <li><strong>Redox:</strong> Transfer of electrons between species (oxidation-reduction)</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Solubility Rules (Key Points)</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Always Soluble:</strong> Group 1 metals (Li⁺, Na⁺, K⁺), NH₄⁺, NO₃⁻, ClO₄⁻</li>
+                    <li><strong>Usually Soluble:</strong> Cl⁻, Br⁻, I⁻ (except with Ag⁺, Pb²⁺, Hg₂²⁺)</li>
+                    <li><strong>Usually Insoluble:</strong> CO₃²⁻, PO₄³⁻, S²⁻, OH⁻ (except with Group 1 and some Group 2)</li>
+                    <li><strong>Special Cases:</strong> SO₄²⁻ (insoluble with Ba²⁺, Sr²⁺, Pb²⁺, Ca²⁺)</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Writing Net Ionic Equations</h3>
+                <ol class="list-decimal list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Write the balanced molecular equation</li>
+                    <li>Write the complete ionic equation (dissociate all strong electrolytes)</li>
+                    <li>Identify and cancel spectator ions</li>
+                    <li>Write the net ionic equation with remaining species</li>
+                    <li>Check that charges and atoms are balanced</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Solubility rules database
+const solubilityRules = {
+    // Always soluble
+    'NO3': 'soluble', 'ClO4': 'soluble', 'ClO3': 'soluble',
+    // Group 1 and NH4+ compounds are always soluble
+    'Li': 'soluble', 'Na': 'soluble', 'K': 'soluble', 'Rb': 'soluble', 'Cs': 'soluble', 'NH4': 'soluble',
+    // Usually soluble halides
+    'Cl': 'soluble', 'Br': 'soluble', 'I': 'soluble',
+    // Usually insoluble
+    'CO3': 'insoluble', 'PO4': 'insoluble', 'S': 'insoluble', 'OH': 'insoluble',
+    'SO3': 'insoluble', 'CrO4': 'insoluble'
+};
+
+// Exceptions to solubility rules
+const solubilityExceptions = {
+    'AgCl': 'insoluble', 'AgBr': 'insoluble', 'AgI': 'insoluble',
+    'PbCl2': 'insoluble', 'PbBr2': 'insoluble', 'PbI2': 'insoluble',
+    'Hg2Cl2': 'insoluble', 'Hg2Br2': 'insoluble', 'Hg2I2': 'insoluble',
+    'BaSO4': 'insoluble', 'SrSO4': 'insoluble', 'PbSO4': 'insoluble', 'CaSO4': 'slightly soluble',
+    'CaOH2': 'slightly soluble', 'SrOH2': 'soluble', 'BaOH2': 'soluble'
+};
+
+// Common reaction presets
+const reactionPresets = {
+    'silver-chloride': {
+        type: 'precipitation',
+        reactant1: 'AgNO3',
+        reactant2: 'NaCl',
+        product1: 'AgCl',
+        product2: 'NaNO3'
+    },
+    'acid-base': {
+        type: 'acid-base',
+        reactant1: 'HCl',
+        reactant2: 'NaOH',
+        product1: 'NaCl',
+        product2: 'H2O'
+    },
+    'barium-sulfate': {
+        type: 'precipitation',
+        reactant1: 'BaCl2',
+        reactant2: 'Na2SO4',
+        product1: 'BaSO4',
+        product2: 'NaCl'
+    },
+    'lead-iodide': {
+        type: 'precipitation',
+        reactant1: 'Pb(NO3)2',
+        reactant2: 'KI',
+        product1: 'PbI2',
+        product2: 'KNO3'
+    }
+};
+
+// Chemistry quotes for different reaction types
+const chemistryQuotes = [
+    { type: 'precipitation', quote: "Precipitation reactions form insoluble products while spectator ions remain in solution.", author: "Solution Chemistry" },
+    { type: 'acid-base', quote: "In acid-base reactions, spectator ions do not participate in proton transfer.", author: "Acid-Base Theory" },
+    { type: 'double-replacement', quote: "Double replacement reactions exchange ions while spectators remain unchanged.", author: "Ionic Reactions" },
+    { type: 'redox', quote: "Redox reactions involve electron transfer while spectator ions maintain charge balance.", author: "Electrochemistry" },
+    { type: 'default', quote: "Spectator ions are essential for maintaining electrical neutrality in ionic solutions.", author: "Chemical Equilibrium" }
+];
+
+let ionChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Spectator Ions Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const reactionTypeSelect = document.getElementById('reaction-type');
+
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', analyzeReaction);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (reactionTypeSelect) {
+        reactionTypeSelect.addEventListener('change', () => {
+            updateReactionInputs();
+        });
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('compound-input')) {
+            updateMolecularEquation();
+            if (hasValidInputs()) {
+                // Optional: auto-analyze on input change
+            }
+        }
+    });
+}
+
+// Update reaction inputs based on type
+function updateReactionInputs() {
+    const reactionType = document.getElementById('reaction-type').value;
+    // Could add specific guidance or constraints based on reaction type
+    updateMolecularEquation();
+}
+
+// Check if we have valid inputs
+function hasValidInputs() {
+    const reactant1 = document.getElementById('reactant-1').value.trim();
+    const reactant2 = document.getElementById('reactant-2').value.trim();
+    
+    return reactant1.length > 0 && reactant2.length > 0;
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    const preset = reactionPresets[presetKey];
+    if (!preset) return;
+
+    document.getElementById('reaction-type').value = preset.type;
+    document.getElementById('reactant-1').value = preset.reactant1;
+    document.getElementById('reactant-2').value = preset.reactant2;
+    document.getElementById('product-1').value = preset.product1;
+    document.getElementById('product-2').value = preset.product2;
+
+    updateMolecularEquation();
+    updateVisualization();
+    analyzeReaction();
+}
+
+// Update molecular equation display
+function updateMolecularEquation() {
+    const reactant1 = document.getElementById('reactant-1').value.trim();
+    const reactant2 = document.getElementById('reactant-2').value.trim();
+    const product1 = document.getElementById('product-1').value.trim();
+    const product2 = document.getElementById('product-2').value.trim();
+    
+    const molecularEq = document.getElementById('molecular-equation');
+    
+    if (reactant1 && reactant2) {
+        let equation = `${reactant1} + ${reactant2}`;
+        if (product1 && product2) {
+            equation += ` → ${product1} + ${product2}`;
+        } else {
+            equation += ' → Products';
+        }
+        molecularEq.textContent = equation;
+    } else {
+        molecularEq.textContent = 'Enter reactants to see equation';
+    }
+}
+
+// Update visualization
+function updateVisualization() {
+    generateIonVisualization();
+}
+
+// Generate ion visualization
+function generateIonVisualization() {
+    const container = document.getElementById('reaction-viz');
+    container.innerHTML = '';
+
+    // Generate participating ions (red)
+    for (let i = 0; i < 4; i++) {
+        const ion = document.createElement('div');
+        ion.className = 'ion-particle participating-ion';
+        ion.textContent = '+';
+        
+        const x = Math.random() * 250 + 25;
+        const y = Math.random() * 150 + 25;
+        ion.style.left = `${x}px`;
+        ion.style.top = `${y}px`;
+        ion.style.animationDelay = `${i * 0.5}s`;
+        
+        container.appendChild(ion);
+    }
+
+    // Generate spectator ions (gray)
+    for (let i = 0; i < 6; i++) {
+        const ion = document.createElement('div');
+        ion.className = 'ion-particle spectator-ion';
+        ion.textContent = i % 2 === 0 ? '+' : '-';
+        
+        const x = Math.random() * 250 + 25;
+        const y = Math.random() * 150 + 25;
+        ion.style.left = `${x}px`;
+        ion.style.top = `${y}px`;
+        ion.style.animationDelay = `${i * 0.3}s`;
+        
+        container.appendChild(ion);
+    }
+
+    // Generate product ions (green)
+    for (let i = 0; i < 2; i++) {
+        const ion = document.createElement('div');
+        ion.className = 'ion-particle product-ion';
+        ion.textContent = '●';
+        
+        const x = Math.random() * 100 + 200;
+        const y = Math.random() * 100 + 50;
+        ion.style.left = `${x}px`;
+        ion.style.top = `${y}px`;
+        ion.style.animationDelay = `${i * 0.7}s`;
+        
+        container.appendChild(ion);
+    }
+}
+
+// Parse chemical formula to extract ions
+function parseCompound(formula) {
+    // Simplified parser for common ionic compounds
+    const ions = [];
+    
+    // Common cations and anions patterns
+    const cationPatterns = [
+        { regex: /^(Li|Na|K|Rb|Cs)\+?/, charge: 1 },
+        { regex: /^(Be|Mg|Ca|Sr|Ba|Zn|Cd|Pb|Sn|Fe|Co|Ni|Cu|Mn)\+?2?/, charge: 2 },
+        { regex: /^(Al|Cr|Fe|Co)\+?3?/, charge: 3 },
+        { regex: /^(NH4)\+?/, charge: 1 },
+        { regex: /^H\+?/, charge: 1 }
+    ];
+    
+    const anionPatterns = [
+        { regex: /(Cl|Br|I|F)\-?$/, charge: -1 },
+        { regex: /(NO3|ClO4|ClO3|OH|CN)\-?$/, charge: -1 },
+        { regex: /(SO4|CO3|CrO4|SO3)\-?2?$/, charge: -2 },
+        { regex: /(PO4)\-?3?$/, charge: -3 }
+    ];
+    
+    // This is a simplified implementation
+    // In a real application, you'd want a more robust chemical formula parser
+    
+    return ions;
+}
+
+// Determine solubility of a compound
+function getSolubility(compound) {
+    // Check exceptions first
+    if (solubilityExceptions[compound]) {
+        return solubilityExceptions[compound];
+    }
+    
+    // Apply general rules
+    // This is simplified - real implementation would be more complex
+    if (compound.includes('NO3') || compound.includes('ClO4')) {
+        return 'soluble';
+    }
+    
+    if (compound.includes('CO3') || compound.includes('PO4') || compound.includes('OH')) {
+        return 'insoluble';
+    }
+    
+    return 'soluble'; // Default assumption
+}
+
+// Analyze the reaction
+function analyzeReaction() {
+    console.log('Analyzing reaction...');
+    try {
+        const reactant1 = document.getElementById('reactant-1').value.trim();
+        const reactant2 = document.getElementById('reactant-2').value.trim();
+        let product1 = document.getElementById('product-1').value.trim();
+        let product2 = document.getElementById('product-2').value.trim();
+        const reactionType = document.getElementById('reaction-type').value;
+
+        if (!reactant1 || !reactant2) {
+            alert('Please enter both reactants');
+            return;
+        }
+
+        // Predict products if not provided
+        if (!product1 || !product2) {
+            const predicted = predictProducts(reactant1, reactant2, reactionType);
+            product1 = predicted.product1;
+            product2 = predicted.product2;
+            
+            // Update the input fields
+            document.getElementById('product-1').value = product1;
+            document.getElementById('product-2').value = product2;
+        }
+
+        // Analyze the reaction
+        const analysis = performReactionAnalysis(reactant1, reactant2, product1, product2, reactionType);
+        
+        // Update display
+        updateResults(analysis);
+
+        // Create chart
+        createIonChart(analysis);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('Reaction analyzed successfully');
+    } catch (error) {
+        console.error('Error analyzing reaction:', error);
+        alert('An error occurred while analyzing the reaction. Please check your inputs.');
+    }
+}
+
+// Predict products based on reaction type
+function predictProducts(reactant1, reactant2, reactionType) {
+    // Simplified product prediction
+    // In a real application, this would be much more sophisticated
+    
+    switch (reactionType) {
+        case 'precipitation':
+            // For precipitation, assume double replacement
+            return { product1: 'Product1', product2: 'Product2' };
+        case 'acid-base':
+            return { product1: 'Salt', product2: 'H2O' };
+        default:
+            return { product1: 'Product1', product2: 'Product2' };
+    }
+}
+
+// Perform detailed reaction analysis
+function performReactionAnalysis(reactant1, reactant2, product1, product2, reactionType) {
+    // Simplified analysis - real implementation would be much more complex
+    
+    const analysis = {
+        balancedMolecular: `${reactant1} + ${reactant2} → ${product1} + ${product2}`,
+        completeIonic: `Ions from ${reactant1} + Ions from ${reactant2} → Ions from ${product1} + Ions from ${product2}`,
+        netIonic: `Participating ions → Product ions`,
+        spectatorIons: ['Na⁺', 'NO₃⁻'],
+        participatingIons: ['Ag⁺', 'Cl⁻'],
+        spectatorCount: 2,
+        participatingCount: 2,
+        reactionType: reactionType,
+        precipitationStatus: reactionType === 'precipitation' ? 'Yes' : 'No',
+        insights: generateInsights(reactionType)
+    };
+    
+    return analysis;
+}
+
+// Generate chemical insights
+function generateInsights(reactionType) {
+    const insights = {
+        participatingAnalysis: '',
+        spectatorAnalysis: '',
+        solubilityAnalysis: '',
+        mechanismAnalysis: ''
+    };
+    
+    switch (reactionType) {
+        case 'precipitation':
+            insights.participatingAnalysis = 'Ions that combine to form the insoluble precipitate are the participating ions.';
+            insights.spectatorAnalysis = 'Ions that remain dissolved and unchanged throughout the reaction.';
+            insights.solubilityAnalysis = 'Precipitate formation occurs when the product exceeds its solubility limit.';
+            insights.mechanismAnalysis = 'Double replacement mechanism with immediate precipitation of insoluble product.';
+            break;
+        case 'acid-base':
+            insights.participatingAnalysis = 'H⁺ from acid and OH⁻ from base participate in neutralization.';
+            insights.spectatorAnalysis = 'Counter ions from acid and base remain as spectators.';
+            insights.solubilityAnalysis = 'Water formation drives the neutralization reaction forward.';
+            insights.mechanismAnalysis = 'Proton transfer mechanism between acid and base.';
+            break;
+        default:
+            insights.participatingAnalysis = 'Ions directly involved in forming new chemical bonds.';
+            insights.spectatorAnalysis = 'Ions present for charge balance but not chemically reactive.';
+            insights.solubilityAnalysis = 'Solubility rules determine which compounds remain dissolved.';
+            insights.mechanismAnalysis = 'Ion exchange mechanism with selective participation.';
+    }
+    
+    return insights;
+}
+
+// Update results display
+function updateResults(analysis) {
+    // Update summary
+    document.getElementById('spectator-count').textContent = analysis.spectatorCount;
+    document.getElementById('participating-count').textContent = analysis.participatingCount;
+    document.getElementById('reaction-classification').textContent = analysis.reactionType.charAt(0).toUpperCase() + analysis.reactionType.slice(1);
+    document.getElementById('precipitation-status').textContent = analysis.precipitationStatus;
+
+    // Update equations
+    document.getElementById('balanced-molecular').textContent = analysis.balancedMolecular;
+    document.getElementById('complete-ionic').textContent = analysis.completeIonic;
+    document.getElementById('net-ionic').textContent = analysis.netIonic;
+    document.getElementById('spectator-list').textContent = analysis.spectatorIons.join(', ');
+
+    // Update insights
+    document.getElementById('participating-analysis').textContent = analysis.insights.participatingAnalysis;
+    document.getElementById('spectator-analysis').textContent = analysis.insights.spectatorAnalysis;
+    document.getElementById('solubility-analysis').textContent = analysis.insights.solubilityAnalysis;
+    document.getElementById('mechanism-analysis').textContent = analysis.insights.mechanismAnalysis;
+
+    // Update chemistry quote
+    const quote = getChemistryQuote(analysis.reactionType);
+    document.getElementById('chemistry-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.chemistry-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get chemistry quote based on reaction type
+function getChemistryQuote(reactionType) {
+    const quote = chemistryQuotes.find(q => q.type === reactionType);
+    return quote || chemistryQuotes.find(q => q.type === 'default');
+}
+
+// Create ion distribution chart
+function createIonChart(analysis) {
+    console.log('Creating ion chart...');
+    try {
+        const ctx = document.getElementById('ion-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (ionChart) {
+            ionChart.destroy();
+        }
+
+        ionChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Participating Ions', 'Spectator Ions'],
+                datasets: [{
+                    data: [analysis.participatingCount, analysis.spectatorCount],
+                    backgroundColor: ['#ef4444', '#6b7280'],
+                    borderColor: ['#dc2626', '#4b5563'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Ion Distribution in Reaction',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#374151',
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return `${context.label}: ${context.parsed} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Ion chart created successfully');
+    } catch (error) {
+        console.error('Error creating ion chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const reactant1 = document.getElementById('reactant-1').value;
+        const reactant2 = document.getElementById('reactant-2').value;
+        const product1 = document.getElementById('product-1').value;
+        const product2 = document.getElementById('product-2').value;
+        const spectatorCount = document.getElementById('spectator-count').textContent;
+        const participatingCount = document.getElementById('participating-count').textContent;
+        
+        const results = `
+Spectator Ions Calculator Results
+================================
+
+Reaction Information:
+Reactants: ${reactant1} + ${reactant2}
+Products: ${product1} + ${product2}
+Reaction Type: ${document.getElementById('reaction-classification').textContent}
+
+Analysis Results:
+Spectator Ions: ${spectatorCount}
+Participating Ions: ${participatingCount}
+Precipitation: ${document.getElementById('precipitation-status').textContent}
+
+Equations:
+Balanced Molecular: ${document.getElementById('balanced-molecular').textContent}
+Complete Ionic: ${document.getElementById('complete-ionic').textContent}
+Net Ionic: ${document.getElementById('net-ionic').textContent}
+Spectator Ions: ${document.getElementById('spectator-list').textContent}
+
+Analysis:
+${document.getElementById('participating-analysis').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Spectator Ions Calculator for more analyses!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `spectator-ions-analysis-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing spectator ions calculator...');
+
+    document.getElementById('reaction-type').value = 'custom';
+    document.getElementById('reactant-1').value = '';
+    document.getElementById('reactant-2').value = '';
+    document.getElementById('product-1').value = '';
+    document.getElementById('product-2').value = '';
+    document.getElementById('temperature').value = '25';
+    document.getElementById('ph-value').value = '7.0';
+    
+    // Reset checkboxes
+    document.getElementById('show-states').checked = true;
+    document.getElementById('balance-equation').checked = true;
+    document.getElementById('check-solubility').checked = true;
+
+    updateMolecularEquation();
+    updateVisualization();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (ionChart) {
+        ionChart.destroy();
+        ionChart = null;
+    }
+
+    console.log('Spectator ions calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing spectator ions calculator...');
+    initCalculator();
+    lucide.createIcons();
+
+    // Render KaTeX formulas
+    setTimeout(() => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ]
+        });
+    }, 100);
+});
+</script>
+{% endblock %}

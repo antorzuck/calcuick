@@ -1,0 +1,1197 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.saponification-display {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.chemistry-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #1e40af;
+    border-radius: 0 8px 8px 0;
+}
+.saponification-meter {
+    background: linear-gradient(90deg, #22c55e 0%, #eab308 25%, #f59e0b 50%, #ef4444 75%, #dc2626 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.saponification-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.reaction-visualization {
+    width: 250px;
+    height: 250px;
+    border: 2px solid #1e40af;
+    border-radius: 20px;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(30, 64, 175, 0.1) 0%, rgba(30, 64, 175, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.molecule-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: float 4s ease-in-out infinite;
+}
+.fat-molecule {
+    background: #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+.koh-molecule {
+    background: #3b82f6;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+.soap-molecule {
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px) translateX(0px); }
+    25% { transform: translateY(-8px) translateX(3px); }
+    50% { transform: translateY(0px) translateX(-3px); }
+    75% { transform: translateY(8px) translateX(2px); }
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.oil-card {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+    transition: all 0.3s ease;
+}
+.dark .oil-card {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    border-color: #3b82f6;
+}
+.oil-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15);
+}
+.quality-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.excellent { background: #10b981; }
+.good { background: #22c55e; }
+.fair { background: #eab308; }
+.poor { background: #ef4444; }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="flask-conical" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Saponification Value Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate saponification values for fats and oils. Essential for soap making, quality control, and lipid analysis!
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div class="text-blue-800 dark:text-blue-300 font-medium">
+                <span class="katex-formula">SV = \frac{(V_b - V_s) \times N \times 56.1}{W}</span> • 🧪 Analytical Chemistry • 🧼 Soap Making • 📊 Quality Control
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Titration Parameters</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sample Type:</label>
+                        <select id="sample-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="coconut-oil">Coconut Oil</option>
+                            <option value="palm-oil">Palm Oil</option>
+                            <option value="olive-oil">Olive Oil</option>
+                            <option value="sunflower-oil">Sunflower Oil</option>
+                            <option value="castor-oil">Castor Oil</option>
+                            <option value="soybean-oil">Soybean Oil</option>
+                            <option value="lard">Lard</option>
+                            <option value="tallow">Tallow</option>
+                            <option value="butter">Butter</option>
+                            <option value="unknown">Unknown Sample</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sample Weight (g):</label>
+                            <input type="number" id="sample-weight" step="0.0001" placeholder="2.0000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Accurate to 4 decimal places</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">KOH Normality (N):</label>
+                            <input type="number" id="koh-normality" step="0.0001" placeholder="0.5000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Standardized KOH solution</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Blank Volume (mL):</label>
+                            <input type="number" id="blank-volume" step="0.01" placeholder="25.00" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">HCl volume for blank</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sample Volume (mL):</label>
+                            <input type="number" id="sample-volume" step="0.01" placeholder="18.50" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">HCl volume for sample</p>
+                        </div>
+                    </div>
+
+                    <!-- Experimental Conditions -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Experimental Conditions</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Temperature (°C):</label>
+                                <input type="number" id="temperature" step="0.1" placeholder="25.0" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Reflux Time (min):</label>
+                                <input type="number" id="reflux-time" step="1" placeholder="30" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Method Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Analysis Method:</label>
+                        <select id="analysis-method" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="astm">ASTM D5558</option>
+                            <option value="aocs">AOCS Cd 3-25</option>
+                            <option value="iso">ISO 3657</option>
+                            <option value="pharmacopoeia">Pharmacopoeia Method</option>
+                        </select>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Presets:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('coconut')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Coconut Oil
+                            </button>
+                            <button onclick="setPreset('olive')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Olive Oil
+                            </button>
+                            <button onclick="setPreset('palm')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Palm Oil
+                            </button>
+                            <button onclick="setPreset('castor')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Castor Oil
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Saponification Reaction</h3>
+                        <div class="reaction-visualization" id="reaction-viz">
+                            <!-- Particles will be generated here -->
+                        </div>
+                        <div class="text-center mt-4">
+                            <span id="reaction-display" class="text-lg font-semibold text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                <span class="quality-indicator good"></span>
+                                Active Saponification
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Saponification Value Meter -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">SV Scale (mg KOH/g)</h4>
+                        <div class="saponification-meter">
+                            <div class="saponification-indicator" id="sv-indicator" style="left: 50%;"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <span>0</span>
+                            <span>100</span>
+                            <span>200</span>
+                            <span>300</span>
+                            <span>400+</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Saponification Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sample Properties -->
+                    <div class="oil-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Sample Properties:</h4>
+                        <div id="sample-info" class="text-sm text-gray-700 dark:text-gray-300">
+                            Expected SV: 250-260 • Type: Vegetable Oil • Chain Length: Medium
+                        </div>
+                    </div>
+
+                    <!-- Reference Values -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Typical SV Ranges</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Coconut Oil:</span>
+                                <span class="font-medium text-blue-600">250-260</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Olive Oil:</span>
+                                <span class="font-medium text-green-600">185-196</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Palm Oil:</span>
+                                <span class="font-medium text-yellow-600">190-209</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Castor Oil:</span>
+                                <span class="font-medium text-purple-600">176-187</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate Saponification Value</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Results</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- Saponification Value Summary -->
+            <div class="saponification-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>Saponification Analysis Results</span>
+                    <i data-lucide="beaker" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="saponification-value" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">SV (mg KOH/g)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="sample-quality" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Quality Grade</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="molecular-weight" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Avg. MW (g/mol)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="chain-length" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Chain Type</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculation Details -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="calculator" class="w-5 h-5"></i>
+                    <span>Calculation Details</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Volume Difference:</span>
+                            <span id="volume-difference" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">KOH Consumed:</span>
+                            <span id="koh-consumed" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Sample Weight:</span>
+                            <span id="display-weight" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Method Used:</span>
+                            <span id="display-method" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>SV Comparison</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="sv-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chemistry Quote -->
+            <div class="chemistry-quote mb-6">
+                <p id="chemistry-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "Saponification value reveals the molecular architecture of fats and oils through chemical analysis."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Analytical Chemistry Principle</p>
+            </div>
+
+            <!-- Chemical Insights -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="microscope" class="w-5 h-5"></i>
+                    <span>Chemical Insights</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="atom" class="w-4 h-4"></i>
+                            <span>Molecular Composition</span>
+                        </h4>
+                        <p id="molecular-composition" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span>Quality Assessment</span>
+                        </h4>
+                        <p id="quality-assessment" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="flask-round" class="w-4 h-4"></i>
+                            <span>Industrial Applications</span>
+                        </h4>
+                        <p id="industrial-applications" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="shield-check" class="w-4 h-4"></i>
+                            <span>Quality Control</span>
+                        </h4>
+                        <p id="quality-control" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>Saponification Value Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Saponification Value?</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    Saponification value is calculated as: <span class="katex-formula">SV = \frac{(V_b - V_s) \times N \times 56.1}{W}</span>
+                </p>
+                <p class="text-gray-600 dark:text-gray-300">
+                    It represents the milligrams of KOH required to saponify one gram of fat or oil, indicating the average molecular weight of fatty acids.
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Typical Saponification Values</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>Coconut Oil:</strong> 250-260 mg KOH/g (short chain fatty acids)</li>
+                    <li><strong>Palm Kernel Oil:</strong> 230-254 mg KOH/g (medium chain)</li>
+                    <li><strong>Olive Oil:</strong> 185-196 mg KOH/g (long chain)</li>
+                    <li><strong>Castor Oil:</strong> 176-187 mg KOH/g (very long chain)</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Soap manufacturing and formulation</li>
+                    <li>Quality control of fats and oils</li>
+                    <li>Identification and authentication of oils</li>
+                    <li>Determination of average molecular weight</li>
+                    <li>Assessment of oil purity and adulteration</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Factors Affecting Saponification Value</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Fatty acid chain length (shorter chains = higher SV)</li>
+                    <li>Degree of saturation</li>
+                    <li>Presence of free fatty acids</li>
+                    <li>Oil processing and refining</li>
+                    <li>Storage conditions and age</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Sample data with properties
+const samples = {
+    'coconut-oil': {
+        name: 'Coconut Oil',
+        expectedSV: [250, 260],
+        chainType: 'Short',
+        avgMW: 680,
+        info: 'Expected SV: 250-260 • Type: Vegetable Oil • Chain Length: Short'
+    },
+    'palm-oil': {
+        name: 'Palm Oil',
+        expectedSV: [190, 209],
+        chainType: 'Medium',
+        avgMW: 850,
+        info: 'Expected SV: 190-209 • Type: Vegetable Oil • Chain Length: Medium'
+    },
+    'olive-oil': {
+        name: 'Olive Oil',
+        expectedSV: [185, 196],
+        chainType: 'Long',
+        avgMW: 880,
+        info: 'Expected SV: 185-196 • Type: Vegetable Oil • Chain Length: Long'
+    },
+    'sunflower-oil': {
+        name: 'Sunflower Oil',
+        expectedSV: [188, 194],
+        chainType: 'Long',
+        avgMW: 875,
+        info: 'Expected SV: 188-194 • Type: Vegetable Oil • Chain Length: Long'
+    },
+    'castor-oil': {
+        name: 'Castor Oil',
+        expectedSV: [176, 187],
+        chainType: 'Very Long',
+        avgMW: 930,
+        info: 'Expected SV: 176-187 • Type: Vegetable Oil • Chain Length: Very Long'
+    },
+    'soybean-oil': {
+        name: 'Soybean Oil',
+        expectedSV: [189, 195],
+        chainType: 'Long',
+        avgMW: 870,
+        info: 'Expected SV: 189-195 • Type: Vegetable Oil • Chain Length: Long'
+    },
+    'lard': {
+        name: 'Lard',
+        expectedSV: [192, 203],
+        chainType: 'Medium',
+        avgMW: 860,
+        info: 'Expected SV: 192-203 • Type: Animal Fat • Chain Length: Medium'
+    },
+    'tallow': {
+        name: 'Tallow',
+        expectedSV: [190, 200],
+        chainType: 'Medium',
+        avgMW: 870,
+        info: 'Expected SV: 190-200 • Type: Animal Fat • Chain Length: Medium'
+    },
+    'butter': {
+        name: 'Butter',
+        expectedSV: [220, 235],
+        chainType: 'Short-Medium',
+        avgMW: 750,
+        info: 'Expected SV: 220-235 • Type: Dairy Fat • Chain Length: Short-Medium'
+    },
+    'unknown': {
+        name: 'Unknown Sample',
+        expectedSV: [150, 300],
+        chainType: 'Variable',
+        avgMW: 800,
+        info: 'Expected SV: Variable • Type: Unknown • Chain Length: Variable'
+    }
+};
+
+// Chemistry quotes for different SV ranges
+const chemistryQuotes = [
+    { min: 240, quote: "High saponification values indicate short-chain fatty acids, typical of tropical oils like coconut.", author: "Lipid Chemistry" },
+    { min: 200, quote: "Moderate saponification values suggest medium-chain fatty acids found in many vegetable oils.", author: "Analytical Chemistry" },
+    { min: 180, quote: "Lower saponification values indicate longer-chain fatty acids characteristic of olive and similar oils.", author: "Food Chemistry" },
+    { min: 0, quote: "Very low saponification values suggest very long-chain fatty acids or possible contamination.", author: "Quality Control" }
+];
+
+// Preset configurations
+const presets = {
+    'coconut': {
+        sampleType: 'coconut-oil',
+        weight: 2.0000,
+        normality: 0.5000,
+        blankVolume: 25.00,
+        sampleVolume: 18.50,
+        temperature: 25.0,
+        refluxTime: 30,
+        method: 'astm'
+    },
+    'olive': {
+        sampleType: 'olive-oil',
+        weight: 2.0000,
+        normality: 0.5000,
+        blankVolume: 25.00,
+        sampleVolume: 21.20,
+        temperature: 25.0,
+        refluxTime: 30,
+        method: 'aocs'
+    },
+    'palm': {
+        sampleType: 'palm-oil',
+        weight: 2.0000,
+        normality: 0.5000,
+        blankVolume: 25.00,
+        sampleVolume: 20.00,
+        temperature: 25.0,
+        refluxTime: 30,
+        method: 'astm'
+    },
+    'castor': {
+        sampleType: 'castor-oil',
+        weight: 2.0000,
+        normality: 0.5000,
+        blankVolume: 25.00,
+        sampleVolume: 21.80,
+        temperature: 25.0,
+        refluxTime: 30,
+        method: 'iso'
+    }
+};
+
+let svChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Saponification Value Calculator...');
+    setupEventListeners();
+    updateSampleInputs();
+    updateVisualization();
+    updateFormula();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const sampleSelect = document.getElementById('sample-type');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateSaponificationValue);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (sampleSelect) {
+        sampleSelect.addEventListener('change', () => {
+            updateSampleInputs();
+            updateVisualization();
+            if (hasValidInputs()) {
+                calculateSaponificationValue();
+            }
+        });
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input')) {
+            if (hasValidInputs()) {
+                calculateSaponificationValue();
+            }
+        }
+    });
+}
+
+// Check if we have valid inputs
+function hasValidInputs() {
+    const weight = parseFloat(document.getElementById('sample-weight').value);
+    const normality = parseFloat(document.getElementById('koh-normality').value);
+    const blankVol = parseFloat(document.getElementById('blank-volume').value);
+    const sampleVol = parseFloat(document.getElementById('sample-volume').value);
+    
+    return weight > 0 && normality > 0 && blankVol > 0 && sampleVol >= 0;
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    const preset = presets[presetKey];
+    if (!preset) return;
+
+    document.getElementById('sample-type').value = preset.sampleType;
+    document.getElementById('sample-weight').value = preset.weight;
+    document.getElementById('koh-normality').value = preset.normality;
+    document.getElementById('blank-volume').value = preset.blankVolume;
+    document.getElementById('sample-volume').value = preset.sampleVolume;
+    document.getElementById('temperature').value = preset.temperature;
+    document.getElementById('reflux-time').value = preset.refluxTime;
+    document.getElementById('analysis-method').value = preset.method;
+
+    updateSampleInputs();
+    updateVisualization();
+    updateFormula();
+    calculateSaponificationValue();
+}
+
+// Update input sections based on sample type
+function updateSampleInputs() {
+    const sampleType = document.getElementById('sample-type').value;
+    const sample = samples[sampleType];
+    
+    // Update sample info
+    const sampleInfo = document.getElementById('sample-info');
+    sampleInfo.textContent = sample.info;
+}
+
+// Update visualization
+function updateVisualization() {
+    // Generate reaction particles
+    generateReactionParticles();
+    
+    // Update reaction display
+    const reactionDisplay = document.getElementById('reaction-display');
+    reactionDisplay.innerHTML = `
+        <span class="quality-indicator good"></span>
+        Active Saponification
+    `;
+}
+
+// Generate reaction particles for visualization
+function generateReactionParticles() {
+    const container = document.getElementById('reaction-viz');
+    container.innerHTML = '';
+
+    // Generate fat molecules (orange)
+    for (let i = 0; i < 6; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'molecule-particle fat-molecule';
+        
+        const x = Math.random() * 220 + 15;
+        const y = Math.random() * 220 + 15;
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.animationDelay = `${Math.random() * 4}s`;
+        
+        container.appendChild(particle);
+    }
+
+    // Generate KOH molecules (blue)
+    for (let i = 0; i < 8; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'molecule-particle koh-molecule';
+        
+        const x = Math.random() * 220 + 15;
+        const y = Math.random() * 220 + 15;
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.animationDelay = `${Math.random() * 4}s`;
+        
+        container.appendChild(particle);
+    }
+
+    // Generate soap molecules (green)
+    for (let i = 0; i < 4; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'molecule-particle soap-molecule';
+        
+        const x = Math.random() * 220 + 15;
+        const y = Math.random() * 220 + 15;
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.animationDelay = `${Math.random() * 4}s`;
+        
+        container.appendChild(particle);
+    }
+}
+
+// Update formula display
+function updateFormula() {
+    const katexElement = document.getElementById('katex-formula');
+    const formula = 'SV = \\frac{(V_b - V_s) \\times N \\times 56.1}{W}';
+
+    try {
+        katex.render(formula, katexElement, {
+            throwOnError: false,
+            displayMode: false
+        });
+    } catch (error) {
+        katexElement.textContent = 'SV = (Vb - Vs) × N × 56.1 / W';
+    }
+}
+
+// Calculate saponification value
+function calculateSaponificationValue() {
+    console.log('Calculating saponification value...');
+    try {
+        const weight = parseFloat(document.getElementById('sample-weight').value) || 0;
+        const normality = parseFloat(document.getElementById('koh-normality').value) || 0;
+        const blankVolume = parseFloat(document.getElementById('blank-volume').value) || 0;
+        const sampleVolume = parseFloat(document.getElementById('sample-volume').value) || 0;
+        const sampleType = document.getElementById('sample-type').value;
+        const method = document.getElementById('analysis-method').value;
+
+        if (weight <= 0 || normality <= 0 || blankVolume <= 0) {
+            console.log('Please enter valid parameters');
+            return;
+        }
+
+        const sample = samples[sampleType];
+
+        // Calculate saponification value
+        const volumeDifference = blankVolume - sampleVolume;
+        const kohConsumed = volumeDifference * normality;
+        const saponificationValue = (volumeDifference * normality * 56.1) / weight;
+
+        // Calculate average molecular weight
+        const avgMolecularWeight = (56.1 * 3 * 1000) / saponificationValue; // Approximate for triglycerides
+
+        // Determine quality and chain type
+        const { quality, chainType } = assessQuality(saponificationValue, sample);
+        
+        // Calculate insights
+        const insights = calculateChemicalInsights(saponificationValue, sample, quality);
+
+        // Update display
+        updateResults(saponificationValue, quality, avgMolecularWeight, chainType, volumeDifference, kohConsumed, weight, method, insights);
+
+        // Update SV meter
+        updateSVMeter(saponificationValue);
+
+        // Create chart
+        createSVChart(saponificationValue, sample);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('Saponification value calculated successfully:', saponificationValue);
+    } catch (error) {
+        console.error('Error calculating saponification value:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Assess quality based on expected range
+function assessQuality(svValue, sample) {
+    const [minExpected, maxExpected] = sample.expectedSV;
+    const tolerance = (maxExpected - minExpected) * 0.1; // 10% tolerance
+    
+    let quality;
+    if (svValue >= minExpected - tolerance && svValue <= maxExpected + tolerance) {
+        if (svValue >= minExpected && svValue <= maxExpected) {
+            quality = 'Excellent';
+        } else {
+            quality = 'Good';
+        }
+    } else if (Math.abs(svValue - (minExpected + maxExpected) / 2) <= (maxExpected - minExpected)) {
+        quality = 'Fair';
+    } else {
+        quality = 'Poor';
+    }
+
+    // Determine chain type based on SV
+    let chainType;
+    if (svValue > 230) {
+        chainType = 'Short';
+    } else if (svValue > 200) {
+        chainType = 'Medium';
+    } else if (svValue > 180) {
+        chainType = 'Long';
+    } else {
+        chainType = 'Very Long';
+    }
+
+    return { quality, chainType };
+}
+
+// Calculate chemical insights
+function calculateChemicalInsights(svValue, sample, quality) {
+    let molecularComposition = '';
+    if (svValue > 230) {
+        molecularComposition = 'High proportion of short-chain fatty acids (C6-C12). Typical of tropical oils like coconut and palm kernel.';
+    } else if (svValue > 200) {
+        molecularComposition = 'Moderate chain length fatty acids (C12-C16). Common in palm oil and animal fats.';
+    } else if (svValue > 180) {
+        molecularComposition = 'Long-chain fatty acids (C16-C18). Characteristic of olive, sunflower, and similar oils.';
+    } else {
+        molecularComposition = 'Very long-chain fatty acids (>C18). Found in specialized oils like castor oil.';
+    }
+
+    let qualityAssessment = '';
+    if (quality === 'Excellent') {
+        qualityAssessment = 'Sample matches expected values perfectly. High purity and authentic composition confirmed.';
+    } else if (quality === 'Good') {
+        qualityAssessment = 'Sample within acceptable range. Minor variations may be due to natural variability or processing.';
+    } else if (quality === 'Fair') {
+        qualityAssessment = 'Sample shows moderate deviation. May indicate adulteration, degradation, or different variety.';
+    } else {
+        qualityAssessment = 'Sample significantly outside expected range. Possible adulteration, contamination, or misidentification.';
+    }
+
+    const industrialApplications = 'Soap formulation, biodiesel production, cosmetics manufacturing, food processing quality control.';
+    const qualityControl = 'Authentication testing, purity assessment, adulteration detection, batch consistency verification.';
+
+    return {
+        molecularComposition,
+        qualityAssessment,
+        industrialApplications,
+        qualityControl
+    };
+}
+
+// Update SV meter
+function updateSVMeter(svValue) {
+    const indicator = document.getElementById('sv-indicator');
+    let position = 0;
+    
+    if (svValue <= 100) {
+        position = (svValue / 100) * 25; // 0-25% of meter
+    } else if (svValue <= 200) {
+        position = 25 + ((svValue - 100) / 100) * 25; // 25-50% of meter
+    } else if (svValue <= 300) {
+        position = 50 + ((svValue - 200) / 100) * 25; // 50-75% of meter
+    } else {
+        position = 75 + Math.min((svValue - 300) / 100, 1) * 25; // 75-100% of meter
+    }
+    
+    indicator.style.left = `${Math.min(position, 100)}%`;
+}
+
+// Update results display
+function updateResults(svValue, quality, avgMW, chainType, volDiff, kohConsumed, weight, method, insights) {
+    // Update summary
+    document.getElementById('saponification-value').textContent = svValue.toFixed(1);
+    document.getElementById('sample-quality').textContent = quality;
+    document.getElementById('molecular-weight').textContent = Math.round(avgMW);
+    document.getElementById('chain-length').textContent = chainType;
+
+    // Update calculation details
+    document.getElementById('volume-difference').textContent = `${volDiff.toFixed(2)} mL`;
+    document.getElementById('koh-consumed').textContent = `${kohConsumed.toFixed(4)} mol`;
+    document.getElementById('display-weight').textContent = `${weight.toFixed(4)} g`;
+    document.getElementById('display-method').textContent = method.toUpperCase();
+
+    // Update insights
+    document.getElementById('molecular-composition').textContent = insights.molecularComposition;
+    document.getElementById('quality-assessment').textContent = insights.qualityAssessment;
+    document.getElementById('industrial-applications').textContent = insights.industrialApplications;
+    document.getElementById('quality-control').textContent = insights.qualityControl;
+
+    // Update chemistry quote
+    const quote = getChemistryQuote(svValue);
+    document.getElementById('chemistry-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.chemistry-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get chemistry quote based on SV value
+function getChemistryQuote(svValue) {
+    for (const quote of chemistryQuotes) {
+        if (svValue >= quote.min) {
+            return quote;
+        }
+    }
+    return chemistryQuotes[chemistryQuotes.length - 1];
+}
+
+// Create SV comparison chart
+function createSVChart(svValue, sample) {
+    console.log('Creating SV chart...');
+    try {
+        const ctx = document.getElementById('sv-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (svChart) {
+            svChart.destroy();
+        }
+
+        const [minExpected, maxExpected] = sample.expectedSV;
+        const avgExpected = (minExpected + maxExpected) / 2;
+
+        svChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Your Sample', 'Expected Min', 'Expected Avg', 'Expected Max'],
+                datasets: [{
+                    label: 'Saponification Value (mg KOH/g)',
+                    data: [svValue, minExpected, avgExpected, maxExpected],
+                    backgroundColor: ['#f59e0b', '#ef4444', '#3b82f6', '#10b981'],
+                    borderColor: ['#d97706', '#dc2626', '#1d4ed8', '#059669'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Saponification Value Comparison',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed.y.toFixed(1)} mg KOH/g`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Saponification Value (mg KOH/g)',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Comparison Type',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('SV chart created successfully');
+    } catch (error) {
+        console.error('Error creating SV chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const svValue = document.getElementById('saponification-value').textContent;
+        const quality = document.getElementById('sample-quality').textContent;
+        const sampleType = document.getElementById('sample-type').selectedOptions[0].text;
+        const weight = document.getElementById('sample-weight').value;
+        const method = document.getElementById('analysis-method').selectedOptions[0].text;
+        
+        const results = `
+Saponification Value Calculator Results
+======================================
+
+Sample Information:
+Sample Type: ${sampleType}
+Sample Weight: ${weight} g
+Analysis Method: ${method}
+
+Titration Data:
+Blank Volume: ${document.getElementById('blank-volume').value} mL
+Sample Volume: ${document.getElementById('sample-volume').value} mL
+KOH Normality: ${document.getElementById('koh-normality').value} N
+
+Results:
+Saponification Value: ${svValue} mg KOH/g
+Quality Grade: ${quality}
+Molecular Weight: ${document.getElementById('molecular-weight').textContent} g/mol
+Chain Type: ${document.getElementById('chain-length').textContent}
+
+Calculation Details:
+Volume Difference: ${document.getElementById('volume-difference').textContent}
+KOH Consumed: ${document.getElementById('koh-consumed').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Saponification Value Calculator for more calculations!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `saponification-calculation-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing saponification calculator...');
+
+    document.getElementById('sample-type').value = 'coconut-oil';
+    document.getElementById('sample-weight').value = '';
+    document.getElementById('koh-normality').value = '';
+    document.getElementById('blank-volume').value = '';
+    document.getElementById('sample-volume').value = '';
+    document.getElementById('temperature').value = '25.0';
+    document.getElementById('reflux-time').value = '30';
+    document.getElementById('analysis-method').value = 'astm';
+
+    updateSampleInputs();
+    updateVisualization();
+    updateFormula();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (svChart) {
+        svChart.destroy();
+        svChart = null;
+    }
+
+    // Reset SV meter
+    const indicator = document.getElementById('sv-indicator');
+    indicator.style.left = '50%';
+
+    console.log('Saponification calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing saponification calculator...');
+    initCalculator();
+    lucide.createIcons();
+
+    // Render KaTeX formulas
+    setTimeout(() => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ]
+        });
+    }, 100);
+});
+</script>
+{% endblock %}

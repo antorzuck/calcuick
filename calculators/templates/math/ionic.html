@@ -1,0 +1,1256 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.ionic-display {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.chemistry-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #1e40af;
+    border-radius: 0 8px 8px 0;
+}
+.ionic-meter {
+    background: linear-gradient(90deg, #22c55e 0%, #eab308 25%, #f59e0b 50%, #ef4444 75%, #dc2626 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.ionic-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.bond-visualization {
+    width: 250px;
+    height: 250px;
+    border: 2px solid #1e40af;
+    border-radius: 20px;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(30, 64, 175, 0.1) 0%, rgba(30, 64, 175, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.electron-cloud {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    animation: orbit 3s linear infinite;
+}
+.cation {
+    background: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+.anion {
+    background: #3b82f6;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+.shared-electron {
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+    animation: float 2s ease-in-out infinite;
+}
+@keyframes orbit {
+    0% { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.bond-card {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+    transition: all 0.3s ease;
+}
+.dark .bond-card {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    border-color: #3b82f6;
+}
+.bond-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15);
+}
+.bond-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.ionic { background: #ef4444; }
+.polar-covalent { background: #f59e0b; }
+.covalent { background: #22c55e; }
+.metallic { background: #8b5cf6; }
+.electronegativity-scale {
+    background: linear-gradient(90deg, #22c55e 0%, #eab308 25%, #f59e0b 50%, #ef4444 75%, #dc2626 100%);
+    height: 6px;
+    border-radius: 3px;
+    position: relative;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="zap" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Ionic Character Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate the ionic character of chemical bonds using electronegativity differences. Essential for understanding bond polarity and molecular properties!
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div class="text-blue-800 dark:text-blue-300 font-medium">
+                ⚛️ Chemical Bonding • 🔬 Molecular Chemistry • 📊 Bond Analysis
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Bond Parameters</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bond Type Analysis:</label>
+                        <select id="bond-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="custom">Custom Elements</option>
+                            <option value="nacl">NaCl (Sodium Chloride)</option>
+                            <option value="hcl">HCl (Hydrogen Chloride)</option>
+                            <option value="h2o">H-O (Water)</option>
+                            <option value="co">C-O (Carbon Monoxide)</option>
+                            <option value="ccl4">C-Cl (Carbon Tetrachloride)</option>
+                            <option value="lif">LiF (Lithium Fluoride)</option>
+                            <option value="csf">CsF (Cesium Fluoride)</option>
+                            <option value="bf3">B-F (Boron Trifluoride)</option>
+                            <option value="sio2">Si-O (Silicon Dioxide)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Element A:</label>
+                            <select id="element-a" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                                <option value="">Select Element</option>
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">First bonding element</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Element B:</label>
+                            <select id="element-b" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                                <option value="">Select Element</option>
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Second bonding element</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Electronegativity A:</label>
+                            <input type="number" id="electronegativity-a" step="0.01" placeholder="2.20" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pauling scale</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Electronegativity B:</label>
+                            <input type="number" id="electronegativity-b" step="0.01" placeholder="3.16" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pauling scale</p>
+                        </div>
+                    </div>
+
+                    <!-- Bond Properties -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Bond Properties</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Bond Length (Å):</label>
+                                <input type="number" id="bond-length" step="0.01" placeholder="1.27" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Bond Energy (kJ/mol):</label>
+                                <input type="number" id="bond-energy" step="1" placeholder="431" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calculation Method -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Calculation Method:</label>
+                        <select id="calculation-method" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="pauling">Pauling Method</option>
+                            <option value="hannay-smyth">Hannay-Smyth Method</option>
+                            <option value="allred-rochow">Allred-Rochow Scale</option>
+                            <option value="mulliken">Mulliken Scale</option>
+                        </select>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Presets:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('ionic')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Ionic Bond (NaCl)
+                            </button>
+                            <button onclick="setPreset('polar')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Polar Covalent (HCl)
+                            </button>
+                            <button onclick="setPreset('covalent')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Covalent (C-C)
+                            </button>
+                            <button onclick="setPreset('highly-ionic')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Highly Ionic (CsF)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Bond Visualization</h3>
+                        <div class="bond-visualization" id="bond-viz">
+                            <!-- Electron clouds will be generated here -->
+                        </div>
+                        <div class="text-center mt-4">
+                            <span id="bond-display" class="text-lg font-semibold text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                <span class="bond-indicator covalent"></span>
+                                Covalent Bond
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Ionic Character Meter -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Ionic Character (%)</h4>
+                        <div class="ionic-meter">
+                            <div class="ionic-indicator" id="ionic-indicator" style="left: 25%;"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <span>0%</span>
+                            <span>25%</span>
+                            <span>50%</span>
+                            <span>75%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Pauling Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Electronegativity Scale -->
+                    <div class="bond-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Electronegativity Scale:</h4>
+                        <div class="electronegativity-scale mb-2"></div>
+                        <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                            <span>0.7 (Cs)</span>
+                            <span>2.0</span>
+                            <span>4.0 (F)</span>
+                        </div>
+                    </div>
+
+                    <!-- Bond Type Guide -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Bond Type Guide</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Ionic:</span>
+                                <span class="font-medium text-red-600">&gt;50%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Polar Covalent:</span>
+                                <span class="font-medium text-orange-600">5-50%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Covalent:</span>
+                                <span class="font-medium text-green-600">&lt;5%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Metallic:</span>
+                                <span class="font-medium text-purple-600">Variable</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate Ionic Character</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Results</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- Ionic Character Summary -->
+            <div class="ionic-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>Bond Analysis Results</span>
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="ionic-character" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Ionic Character (%)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="bond-classification" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Bond Type</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="electronegativity-diff" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">ΔEN</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="polarity-index" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Polarity</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bond Analysis -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="atom" class="w-5 h-5"></i>
+                    <span>Bond Analysis</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Element A:</span>
+                            <span id="display-element-a" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Element B:</span>
+                            <span id="display-element-b" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Bond Length:</span>
+                            <span id="display-bond-length" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Bond Energy:</span>
+                            <span id="display-bond-energy" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Bond Character Comparison</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="ionic-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chemistry Quote -->
+            <div class="chemistry-quote mb-6">
+                <p id="chemistry-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "The ionic character of a bond reveals the degree of electron transfer between atoms."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Chemical Bonding Theory</p>
+            </div>
+
+            <!-- Chemical Insights -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="microscope" class="w-5 h-5"></i>
+                    <span>Chemical Insights</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="zap" class="w-4 h-4"></i>
+                            <span>Electron Distribution</span>
+                        </h4>
+                        <p id="electron-distribution" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span>Bond Properties</span>
+                        </h4>
+                        <p id="bond-properties" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="flask-round" class="w-4 h-4"></i>
+                            <span>Chemical Behavior</span>
+                        </h4>
+                        <p id="chemical-behavior" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="layers" class="w-4 h-4"></i>
+                            <span>Material Properties</span>
+                        </h4>
+                        <p id="material-properties" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>Ionic Character Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Ionic Character?</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    Ionic character is calculated using: <span class="katex-formula">\% \text{ Ionic} = 100 \times (1 - e^{-0.25(\Delta \chi)^2})</span>
+                </p>
+                <p class="text-gray-600 dark:text-gray-300">
+                    It represents the percentage of ionic character in a chemical bond based on electronegativity differences between bonded atoms.
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Bond Classification</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>Ionic Bonds (&gt;50%):</strong> Complete electron transfer, formed between metals and nonmetals</li>
+                    <li><strong>Polar Covalent (5-50%):</strong> Unequal electron sharing, partial charges develop</li>
+                    <li><strong>Covalent (&lt;5%):</strong> Equal electron sharing, typically between similar nonmetals</li>
+                    <li><strong>Metallic:</strong> Delocalized electrons in metal lattices</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Electronegativity Scales</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Pauling Scale:</strong> Most common, based on bond energies</li>
+                    <li><strong>Mulliken Scale:</strong> Based on ionization energy and electron affinity</li>
+                    <li><strong>Allred-Rochow Scale:</strong> Based on effective nuclear charge</li>
+                    <li><strong>Sanderson Scale:</strong> Based on electron density</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Predicting molecular polarity and solubility</li>
+                    <li>Understanding chemical reactivity patterns</li>
+                    <li>Designing materials with specific properties</li>
+                    <li>Analyzing intermolecular forces</li>
+                    <li>Predicting physical properties of compounds</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Electronegativity data (Pauling scale)
+const electronegativityData = {
+    'H': { name: 'Hydrogen', en: 2.20, symbol: 'H' },
+    'He': { name: 'Helium', en: 0.00, symbol: 'He' },
+    'Li': { name: 'Lithium', en: 0.98, symbol: 'Li' },
+    'Be': { name: 'Beryllium', en: 1.57, symbol: 'Be' },
+    'B': { name: 'Boron', en: 2.04, symbol: 'B' },
+    'C': { name: 'Carbon', en: 2.55, symbol: 'C' },
+    'N': { name: 'Nitrogen', en: 3.04, symbol: 'N' },
+    'O': { name: 'Oxygen', en: 3.44, symbol: 'O' },
+    'F': { name: 'Fluorine', en: 3.98, symbol: 'F' },
+    'Ne': { name: 'Neon', en: 0.00, symbol: 'Ne' },
+    'Na': { name: 'Sodium', en: 0.93, symbol: 'Na' },
+    'Mg': { name: 'Magnesium', en: 1.31, symbol: 'Mg' },
+    'Al': { name: 'Aluminum', en: 1.61, symbol: 'Al' },
+    'Si': { name: 'Silicon', en: 1.90, symbol: 'Si' },
+    'P': { name: 'Phosphorus', en: 2.19, symbol: 'P' },
+    'S': { name: 'Sulfur', en: 2.58, symbol: 'S' },
+    'Cl': { name: 'Chlorine', en: 3.16, symbol: 'Cl' },
+    'Ar': { name: 'Argon', en: 0.00, symbol: 'Ar' },
+    'K': { name: 'Potassium', en: 0.82, symbol: 'K' },
+    'Ca': { name: 'Calcium', en: 1.00, symbol: 'Ca' },
+    'Br': { name: 'Bromine', en: 2.96, symbol: 'Br' },
+    'I': { name: 'Iodine', en: 2.66, symbol: 'I' },
+    'Cs': { name: 'Cesium', en: 0.79, symbol: 'Cs' },
+    'Ba': { name: 'Barium', en: 0.89, symbol: 'Ba' }
+};
+
+// Bond presets
+const bondPresets = {
+    'nacl': { elementA: 'Na', elementB: 'Cl', bondLength: 2.36, bondEnergy: 786 },
+    'hcl': { elementA: 'H', elementB: 'Cl', bondLength: 1.27, bondEnergy: 431 },
+    'h2o': { elementA: 'H', elementB: 'O', bondLength: 0.96, bondEnergy: 463 },
+    'co': { elementA: 'C', elementB: 'O', bondLength: 1.13, bondEnergy: 1072 },
+    'ccl4': { elementA: 'C', elementB: 'Cl', bondLength: 1.77, bondEnergy: 328 },
+    'lif': { elementA: 'Li', elementB: 'F', bondLength: 2.01, bondEnergy: 1037 },
+    'csf': { elementA: 'Cs', elementB: 'F', bondLength: 2.35, bondEnergy: 502 },
+    'bf3': { elementA: 'B', elementB: 'F', bondLength: 1.31, bondEnergy: 613 },
+    'sio2': { elementA: 'Si', elementB: 'O', bondLength: 1.61, bondEnergy: 799 }
+};
+
+// Chemistry quotes for different ionic character ranges
+const chemistryQuotes = [
+    { min: 75, quote: "Highly ionic bonds exhibit complete electron transfer and form crystalline ionic solids.", author: "Ionic Bonding Theory" },
+    { min: 50, quote: "Ionic bonds dominate with significant charge separation and electrostatic attraction.", author: "Chemical Bonding" },
+    { min: 25, quote: "Polar covalent bonds show partial charge development and directional properties.", author: "Molecular Chemistry" },
+    { min: 5, quote: "Moderately polar bonds exhibit slight charge separation with covalent character.", author: "Bond Theory" },
+    { min: 0, quote: "Pure covalent bonds involve equal electron sharing between identical or similar atoms.", author: "Covalent Bonding" }
+];
+
+// Preset configurations
+const presets = {
+    'ionic': {
+        bondType: 'nacl',
+        elementA: 'Na',
+        elementB: 'Cl',
+        enA: 0.93,
+        enB: 3.16,
+        bondLength: 2.36,
+        bondEnergy: 786,
+        method: 'pauling'
+    },
+    'polar': {
+        bondType: 'hcl',
+        elementA: 'H',
+        elementB: 'Cl',
+        enA: 2.20,
+        enB: 3.16,
+        bondLength: 1.27,
+        bondEnergy: 431,
+        method: 'pauling'
+    },
+    'covalent': {
+        bondType: 'custom',
+        elementA: 'C',
+        elementB: 'C',
+        enA: 2.55,
+        enB: 2.55,
+        bondLength: 1.54,
+        bondEnergy: 348,
+        method: 'pauling'
+    },
+    'highly-ionic': {
+        bondType: 'csf',
+        elementA: 'Cs',
+        elementB: 'F',
+        enA: 0.79,
+        enB: 3.98,
+        bondLength: 2.35,
+        bondEnergy: 502,
+        method: 'pauling'
+    }
+};
+
+let ionicChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Ionic Character Calculator...');
+    populateElementSelects();
+    setupEventListeners();
+    updateVisualization();
+    updateFormula();
+    clearCalculator();
+}
+
+// Populate element select dropdowns
+function populateElementSelects() {
+    const elementASelect = document.getElementById('element-a');
+    const elementBSelect = document.getElementById('element-b');
+    
+    // Clear existing options
+    elementASelect.innerHTML = '<option value="">Select Element</option>';
+    elementBSelect.innerHTML = '<option value="">Select Element</option>';
+    
+    // Add elements
+    Object.keys(electronegativityData).forEach(symbol => {
+        const element = electronegativityData[symbol];
+        if (element.en > 0) { // Skip noble gases
+            const optionA = document.createElement('option');
+            optionA.value = symbol;
+            optionA.textContent = `${element.name} (${symbol}) - ${element.en}`;
+            elementASelect.appendChild(optionA);
+            
+            const optionB = document.createElement('option');
+            optionB.value = symbol;
+            optionB.textContent = `${element.name} (${symbol}) - ${element.en}`;
+            elementBSelect.appendChild(optionB);
+        }
+    });
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const bondTypeSelect = document.getElementById('bond-type');
+    const elementASelect = document.getElementById('element-a');
+    const elementBSelect = document.getElementById('element-b');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateIonicCharacter);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (bondTypeSelect) {
+        bondTypeSelect.addEventListener('change', () => {
+            updateBondInputs();
+            if (hasValidInputs()) {
+                calculateIonicCharacter();
+            }
+        });
+    }
+
+    if (elementASelect) {
+        elementASelect.addEventListener('change', () => {
+            updateElectronegativity('A');
+            if (hasValidInputs()) {
+                calculateIonicCharacter();
+            }
+        });
+    }
+
+    if (elementBSelect) {
+        elementBSelect.addEventListener('change', () => {
+            updateElectronegativity('B');
+            if (hasValidInputs()) {
+                calculateIonicCharacter();
+            }
+        });
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input')) {
+            if (hasValidInputs()) {
+                calculateIonicCharacter();
+            }
+        }
+    });
+}
+
+// Update bond inputs based on bond type
+function updateBondInputs() {
+    const bondType = document.getElementById('bond-type').value;
+    
+    if (bondType !== 'custom' && bondPresets[bondType]) {
+        const preset = bondPresets[bondType];
+        document.getElementById('element-a').value = preset.elementA;
+        document.getElementById('element-b').value = preset.elementB;
+        document.getElementById('bond-length').value = preset.bondLength;
+        document.getElementById('bond-energy').value = preset.bondEnergy;
+        
+        updateElectronegativity('A');
+        updateElectronegativity('B');
+    }
+}
+
+// Update electronegativity when element is selected
+function updateElectronegativity(element) {
+    const elementSelect = document.getElementById(`element-${element.toLowerCase()}`);
+    const enInput = document.getElementById(`electronegativity-${element.toLowerCase()}`);
+    
+    const selectedElement = elementSelect.value;
+    if (selectedElement && electronegativityData[selectedElement]) {
+        enInput.value = electronegativityData[selectedElement].en;
+    }
+}
+
+// Check if we have valid inputs
+function hasValidInputs() {
+    const enA = parseFloat(document.getElementById('electronegativity-a').value);
+    const enB = parseFloat(document.getElementById('electronegativity-b').value);
+    
+    return enA > 0 && enB > 0;
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    const preset = presets[presetKey];
+    if (!preset) return;
+
+    document.getElementById('bond-type').value = preset.bondType;
+    document.getElementById('element-a').value = preset.elementA;
+    document.getElementById('element-b').value = preset.elementB;
+    document.getElementById('electronegativity-a').value = preset.enA;
+    document.getElementById('electronegativity-b').value = preset.enB;
+    document.getElementById('bond-length').value = preset.bondLength;
+    document.getElementById('bond-energy').value = preset.bondEnergy;
+    document.getElementById('calculation-method').value = preset.method;
+
+    updateVisualization();
+    updateFormula();
+    calculateIonicCharacter();
+}
+
+// Update visualization
+function updateVisualization() {
+    // Generate bond visualization
+    generateBondVisualization();
+    
+    // Update bond display
+    const bondDisplay = document.getElementById('bond-display');
+    bondDisplay.innerHTML = `
+        <span class="bond-indicator covalent"></span>
+        Covalent Bond
+    `;
+}
+
+// Generate bond visualization
+function generateBondVisualization() {
+    const container = document.getElementById('bond-viz');
+    container.innerHTML = '';
+
+    // Create central atoms
+    const cation = document.createElement('div');
+    cation.className = 'electron-cloud cation';
+    cation.style.left = '100px';
+    cation.style.top = '100px';
+    cation.style.width = '20px';
+    cation.style.height = '20px';
+    cation.style.position = 'absolute';
+    cation.style.animation = 'none';
+    container.appendChild(cation);
+
+    const anion = document.createElement('div');
+    anion.className = 'electron-cloud anion';
+    anion.style.left = '130px';
+    anion.style.top = '100px';
+    anion.style.width = '20px';
+    anion.style.height = '20px';
+    anion.style.position = 'absolute';
+    anion.style.animation = 'none';
+    container.appendChild(anion);
+
+    // Add shared electrons
+    for (let i = 0; i < 4; i++) {
+        const electron = document.createElement('div');
+        electron.className = 'electron-cloud shared-electron';
+        electron.style.left = `${115 + Math.random() * 10}px`;
+        electron.style.top = `${105 + Math.random() * 10}px`;
+        electron.style.animationDelay = `${i * 0.5}s`;
+        container.appendChild(electron);
+    }
+}
+
+// Update formula display
+function updateFormula() {
+    const katexElement = document.getElementById('katex-formula');
+    const formula = '\\% \\text{ Ionic} = 100 \\times (1 - e^{-0.25(\\Delta \\chi)^2})';
+
+    try {
+        katex.render(formula, katexElement, {
+            throwOnError: false,
+            displayMode: false
+        });
+    } catch (error) {
+        katexElement.textContent = '% Ionic = 100 × (1 - e^(-0.25(Δχ)²))';
+    }
+}
+
+// Calculate ionic character
+function calculateIonicCharacter() {
+    console.log('Calculating ionic character...');
+    try {
+        const enA = parseFloat(document.getElementById('electronegativity-a').value) || 0;
+        const enB = parseFloat(document.getElementById('electronegativity-b').value) || 0;
+        const bondLength = parseFloat(document.getElementById('bond-length').value) || 0;
+        const bondEnergy = parseFloat(document.getElementById('bond-energy').value) || 0;
+        const method = document.getElementById('calculation-method').value;
+        const elementA = document.getElementById('element-a').value;
+        const elementB = document.getElementById('element-b').value;
+
+        if (enA <= 0 || enB <= 0) {
+            console.log('Please enter valid electronegativity values');
+            return;
+        }
+
+        // Calculate electronegativity difference
+        const deltaEN = Math.abs(enA - enB);
+
+        // Calculate ionic character using Pauling method
+        let ionicCharacter;
+        switch (method) {
+            case 'pauling':
+                ionicCharacter = 100 * (1 - Math.exp(-0.25 * Math.pow(deltaEN, 2)));
+                break;
+            case 'hannay-smyth':
+                ionicCharacter = 16 * deltaEN + 3.5 * Math.pow(deltaEN, 2);
+                break;
+            case 'allred-rochow':
+                ionicCharacter = 100 * (1 - Math.exp(-0.25 * Math.pow(deltaEN * 0.74, 2)));
+                break;
+            case 'mulliken':
+                ionicCharacter = 100 * (1 - Math.exp(-0.25 * Math.pow(deltaEN * 0.87, 2)));
+                break;
+            default:
+                ionicCharacter = 100 * (1 - Math.exp(-0.25 * Math.pow(deltaEN, 2)));
+        }
+
+        // Ensure ionic character doesn't exceed 100%
+        ionicCharacter = Math.min(ionicCharacter, 100);
+
+        // Determine bond classification
+        const { bondType, polarity } = classifyBond(ionicCharacter, deltaEN);
+        
+        // Calculate insights
+        const insights = calculateBondInsights(ionicCharacter, bondType, deltaEN, elementA, elementB);
+
+        // Update display
+        updateResults(ionicCharacter, bondType, deltaEN, polarity, elementA, elementB, bondLength, bondEnergy, insights);
+
+        // Update ionic character meter
+        updateIonicMeter(ionicCharacter);
+
+        // Update bond visualization
+        updateBondVisualization(bondType);
+
+        // Create chart
+        createIonicChart(ionicCharacter, deltaEN);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('Ionic character calculated successfully:', ionicCharacter);
+    } catch (error) {
+        console.error('Error calculating ionic character:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Classify bond type
+function classifyBond(ionicCharacter, deltaEN) {
+    let bondType, polarity;
+    
+    if (ionicCharacter >= 50) {
+        bondType = 'Ionic';
+        polarity = 'High';
+    } else if (ionicCharacter >= 5) {
+        bondType = 'Polar Covalent';
+        polarity = 'Moderate';
+    } else {
+        bondType = 'Covalent';
+        polarity = 'Low';
+    }
+
+    return { bondType, polarity };
+}
+
+// Calculate bond insights
+function calculateBondInsights(ionicCharacter, bondType, deltaEN, elementA, elementB) {
+    let electronDistribution = '';
+    if (ionicCharacter >= 50) {
+        electronDistribution = 'Complete electron transfer from metal to nonmetal. Electrons localized on anion.';
+    } else if (ionicCharacter >= 25) {
+        electronDistribution = 'Significant electron density shift toward more electronegative atom. Partial charges develop.';
+    } else if (ionicCharacter >= 5) {
+        electronDistribution = 'Slight electron density shift. Weak partial charges with mostly covalent character.';
+    } else {
+        electronDistribution = 'Equal electron sharing between atoms. No significant charge separation.';
+    }
+
+    let bondProperties = '';
+    if (bondType === 'Ionic') {
+        bondProperties = 'High melting/boiling points, conducts electricity when molten, brittle crystalline structure.';
+    } else if (bondType === 'Polar Covalent') {
+        bondProperties = 'Moderate polarity, can form hydrogen bonds, directional bonding, variable conductivity.';
+    } else {
+        bondProperties = 'Low polarity, weak intermolecular forces, directional bonding, typically insulating.';
+    }
+
+    let chemicalBehavior = '';
+    if (ionicCharacter >= 50) {
+        chemicalBehavior = 'Dissolves in polar solvents, undergoes ionic reactions, forms ionic crystals.';
+    } else if (ionicCharacter >= 5) {
+        chemicalBehavior = 'Variable solubility, can participate in both ionic and covalent reactions.';
+    } else {
+        chemicalBehavior = 'Dissolves in nonpolar solvents, undergoes covalent reactions, forms molecular compounds.';
+    }
+
+    let materialProperties = '';
+    if (bondType === 'Ionic') {
+        materialProperties = 'Hard, brittle, high thermal stability, ionic conductivity in molten state.';
+    } else if (bondType === 'Polar Covalent') {
+        materialProperties = 'Variable hardness, moderate thermal stability, potential for hydrogen bonding.';
+    } else {
+        materialProperties = 'Variable properties, molecular crystals, low to moderate thermal stability.';
+    }
+
+    return {
+        electronDistribution,
+        bondProperties,
+        chemicalBehavior,
+        materialProperties
+    };
+}
+
+// Update ionic character meter
+function updateIonicMeter(ionicCharacter) {
+    const indicator = document.getElementById('ionic-indicator');
+    const position = Math.min(ionicCharacter, 100);
+    indicator.style.left = `${position}%`;
+}
+
+// Update bond visualization based on bond type
+function updateBondVisualization(bondType) {
+    const bondDisplay = document.getElementById('bond-display');
+    const typeInfo = {
+        'Ionic': { name: 'Ionic Bond', class: 'ionic' },
+        'Polar Covalent': { name: 'Polar Covalent', class: 'polar-covalent' },
+        'Covalent': { name: 'Covalent Bond', class: 'covalent' }
+    };
+    
+    const info = typeInfo[bondType] || typeInfo['Covalent'];
+    bondDisplay.innerHTML = `
+        <span class="bond-indicator ${info.class}"></span>
+        ${info.name}
+    `;
+}
+
+// Update results display
+function updateResults(ionicCharacter, bondType, deltaEN, polarity, elementA, elementB, bondLength, bondEnergy, insights) {
+    // Update summary
+    document.getElementById('ionic-character').textContent = `${ionicCharacter.toFixed(1)}%`;
+    document.getElementById('bond-classification').textContent = bondType;
+    document.getElementById('electronegativity-diff').textContent = deltaEN.toFixed(2);
+    document.getElementById('polarity-index').textContent = polarity;
+
+    // Update bond analysis
+    const elementAName = elementA && electronegativityData[elementA] ? 
+        `${electronegativityData[elementA].name} (${elementA})` : 'Element A';
+    const elementBName = elementB && electronegativityData[elementB] ? 
+        `${electronegativityData[elementB].name} (${elementB})` : 'Element B';
+    
+    document.getElementById('display-element-a').textContent = elementAName;
+    document.getElementById('display-element-b').textContent = elementBName;
+    document.getElementById('display-bond-length').textContent = bondLength ? `${bondLength} Å` : 'Not specified';
+    document.getElementById('display-bond-energy').textContent = bondEnergy ? `${bondEnergy} kJ/mol` : 'Not specified';
+
+    // Update insights
+    document.getElementById('electron-distribution').textContent = insights.electronDistribution;
+    document.getElementById('bond-properties').textContent = insights.bondProperties;
+    document.getElementById('chemical-behavior').textContent = insights.chemicalBehavior;
+    document.getElementById('material-properties').textContent = insights.materialProperties;
+
+    // Update chemistry quote
+    const quote = getChemistryQuote(ionicCharacter);
+    document.getElementById('chemistry-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.chemistry-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get chemistry quote based on ionic character
+function getChemistryQuote(ionicCharacter) {
+    for (const quote of chemistryQuotes) {
+        if (ionicCharacter >= quote.min) {
+            return quote;
+        }
+    }
+    return chemistryQuotes[chemistryQuotes.length - 1];
+}
+
+// Create ionic character comparison chart
+function createIonicChart(ionicCharacter, deltaEN) {
+    console.log('Creating ionic character chart...');
+    try {
+        const ctx = document.getElementById('ionic-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (ionicChart) {
+            ionicChart.destroy();
+        }
+
+        ionicChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Your Bond', 'Pure Covalent', 'Polar Covalent', 'Ionic Threshold'],
+                datasets: [{
+                    label: 'Ionic Character (%)',
+                    data: [ionicCharacter, 0, 25, 50],
+                    backgroundColor: ['#f59e0b', '#22c55e', '#eab308', '#ef4444'],
+                    borderColor: ['#d97706', '#16a34a', '#ca8a04', '#dc2626'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Bond Character Comparison',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed.y.toFixed(1)}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Ionic Character (%)',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Bond Type',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Ionic character chart created successfully');
+    } catch (error) {
+        console.error('Error creating ionic character chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const ionicCharacter = document.getElementById('ionic-character').textContent;
+        const bondType = document.getElementById('bond-classification').textContent;
+        const deltaEN = document.getElementById('electronegativity-diff').textContent;
+        const elementA = document.getElementById('display-element-a').textContent;
+        const elementB = document.getElementById('display-element-b').textContent;
+        
+        const results = `
+Ionic Character Calculator Results
+=================================
+
+Bond Information:
+Element A: ${elementA}
+Element B: ${elementB}
+Electronegativity A: ${document.getElementById('electronegativity-a').value}
+Electronegativity B: ${document.getElementById('electronegativity-b').value}
+
+Results:
+Ionic Character: ${ionicCharacter}
+Bond Classification: ${bondType}
+Electronegativity Difference: ${deltaEN}
+Polarity: ${document.getElementById('polarity-index').textContent}
+
+Bond Properties:
+Bond Length: ${document.getElementById('display-bond-length').textContent}
+Bond Energy: ${document.getElementById('display-bond-energy').textContent}
+
+Analysis:
+${document.getElementById('electron-distribution').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Ionic Character Calculator for more calculations!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ionic-character-calculation-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing ionic character calculator...');
+
+    document.getElementById('bond-type').value = 'custom';
+    document.getElementById('element-a').value = '';
+    document.getElementById('element-b').value = '';
+    document.getElementById('electronegativity-a').value = '';
+    document.getElementById('electronegativity-b').value = '';
+    document.getElementById('bond-length').value = '';
+    document.getElementById('bond-energy').value = '';
+    document.getElementById('calculation-method').value = 'pauling';
+
+    updateVisualization();
+    updateFormula();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (ionicChart) {
+        ionicChart.destroy();
+        ionicChart = null;
+    }
+
+    // Reset ionic character meter
+    const indicator = document.getElementById('ionic-indicator');
+    indicator.style.left = '25%';
+
+    // Reset bond display
+    const bondDisplay = document.getElementById('bond-display');
+    bondDisplay.innerHTML = `
+        <span class="bond-indicator covalent"></span>
+        Covalent Bond
+    `;
+
+    console.log('Ionic character calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing ionic character calculator...');
+    initCalculator();
+    lucide.createIcons();
+
+    // Render KaTeX formulas
+    setTimeout(() => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ]
+        });
+    }, 100);
+});
+</script>
+{% endblock %}

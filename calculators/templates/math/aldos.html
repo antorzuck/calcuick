@@ -1,0 +1,1112 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.arr-display {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.medical-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid #1e40af;
+    border-radius: 0 8px 8px 0;
+}
+.arr-meter {
+    background: linear-gradient(90deg, #22c55e 0%, #eab308 25%, #f59e0b 50%, #ef4444 75%, #dc2626 100%);
+    height: 8px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+.arr-indicator {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 12px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: left 0.5s ease;
+}
+.hormone-visualization {
+    width: 250px;
+    height: 250px;
+    border: 2px solid #1e40af;
+    border-radius: 20px;
+    position: relative;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(30, 64, 175, 0.1) 0%, rgba(30, 64, 175, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.hormone-particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    animation: float 3s ease-in-out infinite;
+}
+.aldosterone {
+    background: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+.renin {
+    background: #3b82f6;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px) translateX(0px); }
+    25% { transform: translateY(-10px) translateX(5px); }
+    50% { transform: translateY(0px) translateX(-5px); }
+    75% { transform: translateY(10px) translateX(3px); }
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.condition-card {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+    transition: all 0.3s ease;
+}
+.dark .condition-card {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    border-color: #3b82f6;
+}
+.condition-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15);
+}
+.risk-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.normal { background: #22c55e; }
+.borderline { background: #eab308; }
+.elevated { background: #f59e0b; }
+.high { background: #ef4444; }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="activity" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Aldosterone-Renin Ratio Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate the aldosterone-to-renin ratio (ARR) for screening primary aldosteronism. Essential for endocrine evaluation and hypertension workup!
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div class="text-blue-800 dark:text-blue-300 font-medium">
+                <span class="katex-formula">ARR = \frac{\text{Aldosterone}}{\text{Renin}}</span> • 🩺 Endocrinology • 💊 Hypertension • 📊 Hormone Analysis
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Laboratory Values</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sample Collection:</label>
+                        <select id="collection-method" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="seated">Seated (after 2h upright)</option>
+                            <option value="supine">Supine (after 1h recumbent)</option>
+                            <option value="ambulatory">Ambulatory</option>
+                            <option value="salt-loading">After salt loading</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aldosterone:</label>
+                            <input type="number" id="aldosterone-value" step="0.1" placeholder="15.0" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <select id="aldosterone-units" class="w-full mt-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <option value="ng/dL">ng/dL</option>
+                                <option value="pmol/L">pmol/L</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Renin:</label>
+                            <input type="number" id="renin-value" step="0.01" placeholder="1.5" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <select id="renin-units" class="w-full mt-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <option value="ng/mL/h">ng/mL/h (PRA)</option>
+                                <option value="mU/L">mU/L (DRC)</option>
+                                <option value="pg/mL">pg/mL (DRC)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Patient Information -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Patient Information</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Age (years):</label>
+                                <input type="number" id="patient-age" min="18" max="100" placeholder="45" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Gender:</label>
+                                <select id="patient-gender" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clinical Context -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Clinical Context</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Hypertension Status:</label>
+                                <select id="hypertension-status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                    <option value="none">No hypertension</option>
+                                    <option value="mild">Mild hypertension</option>
+                                    <option value="moderate">Moderate hypertension</option>
+                                    <option value="severe">Severe hypertension</option>
+                                    <option value="resistant">Resistant hypertension</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Potassium Level (mEq/L):</label>
+                                <input type="number" id="potassium-level" step="0.1" min="2.0" max="6.0" placeholder="3.8" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Presets:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('normal')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Normal ARR
+                            </button>
+                            <button onclick="setPreset('borderline')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Borderline ARR
+                            </button>
+                            <button onclick="setPreset('elevated')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Elevated ARR
+                            </button>
+                            <button onclick="setPreset('high')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                High ARR
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Hormone Balance</h3>
+                        <div class="hormone-visualization" id="hormone-viz">
+                            <!-- Particles will be generated here -->
+                        </div>
+                        <div class="text-center mt-4">
+                            <span id="balance-display" class="text-lg font-semibold text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                <span class="risk-indicator normal"></span>
+                                Normal Balance
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- ARR Meter -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">ARR Scale</h4>
+                        <div class="arr-meter">
+                            <div class="arr-indicator" id="arr-indicator" style="left: 25%;"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <span>0</span>
+                            <span>20</span>
+                            <span>30</span>
+                            <span>50</span>
+                            <span>100+</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">ARR Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Reference Ranges -->
+                    <div class="condition-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Reference Ranges:</h4>
+                        <div id="reference-info" class="text-sm text-gray-700 dark:text-gray-300">
+                            Normal: &lt;20 • Borderline: 20-30 • Elevated: 30-50 • High: &gt;50
+                        </div>
+                    </div>
+
+                    <!-- Standards Display -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Interpretation Guide</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Normal:</span>
+                                <span class="font-medium text-green-600">&lt;20</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Borderline:</span>
+                                <span class="font-medium text-yellow-600">20-30</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Elevated:</span>
+                                <span class="font-medium text-orange-600">30-50</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">High:</span>
+                                <span class="font-medium text-red-600">&gt;50</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate ARR</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Results</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- ARR Summary -->
+            <div class="arr-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>ARR Analysis Results</span>
+                    <i data-lucide="heart-pulse" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="arr-value" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">ARR Value</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="arr-interpretation" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Interpretation</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="risk-level" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Risk Level</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="followup-needed" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Follow-up</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Laboratory Analysis -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="flask-conical" class="w-5 h-5"></i>
+                    <span>Laboratory Analysis</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Aldosterone:</span>
+                            <span id="display-aldosterone" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Renin:</span>
+                            <span id="display-renin" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Collection Method:</span>
+                            <span id="display-collection" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                            <span class="font-medium text-gray-900 dark:text-white">Potassium Level:</span>
+                            <span id="display-potassium" class="font-semibold text-green-600 dark:text-green-400">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>ARR Comparison</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="arr-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Medical Quote -->
+            <div class="medical-quote mb-6">
+                <p id="medical-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "The aldosterone-to-renin ratio is the most practical screening test for primary aldosteronism."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Endocrine Society Guidelines</p>
+            </div>
+
+            <!-- Clinical Insights -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                    <span>Clinical Insights</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span>Clinical Significance</span>
+                        </h4>
+                        <p id="clinical-significance" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                            <span>Interfering Factors</span>
+                        </h4>
+                        <p id="interfering-factors" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+                            <span>Next Steps</span>
+                        </h4>
+                        <p id="next-steps" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="users" class="w-4 h-4"></i>
+                            <span>Patient Counseling</span>
+                        </h4>
+                        <p id="patient-counseling" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>ARR Clinical Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is the Aldosterone-Renin Ratio?</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    The ARR is calculated as: <span class="katex-formula">ARR = \frac{\text{Aldosterone (ng/dL)}}{\text{Renin (ng/mL/h)}}</span>
+                </p>
+                <p class="text-gray-600 dark:text-gray-300">
+                    It's the primary screening test for primary aldosteronism, a common cause of secondary hypertension.
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Interpretation Guidelines</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>Normal (&lt;20):</strong> Low probability of primary aldosteronism</li>
+                    <li><strong>Borderline (20-30):</strong> Consider repeat testing or confirmatory tests</li>
+                    <li><strong>Elevated (30-50):</strong> Moderate probability, confirmatory testing recommended</li>
+                    <li><strong>High (&gt;50):</strong> High probability, proceed with confirmatory testing</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Factors Affecting ARR</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Antihypertensive medications (especially ACE inhibitors, ARBs, diuretics)</li>
+                    <li>Posture and time of day</li>
+                    <li>Sodium intake and potassium levels</li>
+                    <li>Age, gender, and pregnancy</li>
+                    <li>Kidney function and other medical conditions</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Clinical Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Screening for primary aldosteronism in hypertensive patients</li>
+                    <li>Evaluation of resistant hypertension</li>
+                    <li>Assessment of patients with hypokalemia</li>
+                    <li>Follow-up after adrenalectomy</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Preset configurations
+const presets = {
+    'normal': {
+        aldosterone: 12.0,
+        aldosteroneUnits: 'ng/dL',
+        renin: 1.8,
+        reninUnits: 'ng/mL/h',
+        collection: 'seated',
+        age: 45,
+        gender: 'male',
+        hypertension: 'mild',
+        potassium: 4.2
+    },
+    'borderline': {
+        aldosterone: 18.0,
+        aldosteroneUnits: 'ng/dL',
+        renin: 0.8,
+        reninUnits: 'ng/mL/h',
+        collection: 'seated',
+        age: 52,
+        gender: 'female',
+        hypertension: 'moderate',
+        potassium: 3.9
+    },
+    'elevated': {
+        aldosterone: 25.0,
+        aldosteroneUnits: 'ng/dL',
+        renin: 0.6,
+        reninUnits: 'ng/mL/h',
+        collection: 'seated',
+        age: 48,
+        gender: 'male',
+        hypertension: 'severe',
+        potassium: 3.5
+    },
+    'high': {
+        aldosterone: 35.0,
+        aldosteroneUnits: 'ng/dL',
+        renin: 0.4,
+        reninUnits: 'ng/mL/h',
+        collection: 'seated',
+        age: 55,
+        gender: 'female',
+        hypertension: 'resistant',
+        potassium: 3.2
+    }
+};
+
+// Medical quotes for different ARR ranges
+const medicalQuotes = [
+    { min: 50, quote: "High ARR strongly suggests primary aldosteronism and warrants immediate confirmatory testing.", author: "Endocrine Society Guidelines" },
+    { min: 30, quote: "Elevated ARR indicates significant probability of primary aldosteronism requiring further evaluation.", author: "Clinical Endocrinology" },
+    { min: 20, quote: "Borderline ARR may require repeat testing under optimal conditions.", author: "Hypertension Guidelines" },
+    { min: 0, quote: "Normal ARR makes primary aldosteronism unlikely but doesn't completely exclude it.", author: "Diagnostic Medicine" }
+];
+
+let arrChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing ARR Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    updateFormula();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateARR);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input')) {
+            if (hasValidInputs()) {
+                calculateARR();
+            }
+        }
+    });
+}
+
+// Check if we have valid inputs
+function hasValidInputs() {
+    const aldosterone = parseFloat(document.getElementById('aldosterone-value').value);
+    const renin = parseFloat(document.getElementById('renin-value').value);
+    
+    return aldosterone > 0 && renin > 0;
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    const preset = presets[presetKey];
+    if (!preset) return;
+
+    document.getElementById('aldosterone-value').value = preset.aldosterone;
+    document.getElementById('aldosterone-units').value = preset.aldosteroneUnits;
+    document.getElementById('renin-value').value = preset.renin;
+    document.getElementById('renin-units').value = preset.reninUnits;
+    document.getElementById('collection-method').value = preset.collection;
+    document.getElementById('patient-age').value = preset.age;
+    document.getElementById('patient-gender').value = preset.gender;
+    document.getElementById('hypertension-status').value = preset.hypertension;
+    document.getElementById('potassium-level').value = preset.potassium;
+
+    updateVisualization();
+    updateFormula();
+    calculateARR();
+}
+
+// Update visualization
+function updateVisualization() {
+    // Generate hormone particles
+    generateHormoneParticles();
+}
+
+// Generate hormone particles for visualization
+function generateHormoneParticles() {
+    const container = document.getElementById('hormone-viz');
+    container.innerHTML = '';
+
+    // Generate aldosterone particles (red)
+    for (let i = 0; i < 8; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'hormone-particle aldosterone';
+        
+        const x = Math.random() * 220 + 15;
+        const y = Math.random() * 220 + 15;
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.animationDelay = `${Math.random() * 3}s`;
+        
+        container.appendChild(particle);
+    }
+
+    // Generate renin particles (blue)
+    for (let i = 0; i < 6; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'hormone-particle renin';
+        
+        const x = Math.random() * 220 + 15;
+        const y = Math.random() * 220 + 15;
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.animationDelay = `${Math.random() * 3}s`;
+        
+        container.appendChild(particle);
+    }
+}
+
+// Update formula display
+function updateFormula() {
+    const katexElement = document.getElementById('katex-formula');
+    const formula = 'ARR = \\frac{\\text{Aldosterone}}{\\text{Renin}}';
+
+    try {
+        katex.render(formula, katexElement, {
+            throwOnError: false,
+            displayMode: false
+        });
+    } catch (error) {
+        katexElement.textContent = 'ARR = Aldosterone / Renin';
+    }
+}
+
+// Calculate ARR
+function calculateARR() {
+    console.log('Calculating ARR...');
+    try {
+        const aldosteroneValue = parseFloat(document.getElementById('aldosterone-value').value) || 0;
+        const aldosteroneUnits = document.getElementById('aldosterone-units').value;
+        const reninValue = parseFloat(document.getElementById('renin-value').value) || 0;
+        const reninUnits = document.getElementById('renin-units').value;
+        const collectionMethod = document.getElementById('collection-method').value;
+        const potassiumLevel = parseFloat(document.getElementById('potassium-level').value) || 4.0;
+
+        if (aldosteroneValue <= 0 || reninValue <= 0) {
+            console.log('Please enter valid hormone values');
+            return;
+        }
+
+        // Convert to standard units (ng/dL for aldosterone, ng/mL/h for renin)
+        let aldosteroneStd = aldosteroneValue;
+        let reninStd = reninValue;
+
+        // Convert aldosterone to ng/dL if needed
+        if (aldosteroneUnits === 'pmol/L') {
+            aldosteroneStd = aldosteroneValue * 0.0361; // pmol/L to ng/dL
+        }
+
+        // Convert renin to ng/mL/h if needed
+        if (reninUnits === 'mU/L') {
+            reninStd = reninValue * 0.6; // Approximate conversion
+        } else if (reninUnits === 'pg/mL') {
+            reninStd = reninValue * 0.001; // pg/mL to ng/mL
+        }
+
+        // Calculate ARR
+        const arrValue = aldosteroneStd / reninStd;
+
+        // Determine interpretation and risk
+        const { interpretation, risk, followup } = interpretARR(arrValue, potassiumLevel, collectionMethod);
+        
+        // Calculate insights
+        const insights = calculateClinicalInsights(arrValue, interpretation, potassiumLevel, collectionMethod);
+
+        // Update display
+        updateResults(arrValue, interpretation, risk, followup, aldosteroneStd, reninStd, aldosteroneUnits, reninUnits, collectionMethod, potassiumLevel, insights);
+
+        // Update ARR meter
+        updateARRMeter(arrValue);
+
+        // Update balance display
+        updateBalanceDisplay(interpretation);
+
+        // Create chart
+        createARRChart(arrValue);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('ARR calculated successfully:', arrValue);
+    } catch (error) {
+        console.error('Error calculating ARR:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Interpret ARR value
+function interpretARR(arrValue, potassiumLevel, collectionMethod) {
+    let interpretation, risk, followup;
+
+    if (arrValue < 20) {
+        interpretation = 'Normal';
+        risk = 'Low';
+        followup = 'Routine';
+    } else if (arrValue < 30) {
+        interpretation = 'Borderline';
+        risk = 'Low-Moderate';
+        followup = 'Consider Repeat';
+    } else if (arrValue < 50) {
+        interpretation = 'Elevated';
+        risk = 'Moderate';
+        followup = 'Confirmatory Test';
+    } else {
+        interpretation = 'High';
+        risk = 'High';
+        followup = 'Urgent Workup';
+    }
+
+    // Adjust based on potassium level
+    if (potassiumLevel < 3.5 && arrValue > 20) {
+        risk = risk === 'Low' ? 'Moderate' : risk === 'Moderate' ? 'High' : 'Very High';
+    }
+
+    return { interpretation, risk, followup };
+}
+
+// Calculate clinical insights
+function calculateClinicalInsights(arrValue, interpretation, potassiumLevel, collectionMethod) {
+    let clinicalSignificance = '';
+    if (arrValue >= 50) {
+        clinicalSignificance = 'High probability of primary aldosteronism. Immediate confirmatory testing recommended.';
+    } else if (arrValue >= 30) {
+        clinicalSignificance = 'Moderate probability of primary aldosteronism. Consider confirmatory testing.';
+    } else if (arrValue >= 20) {
+        clinicalSignificance = 'Borderline result. May warrant repeat testing under optimal conditions.';
+    } else {
+        clinicalSignificance = 'Low probability of primary aldosteronism. Consider other causes of hypertension.';
+    }
+
+    let interferingFactors = '';
+    if (collectionMethod === 'ambulatory') {
+        interferingFactors = 'Ambulatory collection may affect results. Consider seated collection for accuracy.';
+    } else {
+        interferingFactors = 'Ensure patient is off interfering medications. Check sodium intake and timing.';
+    }
+
+    let nextSteps = '';
+    if (arrValue >= 30) {
+        nextSteps = 'Proceed with confirmatory testing (salt loading test or fludrocortisone suppression test).';
+    } else if (arrValue >= 20) {
+        nextSteps = 'Consider repeat ARR testing. Review medications and collection conditions.';
+    } else {
+        nextSteps = 'Continue routine hypertension management. Consider other secondary causes if indicated.';
+    }
+
+    let patientCounseling = '';
+    if (arrValue >= 30) {
+        patientCounseling = 'Explain need for additional testing. Discuss potential for treatable cause of hypertension.';
+    } else {
+        patientCounseling = 'Reassure about low probability of primary aldosteronism. Continue current management.';
+    }
+
+    return {
+        clinicalSignificance,
+        interferingFactors,
+        nextSteps,
+        patientCounseling
+    };
+}
+
+// Update ARR meter
+function updateARRMeter(arrValue) {
+    const indicator = document.getElementById('arr-indicator');
+    let position = 0;
+    
+    if (arrValue <= 20) {
+        position = (arrValue / 20) * 25; // 0-25% of meter
+    } else if (arrValue <= 30) {
+        position = 25 + ((arrValue - 20) / 10) * 25; // 25-50% of meter
+    } else if (arrValue <= 50) {
+        position = 50 + ((arrValue - 30) / 20) * 25; // 50-75% of meter
+    } else {
+        position = 75 + Math.min((arrValue - 50) / 50, 1) * 25; // 75-100% of meter
+    }
+    
+    indicator.style.left = `${Math.min(position, 100)}%`;
+}
+
+// Update balance display
+function updateBalanceDisplay(interpretation) {
+    const balanceDisplay = document.getElementById('balance-display');
+    const typeInfo = {
+        'Normal': { name: 'Normal Balance', class: 'normal' },
+        'Borderline': { name: 'Borderline Balance', class: 'borderline' },
+        'Elevated': { name: 'Elevated Ratio', class: 'elevated' },
+        'High': { name: 'High Ratio', class: 'high' }
+    };
+    
+    const info = typeInfo[interpretation];
+    balanceDisplay.innerHTML = `
+        <span class="risk-indicator ${info.class}"></span>
+        ${info.name}
+    `;
+}
+
+// Update results display
+function updateResults(arrValue, interpretation, risk, followup, aldosterone, renin, aldoUnits, reninUnits, collection, potassium, insights) {
+    // Update summary
+    document.getElementById('arr-value').textContent = arrValue.toFixed(1);
+    document.getElementById('arr-interpretation').textContent = interpretation;
+    document.getElementById('risk-level').textContent = risk;
+    document.getElementById('followup-needed').textContent = followup;
+
+    // Update laboratory analysis
+    document.getElementById('display-aldosterone').textContent = `${aldosterone.toFixed(1)} ${aldoUnits}`;
+    document.getElementById('display-renin').textContent = `${renin.toFixed(2)} ${reninUnits}`;
+    document.getElementById('display-collection').textContent = collection.charAt(0).toUpperCase() + collection.slice(1);
+    document.getElementById('display-potassium').textContent = `${potassium.toFixed(1)} mEq/L`;
+
+    // Update insights
+    document.getElementById('clinical-significance').textContent = insights.clinicalSignificance;
+    document.getElementById('interfering-factors').textContent = insights.interferingFactors;
+    document.getElementById('next-steps').textContent = insights.nextSteps;
+    document.getElementById('patient-counseling').textContent = insights.patientCounseling;
+
+    // Update medical quote
+    const quote = getMedicalQuote(arrValue);
+    document.getElementById('medical-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.medical-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get medical quote based on ARR value
+function getMedicalQuote(arrValue) {
+    for (const quote of medicalQuotes) {
+        if (arrValue >= quote.min) {
+            return quote;
+        }
+    }
+    return medicalQuotes[medicalQuotes.length - 1];
+}
+
+// Create ARR comparison chart
+function createARRChart(arrValue) {
+    console.log('Creating ARR chart...');
+    try {
+        const ctx = document.getElementById('arr-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (arrChart) {
+            arrChart.destroy();
+        }
+
+        arrChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Your ARR', 'Normal Cutoff', 'Borderline Cutoff', 'Elevated Cutoff'],
+                datasets: [{
+                    label: 'ARR Value',
+                    data: [arrValue, 20, 30, 50],
+                    backgroundColor: ['#f59e0b', '#22c55e', '#eab308', '#ef4444'],
+                    borderColor: ['#d97706', '#16a34a', '#ca8a04', '#dc2626'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'ARR Comparison with Reference Values',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed.y.toFixed(1)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'ARR Value',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Comparison Type',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('ARR chart created successfully');
+    } catch (error) {
+        console.error('Error creating ARR chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const arrValue = document.getElementById('arr-value').textContent;
+        const interpretation = document.getElementById('arr-interpretation').textContent;
+        const aldosterone = document.getElementById('display-aldosterone').textContent;
+        const renin = document.getElementById('display-renin').textContent;
+        
+        const results = `
+Aldosterone-Renin Ratio Calculator Results
+=========================================
+
+Laboratory Values:
+Aldosterone: ${aldosterone}
+Renin: ${renin}
+Collection Method: ${document.getElementById('display-collection').textContent}
+Potassium Level: ${document.getElementById('display-potassium').textContent}
+
+Results:
+ARR Value: ${arrValue}
+Interpretation: ${interpretation}
+Risk Level: ${document.getElementById('risk-level').textContent}
+Follow-up: ${document.getElementById('followup-needed').textContent}
+
+Clinical Assessment:
+${document.getElementById('clinical-significance').textContent}
+
+Next Steps:
+${document.getElementById('next-steps').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our ARR Calculator for more calculations!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `arr-calculation-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing ARR calculator...');
+
+    document.getElementById('aldosterone-value').value = '';
+    document.getElementById('aldosterone-units').value = 'ng/dL';
+    document.getElementById('renin-value').value = '';
+    document.getElementById('renin-units').value = 'ng/mL/h';
+    document.getElementById('collection-method').value = 'seated';
+    document.getElementById('patient-age').value = '';
+    document.getElementById('patient-gender').value = 'male';
+    document.getElementById('hypertension-status').value = 'none';
+    document.getElementById('potassium-level').value = '';
+
+    updateVisualization();
+    updateFormula();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (arrChart) {
+        arrChart.destroy();
+        arrChart = null;
+    }
+
+    // Reset ARR meter
+    const indicator = document.getElementById('arr-indicator');
+    indicator.style.left = '25%';
+
+    // Reset balance display
+    const balanceDisplay = document.getElementById('balance-display');
+    balanceDisplay.innerHTML = `
+        <span class="risk-indicator normal"></span>
+        Normal Balance
+    `;
+
+    console.log('ARR calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing ARR calculator...');
+    initCalculator();
+    lucide.createIcons();
+
+    // Render KaTeX formulas
+    setTimeout(() => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ]
+        });
+    }, 100);
+});
+</script>
+{% endblock %}
