@@ -1,0 +1,1601 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.ote-display {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.sales-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+    border-left: 4px solid #3b82f6;
+    border-radius: 0 8px 8px 0;
+}
+.earnings-wheel {
+    width: 250px;
+    height: 250px;
+    position: relative;
+    margin: 0 auto;
+    background: conic-gradient(from 0deg, #3b82f6 0deg 120deg, #10b981 120deg 240deg, #f59e0b 240deg 360deg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+}
+.earnings-wheel::before {
+    content: '';
+    width: 180px;
+    height: 180px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    box-shadow: inset 0 4px 12px rgba(0,0,0,0.1);
+}
+.dark .earnings-wheel::before {
+    background: #1f2937;
+}
+.earnings-center {
+    position: absolute;
+    z-index: 10;
+    text-align: center;
+    color: #1f2937;
+}
+.dark .earnings-center {
+    color: #f9fafb;
+}
+.commission-ladder {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+.dark .commission-ladder {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+}
+.ladder-step {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+    transition: all 0.3s ease;
+    position: relative;
+}
+.dark .ladder-step {
+    background: rgba(30, 58, 138, 0.8);
+    border-left-color: #60a5fa;
+}
+.ladder-step.active {
+    background: rgba(59, 130, 246, 0.2);
+    transform: translateX(8px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+.ladder-step.achieved {
+    background: rgba(16, 185, 129, 0.2);
+    border-left-color: #10b981;
+}
+.target-gauge {
+    width: 200px;
+    height: 100px;
+    position: relative;
+    margin: 0 auto;
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+    border-radius: 100px 100px 0 0;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.gauge-fill {
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+    border-radius: 100px 100px 0 0;
+    transition: height 0.8s ease;
+    position: absolute;
+    bottom: 0;
+}
+.gauge-needle {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 4px;
+    height: 80px;
+    background: #ef4444;
+    border-radius: 2px;
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(-90deg);
+    transition: transform 0.5s ease;
+    z-index: 20;
+}
+.gauge-labels {
+    position: absolute;
+    bottom: -30px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+.earnings-timeline {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0.25rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 8px;
+}
+.timeline-month {
+    aspect-ratio: 1;
+    background: #e5e7eb;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+.timeline-month.ramp {
+    background: linear-gradient(45deg, #3b82f6 0%, #60a5fa 100%);
+    color: white;
+}
+.timeline-month.full {
+    background: #10b981;
+    color: white;
+    transform: scale(1.1);
+}
+.timeline-month.accelerator {
+    background: linear-gradient(45deg, #f59e0b 0%, #fbbf24 100%);
+    color: white;
+    animation: glow 2s infinite;
+}
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.8); }
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.compensation-card {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border: 1px solid #93c5fd;
+    transition: all 0.3s ease;
+}
+.dark .compensation-card {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+    border-color: #3b82f6;
+}
+.compensation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+.tier-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.tier-1 { background: #ef4444; }
+.tier-2 { background: #f59e0b; }
+.tier-3 { background: #10b981; }
+.tier-4 { background: #3b82f6; }
+.earnings-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+.breakdown-item {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+.breakdown-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+.breakdown-item:hover::before {
+    left: 100%;
+}
+.breakdown-item:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+.quota-progress {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    margin: 0.5rem 0;
+}
+.progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    position: relative;
+}
+.progress-under { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); }
+.progress-on-track { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); }
+.progress-exceeding { background: linear-gradient(90deg, #10b981 0%, #059669 100%); }
+.progress-accelerator { background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%); }
+.commission-structure {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+    transition: all 0.3s ease;
+}
+.commission-structure:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: translateX(4px);
+}
+.ramp-period {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fbbf24;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin: 0.25rem 0;
+    transition: all 0.3s ease;
+}
+.dark .ramp-period {
+    background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+    border-color: #f59e0b;
+}
+.territory-multiplier {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin: 0.25rem;
+    transition: all 0.3s ease;
+}
+.territory-multiplier:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="target" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">OTE Salary Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate On-Target Earnings with base salary, commission structures, and performance multipliers. Plan your total compensation potential!
+        </p>
+        <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg inline-block">
+            <div class="text-blue-800 dark:text-blue-300 font-medium">
+                💰 Total Compensation • 🎯 Target Achievement • 📈 Commission Tiers • 🚀 Accelerators
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">OTE Parameters</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Commission Structure:</label>
+                        <select id="commission-structure" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="flat-rate">Flat Rate Commission</option>
+                            <option value="tiered">Tiered Commission</option>
+                            <option value="accelerator">Accelerator Model</option>
+                            <option value="draw-against">Draw Against Commission</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Base Salary ($):</label>
+                            <input type="number" id="base-salary" step="1000" placeholder="60000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Annual base salary</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Annual Quota ($):</label>
+                            <input type="number" id="annual-quota" step="10000" placeholder="500000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Sales target</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Commission Rate (%):</label>
+                            <input type="number" id="commission-rate" step="0.1" placeholder="8.0" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Expected Sales ($):</label>
+                            <input type="number" id="expected-sales" step="10000" placeholder="500000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+                        </div>
+                    </div>
+
+                    <!-- Performance Section -->
+                    <div id="performance-section">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Performance Factors</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Quota Attainment (%):</label>
+                                <input type="range" id="quota-attainment" min="0" max="200" value="100" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <span>0%</span>
+                                    <span id="quota-display" class="font-medium text-blue-600">100%</span>
+                                    <span>200%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Territory Multiplier:</label>
+                                <input type="range" id="territory-multiplier" min="0.5" max="1.5" step="0.1" value="1.0" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <span>0.5x</span>
+                                    <span id="territory-display" class="font-medium text-blue-600">1.0x</span>
+                                    <span>1.5x</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ramp Period -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ramp Period (Months):</label>
+                        <select id="ramp-period" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="0">No Ramp (Experienced)</option>
+                            <option value="3">3 Months (Quick Start)</option>
+                            <option value="6">6 Months (Standard)</option>
+                            <option value="9">9 Months (Complex Sale)</option>
+                            <option value="12">12 Months (Enterprise)</option>
+                        </select>
+                    </div>
+
+                    <!-- Role Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sales Role:</label>
+                        <select id="sales-role" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="sdr" data-multiplier="0.8">SDR/BDR (0.8x)</option>
+                            <option value="inside-sales" data-multiplier="1.0">Inside Sales (1.0x)</option>
+                            <option value="field-sales" data-multiplier="1.2">Field Sales (1.2x)</option>
+                            <option value="enterprise" data-multiplier="1.4">Enterprise (1.4x)</option>
+                            <option value="key-account" data-multiplier="1.3">Key Account (1.3x)</option>
+                            <option value="channel" data-multiplier="0.9">Channel Sales (0.9x)</option>
+                        </select>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Scenarios:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('entry-level')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Entry Level
+                            </button>
+                            <button onclick="setPreset('mid-level')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Mid Level
+                            </button>
+                            <button onclick="setPreset('senior-rep')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Senior Rep
+                            </button>
+                            <button onclick="setPreset('enterprise-ae')" class="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                Enterprise AE
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Earnings Breakdown</h3>
+                        <div class="earnings-wheel">
+                            <div class="earnings-center">
+                                <div class="text-2xl font-bold" id="total-ote">$120K</div>
+                                <div class="text-sm opacity-75">Total OTE</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-center space-x-4 text-xs text-gray-600 dark:text-gray-400 mt-4">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-blue-500 rounded mr-1"></div>
+                                <span>Base Salary</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-500 rounded mr-1"></div>
+                                <span>Commission</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-amber-500 rounded mr-1"></div>
+                                <span>Bonus</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Target Achievement Gauge -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Quota Achievement</h3>
+                        <div class="target-gauge">
+                            <div class="gauge-fill" id="quota-gauge-fill"></div>
+                            <div class="gauge-needle" id="quota-needle"></div>
+                            <div class="gauge-labels">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                                <span>150%</span>
+                                <span>200%</span>
+                            </div>
+                        </div>
+                        <div class="text-center mt-6">
+                            <span id="achievement-status" class="text-lg font-semibold text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                <span class="tier-indicator tier-3"></span>
+                                On Target
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Commission Ladder -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Commission Tiers</h3>
+                        <div class="commission-ladder" id="commission-ladder">
+                            <!-- Commission tiers will be generated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">OTE Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Compensation Properties -->
+                    <div class="compensation-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Compensation Details:</h4>
+                        <div id="compensation-info" class="text-sm text-gray-700 dark:text-gray-300">
+                            Structure: Tiered Commission • Frequency: Monthly • Accelerators: Yes • Currency: USD
+                        </div>
+                    </div>
+
+                    <!-- Earnings Timeline -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Earnings Timeline</h4>
+                        <div class="earnings-timeline" id="earnings-timeline">
+                            <!-- Timeline months will be generated here -->
+                        </div>
+                        <div class="flex justify-center space-x-4 text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-blue-500 rounded mr-1"></div>
+                                <span>Ramp</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-500 rounded mr-1"></div>
+                                <span>Full</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-amber-500 rounded mr-1"></div>
+                                <span>Accelerator</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate OTE</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Results</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- OTE Summary -->
+            <div class="ote-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>On-Target Earnings Results</span>
+                    <i data-lucide="target" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="total-ote-result" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Total OTE ($)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="commission-earnings" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Commission ($)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="quota-achievement" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Quota Achievement (%)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="monthly-earnings" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Monthly Avg ($)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Earnings Breakdown -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                    <span>Earnings Breakdown</span>
+                </h3>
+                <div class="earnings-breakdown" id="earnings-breakdown">
+                    <!-- Breakdown items will be generated here -->
+                </div>
+            </div>
+
+            <!-- Performance Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Performance vs Earnings</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="performance-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Sales Quote -->
+            <div class="sales-quote mb-6">
+                <p id="sales-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "Success in sales comes from understanding your compensation and maximizing every opportunity."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Sales Excellence</p>
+            </div>
+
+            <!-- Compensation Analysis -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    <span>Compensation Analysis</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="target" class="w-4 h-4"></i>
+                            <span>Quota Analysis</span>
+                        </h4>
+                        <p id="quota-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span>Commission Structure</span>
+                        </h4>
+                        <p id="commission-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            <span>Ramp Impact</span>
+                        </h4>
+                        <p id="ramp-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="map" class="w-4 h-4"></i>
+                            <span>Territory Impact</span>
+                        </h4>
+                        <p id="territory-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>OTE Compensation Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is OTE (On-Target Earnings)?</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    On-Target Earnings represents the total compensation a sales professional can expect when achieving 100% of their quota, combining base salary with variable compensation.
+                </p>
+                <div class="formula-box mt-4">
+                    <div class="katex-formula">OTE = Base\ Salary + Target\ Commission + Bonuses</div>
+                </div>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Commission Structures</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>Flat Rate:</strong> <span class="katex-formula">Commission = Sales \times Rate</span></li>
+                    <li><strong>Tiered:</strong> <span class="katex-formula">Commission = \sum_{tier} Sales_{tier} \times Rate_{tier}</span></li>
+                    <li><strong>Accelerator:</strong> <span class="katex-formula">Commission = Base + (Excess \times Accelerator)</span></li>
+                    <li><strong>Draw Against:</strong> <span class="katex-formula">Net = max(0, Commission - Draw)</span></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key OTE Components</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Base Salary:</strong> Fixed annual compensation</li>
+                    <li><strong>Variable Pay:</strong> Commission and performance bonuses</li>
+                    <li><strong>Quota:</strong> Sales target for full commission</li>
+                    <li><strong>Accelerators:</strong> Higher rates above quota</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Optimization Strategies</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Understand your commission structure and breakpoints</li>
+                    <li>Focus on high-value opportunities near quota</li>
+                    <li>Leverage accelerators for over-achievement</li>
+                    <li>Plan territory coverage for maximum efficiency</li>
+                    <li>Track performance metrics consistently</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// OTE presets
+const presets = {
+    'entry-level': {
+        structure: 'flat-rate',
+        baseSalary: 45000,
+        annualQuota: 300000,
+        commissionRate: 6.0,
+        expectedSales: 300000,
+        quotaAttainment: 90,
+        territoryMultiplier: 1.0,
+        rampPeriod: 6,
+        salesRole: 'sdr'
+    },
+    'mid-level': {
+        structure: 'tiered',
+        baseSalary: 65000,
+        annualQuota: 500000,
+        commissionRate: 8.0,
+        expectedSales: 550000,
+        quotaAttainment: 110,
+        territoryMultiplier: 1.1,
+        rampPeriod: 3,
+        salesRole: 'inside-sales'
+    },
+    'senior-rep': {
+        structure: 'accelerator',
+        baseSalary: 80000,
+        annualQuota: 750000,
+        commissionRate: 10.0,
+        expectedSales: 825000,
+        quotaAttainment: 130,
+        territoryMultiplier: 1.2,
+        rampPeriod: 3,
+        salesRole: 'field-sales'
+    },
+    'enterprise-ae': {
+        structure: 'tiered',
+        baseSalary: 120000,
+        annualQuota: 1500000,
+        commissionRate: 12.0,
+        expectedSales: 1650000,
+        quotaAttainment: 140,
+        territoryMultiplier: 1.3,
+        rampPeriod: 6,
+        salesRole: 'enterprise'
+    }
+};
+
+// Sales quotes for different scenarios
+const salesQuotes = [
+    { condition: 'high-performance', quote: "Success in sales comes from understanding your compensation and maximizing every opportunity.", author: "Sales Excellence" },
+    { condition: 'on-target', quote: "Consistency in hitting quota builds both income and career momentum.", author: "Sales Leadership" },
+    { condition: 'accelerator', quote: "The real money in sales is made above quota - that's where accelerators kick in.", author: "Top Performer" },
+    { condition: 'ramp-period', quote: "Every expert was once a beginner. Focus on learning during your ramp period.", author: "Sales Development" }
+];
+
+let performanceChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing OTE Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    updateFormula();
+    generateCommissionLadder();
+    generateEarningsTimeline();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const commissionStructure = document.getElementById('commission-structure');
+    const quotaAttainment = document.getElementById('quota-attainment');
+    const territoryMultiplier = document.getElementById('territory-multiplier');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateOTE);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (commissionStructure) {
+        commissionStructure.addEventListener('change', () => {
+            updateFormula();
+            generateCommissionLadder();
+        });
+    }
+
+    if (quotaAttainment) {
+        quotaAttainment.addEventListener('input', (e) => {
+            document.getElementById('quota-display').textContent = `${e.target.value}%`;
+            updateQuotaGauge();
+            if (hasValidInputs()) {
+                calculateOTE();
+            }
+        });
+    }
+
+    if (territoryMultiplier) {
+        territoryMultiplier.addEventListener('input', (e) => {
+            document.getElementById('territory-display').textContent = `${parseFloat(e.target.value).toFixed(1)}x`;
+            if (hasValidInputs()) {
+                calculateOTE();
+            }
+        });
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input')) {
+            updateEarningsWheel();
+            if (hasValidInputs()) {
+                calculateOTE();
+            }
+        }
+    });
+}
+
+// Check if we have valid inputs
+function hasValidInputs() {
+    const baseSalary = parseFloat(document.getElementById('base-salary').value);
+    const annualQuota = parseFloat(document.getElementById('annual-quota').value);
+    const commissionRate = parseFloat(document.getElementById('commission-rate').value);
+    
+    return baseSalary > 0 && annualQuota > 0 && commissionRate > 0;
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    console.log(`Setting preset: ${presetKey}`);
+    const preset = presets[presetKey];
+    if (!preset) {
+        console.error(`Preset ${presetKey} not found`);
+        return;
+    }
+
+    try {
+        document.getElementById('commission-structure').value = preset.structure;
+        document.getElementById('base-salary').value = preset.baseSalary;
+        document.getElementById('annual-quota').value = preset.annualQuota;
+        document.getElementById('commission-rate').value = preset.commissionRate;
+        document.getElementById('expected-sales').value = preset.expectedSales;
+        document.getElementById('quota-attainment').value = preset.quotaAttainment;
+        document.getElementById('territory-multiplier').value = preset.territoryMultiplier;
+        document.getElementById('ramp-period').value = preset.rampPeriod;
+        document.getElementById('sales-role').value = preset.salesRole;
+
+        // Update displays
+        document.getElementById('quota-display').textContent = `${preset.quotaAttainment}%`;
+        document.getElementById('territory-display').textContent = `${preset.territoryMultiplier.toFixed(1)}x`;
+
+        console.log('Preset values set, updating visualizations...');
+        
+        // Force update all UI elements
+        setTimeout(() => {
+            updateVisualization();
+            updateFormula();
+            generateCommissionLadder();
+            generateEarningsTimeline();
+            calculateOTE();
+        }, 50);
+    } catch (error) {
+        console.error('Error setting preset:', error);
+    }
+}
+
+// Update visualization
+function updateVisualization() {
+    updateEarningsWheel();
+    updateQuotaGauge();
+    generateCommissionLadder();
+    generateEarningsTimeline();
+}
+
+// Update earnings wheel
+function updateEarningsWheel() {
+    const baseSalary = parseFloat(document.getElementById('base-salary').value) || 60000;
+    const annualQuota = parseFloat(document.getElementById('annual-quota').value) || 500000;
+    const commissionRate = parseFloat(document.getElementById('commission-rate').value) || 8;
+    
+    const targetCommission = annualQuota * (commissionRate / 100);
+    const totalOTE = baseSalary + targetCommission;
+    
+    document.getElementById('total-ote').textContent = `$${Math.round(totalOTE / 1000)}K`;
+}
+
+// Update quota gauge
+function updateQuotaGauge() {
+    const quotaAttainment = parseInt(document.getElementById('quota-attainment').value);
+    
+    const gaugeFill = document.getElementById('quota-gauge-fill');
+    const gaugeNeedle = document.getElementById('quota-needle');
+    const achievementStatus = document.getElementById('achievement-status');
+    
+    // Update gauge fill (0-200% range)
+    const fillHeight = Math.min(quotaAttainment / 2, 100);
+    gaugeFill.style.height = `${fillHeight}%`;
+    
+    // Update needle rotation (-90 to +90 degrees for 0-200%)
+    const needleRotation = -90 + (quotaAttainment / 200 * 180);
+    gaugeNeedle.style.transform = `translateX(-50%) rotate(${needleRotation}deg)`;
+    
+    // Update status
+    let status = '';
+    let indicator = '';
+    if (quotaAttainment >= 150) {
+        status = 'Accelerator Zone';
+        indicator = '<span class="tier-indicator tier-4"></span>';
+    } else if (quotaAttainment >= 100) {
+        status = 'Above Target';
+        indicator = '<span class="tier-indicator tier-3"></span>';
+    } else if (quotaAttainment >= 80) {
+        status = 'On Track';
+        indicator = '<span class="tier-indicator tier-2"></span>';
+    } else {
+        status = 'Below Target';
+        indicator = '<span class="tier-indicator tier-1"></span>';
+    }
+    
+    achievementStatus.innerHTML = `${indicator}${status}`;
+}
+
+// Generate commission ladder
+function generateCommissionLadder() {
+    const ladder = document.getElementById('commission-ladder');
+    ladder.innerHTML = '';
+    
+    const structure = document.getElementById('commission-structure').value;
+    const quotaAttainment = parseInt(document.getElementById('quota-attainment').value);
+    
+    let tiers = [];
+    
+    switch (structure) {
+        case 'flat-rate':
+            tiers = [
+                { range: '0% - 100%', rate: '8.0%', threshold: 100 }
+            ];
+            break;
+        case 'tiered':
+            tiers = [
+                { range: '0% - 50%', rate: '4.0%', threshold: 50 },
+                { range: '50% - 100%', rate: '8.0%', threshold: 100 },
+                { range: '100% - 150%', rate: '12.0%', threshold: 150 },
+                { range: '150%+', rate: '15.0%', threshold: 200 }
+            ];
+            break;
+        case 'accelerator':
+            tiers = [
+                { range: '0% - 100%', rate: '8.0%', threshold: 100 },
+                { range: '100% - 125%', rate: '12.0%', threshold: 125 },
+                { range: '125%+', rate: '16.0%', threshold: 200 }
+            ];
+            break;
+        case 'draw-against':
+            tiers = [
+                { range: 'Draw Period', rate: 'Fixed', threshold: 50 },
+                { range: '50% - 100%', rate: '10.0%', threshold: 100 },
+                { range: '100%+', rate: '12.0%', threshold: 200 }
+            ];
+            break;
+    }
+    
+    tiers.forEach(tier => {
+        const tierDiv = document.createElement('div');
+        tierDiv.className = 'ladder-step';
+        
+        if (quotaAttainment >= tier.threshold) {
+            tierDiv.classList.add('achieved');
+        } else if (quotaAttainment >= tier.threshold - 25) {
+            tierDiv.classList.add('active');
+        }
+        
+        tierDiv.innerHTML = `
+            <span class="font-medium">${tier.range}</span>
+            <span class="font-bold text-blue-600 dark:text-blue-400">${tier.rate}</span>
+        `;
+        
+        ladder.appendChild(tierDiv);
+    });
+}
+
+// Generate earnings timeline
+function generateEarningsTimeline() {
+    const timeline = document.getElementById('earnings-timeline');
+    timeline.innerHTML = '';
+    
+    const months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+    const rampPeriod = parseInt(document.getElementById('ramp-period').value) || 0;
+    const quotaAttainment = parseInt(document.getElementById('quota-attainment').value);
+    
+    months.forEach((month, index) => {
+        const monthDiv = document.createElement('div');
+        monthDiv.className = 'timeline-month';
+        monthDiv.textContent = month;
+        
+        if (index < rampPeriod) {
+            monthDiv.classList.add('ramp');
+        } else if (quotaAttainment >= 150) {
+            monthDiv.classList.add('accelerator');
+        } else {
+            monthDiv.classList.add('full');
+        }
+        
+        timeline.appendChild(monthDiv);
+    });
+}
+
+// Update formula display
+function updateFormula() {
+    const structure = document.getElementById('commission-structure').value;
+    const katexElement = document.getElementById('katex-formula');
+
+    let formula = '';
+    switch (structure) {
+        case 'flat-rate':
+            formula = 'OTE = Base\\ Salary + (Quota \\times Commission\\ Rate)';
+            break;
+        case 'tiered':
+            formula = 'OTE = Base + \\sum_{tier} (Sales_{tier} \\times Rate_{tier})';
+            break;
+        case 'accelerator':
+            formula = 'OTE = Base + Base\\ Commission + (Excess \\times Accelerator)';
+            break;
+        case 'draw-against':
+            formula = 'OTE = Base + max(0, Commission - Draw)';
+            break;
+        default:
+            formula = 'OTE = Base\\ Salary + Variable\\ Compensation';
+    }
+
+    try {
+        katex.render(formula, katexElement, {
+            throwOnError: false,
+            displayMode: false
+        });
+    } catch (error) {
+        katexElement.textContent = formula;
+    }
+}
+
+// Calculate OTE
+function calculateOTE() {
+    console.log('Calculating OTE...');
+    try {
+        const baseSalary = parseFloat(document.getElementById('base-salary').value) || 0;
+        const annualQuota = parseFloat(document.getElementById('annual-quota').value) || 0;
+        const commissionRate = parseFloat(document.getElementById('commission-rate').value) || 0;
+        const expectedSales = parseFloat(document.getElementById('expected-sales').value) || annualQuota;
+        const quotaAttainment = parseInt(document.getElementById('quota-attainment').value) || 100;
+        const territoryMultiplier = parseFloat(document.getElementById('territory-multiplier').value) || 1.0;
+        const structure = document.getElementById('commission-structure').value;
+        const rampPeriod = parseInt(document.getElementById('ramp-period').value) || 0;
+        const salesRole = document.getElementById('sales-role').value;
+        const roleMultiplier = parseFloat(document.getElementById('sales-role').selectedOptions[0].dataset.multiplier) || 1.0;
+
+        if (baseSalary <= 0 || annualQuota <= 0 || commissionRate <= 0) {
+            console.log('Please enter valid OTE parameters');
+            return;
+        }
+
+        // Calculate commission based on structure
+        const commissionEarnings = calculateCommissionByStructure(
+            structure, 
+            expectedSales, 
+            annualQuota, 
+            commissionRate, 
+            quotaAttainment
+        );
+        
+        // Apply multipliers
+        const adjustedCommission = commissionEarnings * territoryMultiplier * roleMultiplier;
+        
+        // Apply ramp period impact
+        const rampAdjustedCommission = applyRampPeriod(adjustedCommission, rampPeriod);
+        
+        // Calculate total OTE
+        const totalOTE = baseSalary + rampAdjustedCommission;
+        const monthlyEarnings = totalOTE / 12;
+        
+        // Generate breakdown
+        const breakdown = generateEarningsBreakdown(baseSalary, rampAdjustedCommission, totalOTE);
+        
+        // Calculate analysis
+        const analysis = calculateOTEAnalysis(quotaAttainment, structure, rampPeriod, territoryMultiplier);
+
+        // Update display
+        updateResults({
+            totalOTE,
+            commissionEarnings: rampAdjustedCommission,
+            quotaAchievement: quotaAttainment,
+            monthlyEarnings,
+            baseSalary
+        }, breakdown, analysis);
+
+        // Create chart
+        createPerformanceChart(baseSalary, rampAdjustedCommission, quotaAttainment);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('OTE calculations completed successfully');
+    } catch (error) {
+        console.error('Error calculating OTE:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Calculate commission by structure
+function calculateCommissionByStructure(structure, sales, quota, baseRate, attainment) {
+    const attainmentDecimal = attainment / 100;
+    
+    switch (structure) {
+        case 'flat-rate':
+            return sales * (baseRate / 100);
+            
+        case 'tiered':
+            let commission = 0;
+            if (attainmentDecimal <= 0.5) {
+                commission = sales * 0.04;
+            } else if (attainmentDecimal <= 1.0) {
+                commission = (quota * 0.5 * 0.04) + ((sales - quota * 0.5) * 0.08);
+            } else if (attainmentDecimal <= 1.5) {
+                commission = (quota * 0.5 * 0.04) + (quota * 0.5 * 0.08) + ((sales - quota) * 0.12);
+            } else {
+                commission = (quota * 0.5 * 0.04) + (quota * 0.5 * 0.08) + (quota * 0.5 * 0.12) + ((sales - quota * 1.5) * 0.15);
+            }
+            return commission;
+            
+        case 'accelerator':
+            const baseCommission = Math.min(sales, quota) * (baseRate / 100);
+            const excessSales = Math.max(0, sales - quota);
+            const acceleratorCommission = excessSales * (baseRate * 1.5 / 100);
+            return baseCommission + acceleratorCommission;
+            
+        case 'draw-against':
+            const totalCommission = sales * (baseRate / 100);
+            const draw = quota * 0.5 * (baseRate / 100); // Assume 50% quota as draw
+            return Math.max(0, totalCommission - draw) + draw;
+            
+        default:
+            return sales * (baseRate / 100);
+    }
+}
+
+// Apply ramp period impact
+function applyRampPeriod(commission, rampMonths) {
+    if (rampMonths === 0) return commission;
+    
+    const fullMonths = 12 - rampMonths;
+    const rampCommission = commission * 0.5 * (rampMonths / 12); // 50% during ramp
+    const fullCommission = commission * (fullMonths / 12);
+    
+    return rampCommission + fullCommission;
+}
+
+// Generate earnings breakdown
+function generateEarningsBreakdown(baseSalary, commission, totalOTE) {
+    const bonus = totalOTE * 0.05; // Assume 5% bonus
+    
+    return [
+        {
+            label: 'Base Salary',
+            value: baseSalary,
+            percentage: (baseSalary / totalOTE * 100).toFixed(1),
+            description: 'Fixed annual compensation'
+        },
+        {
+            label: 'Commission',
+            value: commission,
+            percentage: (commission / totalOTE * 100).toFixed(1),
+            description: 'Variable sales compensation'
+        },
+        {
+            label: 'Bonus',
+            value: bonus,
+            percentage: (bonus / totalOTE * 100).toFixed(1),
+            description: 'Performance bonus estimate'
+        }
+    ];
+}
+
+// Calculate OTE analysis
+function calculateOTEAnalysis(quotaAttainment, structure, rampPeriod, territoryMultiplier) {
+    let quotaAnalysis = '';
+    if (quotaAttainment >= 150) {
+        quotaAnalysis = 'Exceptional performance. Well into accelerator territory with maximum earning potential.';
+    } else if (quotaAttainment >= 100) {
+        quotaAnalysis = 'Strong performance. Meeting or exceeding quota targets consistently.';
+    } else if (quotaAttainment >= 80) {
+        quotaAnalysis = 'Good performance. On track to meet annual targets with focused effort.';
+    } else {
+        quotaAnalysis = 'Below target performance. Focus needed on pipeline development and closing skills.';
+    }
+
+    let commissionAnalysis = '';
+    switch (structure) {
+        case 'flat-rate':
+            commissionAnalysis = 'Simple flat rate structure provides predictable earnings but limited upside potential.';
+            break;
+        case 'tiered':
+            commissionAnalysis = 'Tiered structure rewards consistent performance with increasing rates at higher achievement levels.';
+            break;
+        case 'accelerator':
+            commissionAnalysis = 'Accelerator model provides significant upside for over-achievement beyond quota.';
+            break;
+        case 'draw-against':
+            commissionAnalysis = 'Draw against commission provides income stability but requires payback of advances.';
+            break;
+    }
+
+    let rampAnalysis = '';
+    if (rampPeriod === 0) {
+        rampAnalysis = 'No ramp period. Expected to perform at full capacity immediately.';
+    } else if (rampPeriod <= 3) {
+        rampAnalysis = 'Short ramp period. Quick transition to full earning potential expected.';
+    } else if (rampPeriod <= 6) {
+        rampAnalysis = 'Standard ramp period. Balanced approach to skill development and earnings.';
+    } else {
+        rampAnalysis = 'Extended ramp period. Focus on learning and relationship building before full earnings.';
+    }
+
+    let territoryAnalysis = '';
+    if (territoryMultiplier > 1.2) {
+        territoryAnalysis = 'Premium territory with high earning potential and strategic account opportunities.';
+    } else if (territoryMultiplier > 1.0) {
+        territoryAnalysis = 'Above-average territory with good growth opportunities and market potential.';
+    } else if (territoryMultiplier === 1.0) {
+        territoryAnalysis = 'Standard territory with balanced opportunities and typical market conditions.';
+    } else {
+        territoryAnalysis = 'Developing territory requiring investment in market development and relationship building.';
+    }
+
+    return {
+        quotaAnalysis,
+        commissionAnalysis,
+        rampAnalysis,
+        territoryAnalysis
+    };
+}
+
+// Update results display
+function updateResults(metrics, breakdown, analysis) {
+    // Update summary
+    document.getElementById('total-ote-result').textContent = `$${metrics.totalOTE.toLocaleString()}`;
+    document.getElementById('commission-earnings').textContent = `$${metrics.commissionEarnings.toLocaleString()}`;
+    document.getElementById('quota-achievement').textContent = `${metrics.quotaAchievement}%`;
+    document.getElementById('monthly-earnings').textContent = `$${metrics.monthlyEarnings.toLocaleString()}`;
+
+    // Update breakdown
+    const breakdownContainer = document.getElementById('earnings-breakdown');
+    breakdownContainer.innerHTML = '';
+    
+    breakdown.forEach(item => {
+        const breakdownDiv = document.createElement('div');
+        breakdownDiv.className = 'breakdown-item';
+        breakdownDiv.innerHTML = `
+            <h4 class="font-semibold text-gray-900 dark:text-white mb-2">${item.label}</h4>
+            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                $${item.value.toLocaleString()}
+            </div>
+            <div class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                ${item.percentage}% of OTE
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">${item.description}</p>
+        `;
+        breakdownContainer.appendChild(breakdownDiv);
+    });
+
+    // Update analysis
+    document.getElementById('quota-analysis').textContent = analysis.quotaAnalysis;
+    document.getElementById('commission-analysis').textContent = analysis.commissionAnalysis;
+    document.getElementById('ramp-analysis').textContent = analysis.rampAnalysis;
+    document.getElementById('territory-analysis').textContent = analysis.territoryAnalysis;
+
+    // Update sales quote
+    const quote = getSalesQuote(metrics.quotaAchievement, metrics.commissionEarnings);
+    document.getElementById('sales-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.sales-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get sales quote based on metrics
+function getSalesQuote(quotaAchievement, commissionEarnings) {
+    if (quotaAchievement >= 150) {
+        return salesQuotes.find(q => q.condition === 'accelerator');
+    } else if (quotaAchievement >= 100) {
+        return salesQuotes.find(q => q.condition === 'high-performance');
+    } else if (commissionEarnings > 50000) {
+        return salesQuotes.find(q => q.condition === 'on-target');
+    } else {
+        return salesQuotes.find(q => q.condition === 'ramp-period');
+    }
+}
+
+// Create performance chart
+function createPerformanceChart(baseSalary, commission, quotaAchievement) {
+    console.log('Creating performance chart...');
+    try {
+        const ctx = document.getElementById('performance-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (performanceChart) {
+            performanceChart.destroy();
+        }
+
+        // Generate data points for different quota achievement levels
+        const quotaLevels = [50, 75, 100, 125, 150, 175, 200];
+        const earningsData = quotaLevels.map(level => {
+            const sales = (level / 100) * parseFloat(document.getElementById('annual-quota').value || 500000);
+            const commissionRate = parseFloat(document.getElementById('commission-rate').value || 8);
+            const commission = calculateCommissionByStructure(
+                document.getElementById('commission-structure').value,
+                sales,
+                parseFloat(document.getElementById('annual-quota').value || 500000),
+                commissionRate,
+                level
+            );
+            return baseSalary + commission;
+        });
+
+        performanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: quotaLevels.map(level => `${level}%`),
+                datasets: [{
+                    label: 'Total Earnings',
+                    data: earningsData,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Earnings vs Quota Achievement',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Total Earnings: $${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Total Earnings ($)',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            callback: function(value) {
+                                return '$' + (value / 1000).toFixed(0) + 'K';
+                            }
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Quota Achievement',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Performance chart created successfully');
+    } catch (error) {
+        console.error('Error creating performance chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const totalOTE = document.getElementById('total-ote-result').textContent;
+        const commissionEarnings = document.getElementById('commission-earnings').textContent;
+        const baseSalary = document.getElementById('base-salary').value;
+        const salesRole = document.getElementById('sales-role').value;
+        
+        const results = `
+OTE Salary Calculator Results
+=============================
+
+OTE Parameters:
+Base Salary: $${baseSalary}
+Sales Role: ${salesRole}
+Annual Quota: $${document.getElementById('annual-quota').value}
+Commission Rate: ${document.getElementById('commission-rate').value}%
+Commission Structure: ${document.getElementById('commission-structure').value}
+
+Results:
+Total OTE: ${totalOTE}
+Commission Earnings: ${commissionEarnings}
+Quota Achievement: ${document.getElementById('quota-achievement').textContent}
+Monthly Average: ${document.getElementById('monthly-earnings').textContent}
+
+Performance Factors:
+Quota Attainment: ${document.getElementById('quota-display').textContent}
+Territory Multiplier: ${document.getElementById('territory-display').textContent}
+Ramp Period: ${document.getElementById('ramp-period').value} months
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our OTE Calculator for more compensation analysis!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ote-calculation-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing OTE calculator...');
+
+    document.getElementById('commission-structure').value = 'flat-rate';
+    document.getElementById('base-salary').value = '';
+    document.getElementById('annual-quota').value = '';
+    document.getElementById('commission-rate').value = '';
+    document.getElementById('expected-sales').value = '';
+    document.getElementById('quota-attainment').value = '100';
+    document.getElementById('territory-multiplier').value = '1.0';
+    document.getElementById('ramp-period').value = '0';
+    document.getElementById('sales-role').value = 'inside-sales';
+
+    // Update displays
+    document.getElementById('quota-display').textContent = '100%';
+    document.getElementById('territory-display').textContent = '1.0x';
+
+    updateVisualization();
+    updateFormula();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (performanceChart) {
+        performanceChart.destroy();
+        performanceChart = null;
+    }
+
+    console.log('OTE calculator cleared successfully');
+}
+
+// Set default values if empty
+function setDefaultValues() {
+    if (!document.getElementById('base-salary').value) {
+        document.getElementById('base-salary').value = '60000';
+        document.getElementById('annual-quota').value = '500000';
+        document.getElementById('commission-rate').value = '8.0';
+        document.getElementById('expected-sales').value = '500000';
+    }
+}
+
+// Ensure DOM is fully loaded before initializing
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing OTE calculator...');
+        setDefaultValues();
+        initCalculator();
+        lucide.createIcons();
+        
+        // Render KaTeX formulas
+        setTimeout(() => {
+            try {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: "$$", right: "$$", display: true},
+                        {left: "$", right: "$", display: false}
+                    ]
+                });
+            } catch (e) {
+                console.error('Error rendering math:', e);
+            }
+        }, 100);
+    });
+} else {
+    console.log('DOM already loaded, initializing OTE calculator...');
+    setDefaultValues();
+    initCalculator();
+    lucide.createIcons();
+    
+    // Render KaTeX formulas
+    setTimeout(() => {
+        try {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false}
+                ]
+            });
+        } catch (e) {
+            console.error('Error rendering math:', e);
+        }
+    }, 100);
+}
+</script>
+{% endblock %}

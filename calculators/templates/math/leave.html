@@ -1,0 +1,1827 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.leave-display {
+    background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.hr-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(234, 88, 12, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+    border-left: 4px solid #ea580c;
+    border-radius: 0 8px 8px 0;
+}
+.leave-balance-wheel {
+    width: 250px;
+    height: 250px;
+    position: relative;
+    margin: 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 32px rgba(234, 88, 12, 0.3);
+    background: conic-gradient(from 0deg, 
+        #ea580c 0deg var(--used-angle), 
+        #f59e0b var(--used-angle) var(--selling-angle), 
+        #10b981 var(--selling-angle) var(--remaining-angle), 
+        #e5e7eb var(--remaining-angle) 360deg);
+}
+.leave-balance-wheel::before {
+    content: '';
+    width: 180px;
+    height: 180px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    box-shadow: inset 0 4px 12px rgba(0,0,0,0.1);
+}
+.dark .leave-balance-wheel::before {
+    background: #1f2937;
+}
+.leave-center {
+    position: absolute;
+    z-index: 10;
+    text-align: center;
+    color: #1f2937;
+}
+.dark .leave-center {
+    color: #f9fafb;
+}
+.payout-waterfall {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 200px;
+    padding: 1rem;
+    background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+.dark .payout-waterfall {
+    background: linear-gradient(135deg, #9a3412 0%, #ea580c 100%);
+}
+.waterfall-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+    transition: all 0.5s ease;
+    position: relative;
+}
+.waterfall-column {
+    width: 40px;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.8s ease;
+    position: relative;
+    margin-bottom: 4px;
+}
+.waterfall-gross {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+}
+.waterfall-deduction {
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+}
+.waterfall-net {
+    background: linear-gradient(180deg, #ea580c 0%, #dc2626 100%);
+}
+.waterfall-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+    color: #374151;
+    margin-top: 0.5rem;
+    line-height: 1.2;
+}
+.dark .waterfall-label {
+    color: #f9fafb;
+}
+.waterfall-value {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+.utilization-meter {
+    width: 200px;
+    height: 100px;
+    position: relative;
+    margin: 0 auto;
+    background: linear-gradient(180deg, #ea580c 0%, #dc2626 100%);
+    border-radius: 100px 100px 0 0;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.meter-fill {
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+    border-radius: 100px 100px 0 0;
+    transition: height 0.8s ease;
+    position: absolute;
+    bottom: 0;
+}
+.meter-needle {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 4px;
+    height: 80px;
+    background: #1f2937;
+    border-radius: 2px;
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(-90deg);
+    transition: transform 0.5s ease;
+    z-index: 20;
+}
+.meter-labels {
+    position: absolute;
+    bottom: -30px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+.accrual-timeline {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0.25rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(234, 88, 12, 0.05);
+    border-radius: 8px;
+}
+.timeline-month {
+    aspect-ratio: 1;
+    background: #e5e7eb;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+.timeline-month.accrued {
+    background: linear-gradient(45deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+.timeline-month.used {
+    background: linear-gradient(45deg, #ea580c 0%, #dc2626 100%);
+    color: white;
+}
+.timeline-month.selling {
+    background: linear-gradient(45deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    animation: highlight 2s infinite;
+}
+.timeline-month.carryover {
+    background: linear-gradient(45deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+@keyframes highlight {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.leave-card {
+    background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+    border: 1px solid #fdba74;
+    transition: all 0.3s ease;
+}
+.dark .leave-card {
+    background: linear-gradient(135deg, #9a3412 0%, #ea580c 100%);
+    border-color: #ea580c;
+}
+.leave-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);
+}
+.policy-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.policy-compliant { background: #10b981; }
+.policy-warning { background: #f59e0b; }
+.policy-violation { background: #ef4444; }
+.policy-optimal { background: #3b82f6; }
+.leave-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+.breakdown-item {
+    background: rgba(234, 88, 12, 0.1);
+    border: 1px solid rgba(234, 88, 12, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+.breakdown-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+.breakdown-item:hover::before {
+    left: 100%;
+}
+.breakdown-item:hover {
+    background: rgba(234, 88, 12, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2);
+}
+.tax-bracket {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    margin: 0.5rem 0;
+}
+.bracket-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    position: relative;
+}
+.bracket-low { background: linear-gradient(90deg, #10b981 0%, #059669 100%); }
+.bracket-medium { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); }
+.bracket-high { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); }
+.bracket-maximum { background: linear-gradient(90deg, #7c2d12 0%, #991b1b 100%); }
+.leave-type {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: rgba(234, 88, 12, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid #ea580c;
+    transition: all 0.3s ease;
+}
+.leave-type:hover {
+    background: rgba(234, 88, 12, 0.1);
+    transform: translateX(4px);
+}
+.timing-strategy {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fbbf24;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin: 0.25rem 0;
+    transition: all 0.3s ease;
+}
+.dark .timing-strategy {
+    background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+    border-color: #f59e0b;
+}
+.payout-option {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    background: rgba(234, 88, 12, 0.1);
+    border: 1px solid rgba(234, 88, 12, 0.3);
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin: 0.25rem;
+    transition: all 0.3s ease;
+}
+.payout-option:hover {
+    background: rgba(234, 88, 12, 0.2);
+    transform: scale(1.05);
+}
+.leave-categories {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(234, 88, 12, 0.05);
+    border-radius: 8px;
+}
+.category-item {
+    aspect-ratio: 1;
+    background: #e5e7eb;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+.category-vacation {
+    background: linear-gradient(45deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+.category-sick {
+    background: linear-gradient(45deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+.category-personal {
+    background: linear-gradient(45deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+.category-comp {
+    background: linear-gradient(45deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+.policy-compliance {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: rgba(234, 88, 12, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid #ea580c;
+    transition: all 0.3s ease;
+}
+.policy-compliance:hover {
+    background: rgba(234, 88, 12, 0.1);
+    transform: translateX(4px);
+}
+.blackout-period {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin: 0.25rem 0;
+    transition: all 0.3s ease;
+}
+.dark .blackout-period {
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    border-color: #ef4444;
+}
+.salary-tier {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    background: rgba(234, 88, 12, 0.1);
+    border: 1px solid rgba(234, 88, 12, 0.3);
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin: 0.25rem;
+    transition: all 0.3s ease;
+}
+.salary-tier:hover {
+    background: rgba(234, 88, 12, 0.2);
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-orange-50 dark:bg-orange-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="calendar-days" class="w-8 h-8 text-orange-600 dark:text-orange-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Selling Leave Days Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate the value of selling back unused vacation and leave days. Optimize your payout timing and understand tax implications!
+        </p>
+        <div class="mt-4 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg inline-block">
+            <div class="text-orange-800 dark:text-orange-300 font-medium">
+                📅 Leave Balance • 💰 Payout Value • 📊 Tax Impact • ⏰ Optimal Timing
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Leave Sellback Parameters</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Employee Type:</label>
+                        <select id="employee-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            <option value="full-time">Full-Time Employee</option>
+                            <option value="part-time">Part-Time Employee</option>
+                            <option value="contractor">Contract Employee</option>
+                            <option value="executive">Executive Level</option>
+                            <option value="union">Union Member</option>
+                            <option value="temporary">Temporary Employee</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Annual Salary ($):</label>
+                            <input type="number" id="annual-salary" step="1000" placeholder="75000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Gross annual salary</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Work Days/Year:</label>
+                            <input type="number" id="work-days" min="200" max="300" placeholder="260" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Typically 260 days</p>
+                        </div>
+                    </div>
+
+                    <!-- Leave Balances -->
+                    <div class="space-y-4">
+                        <h3 class="font-medium text-gray-900 dark:text-white">Current Leave Balances</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Vacation Days:</label>
+                                <input type="number" id="vacation-balance" step="0.5" placeholder="15" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Sick Days:</label>
+                                <input type="number" id="sick-balance" step="0.5" placeholder="8" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Personal Days:</label>
+                                <input type="number" id="personal-balance" step="0.5" placeholder="3" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Comp Time:</label>
+                                <input type="number" id="comp-balance" step="0.5" placeholder="5" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sellback Configuration -->
+                    <div class="space-y-4">
+                        <h3 class="font-medium text-gray-900 dark:text-white">Sellback Configuration</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Days to Sell:</label>
+                                <input type="number" id="days-to-sell" step="0.5" placeholder="10" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Buyback Rate (%):</label>
+                                <input type="number" id="buyback-rate" min="50" max="100" step="5" placeholder="100" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tax Information -->
+                    <div class="space-y-3">
+                        <h3 class="font-medium text-gray-900 dark:text-white">Tax Information</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Federal Tax Rate (%):</label>
+                                <input type="number" id="federal-tax" min="0" max="37" step="1" placeholder="22" 
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">State Tax Rate (%):</label>
+                                <input type="number" id="state-tax" min="0" max="15" step="0.5" placeholder="5" 
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">FICA Rate (%):</label>
+                                <input type="number" id="fica-tax" min="0" max="10" step="0.1" placeholder="7.65" 
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Other Deductions (%):</label>
+                                <input type="number" id="other-deductions" min="0" max="20" step="0.5" placeholder="3" 
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Company Policy -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company Policy:</label>
+                        <select id="company-policy" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="standard" data-max="20" data-min="5">Standard Policy (5-20 days)</option>
+                            <option value="generous" data-max="30" data-min="0">Generous Policy (0-30 days)</option>
+                            <option value="restrictive" data-max="10" data-min="10">Restrictive Policy (10 days max)</option>
+                            <option value="unlimited" data-max="999" data-min="0">Unlimited PTO</option>
+                            <option value="use-it-lose-it" data-max="0" data-min="0">Use It or Lose It</option>
+                        </select>
+                    </div>
+
+                    <!-- Timing -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payout Timing:</label>
+                        <select id="payout-timing" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="year-end">Year-End Payout</option>
+                            <option value="resignation">Upon Resignation</option>
+                            <option value="quarterly">Quarterly Payout</option>
+                            <option value="mid-year">Mid-Year Adjustment</option>
+                            <option value="retirement">Retirement Payout</option>
+                            <option value="immediate">Immediate Request</option>
+                        </select>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Scenarios:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('standard-employee')" class="px-3 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg text-sm hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors">
+                                Standard Employee
+                            </button>
+                            <button onclick="setPreset('senior-executive')" class="px-3 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg text-sm hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors">
+                                Senior Executive
+                            </button>
+                            <button onclick="setPreset('part-time-worker')" class="px-3 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg text-sm hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors">
+                                Part-Time Worker
+                            </button>
+                            <button onclick="setPreset('year-end-sellback')" class="px-3 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg text-sm hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors">
+                                Year-End Sellback
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Leave Balance Overview</h3>
+                        <div class="leave-balance-wheel" id="leave-balance-wheel" style="--used-angle: 90deg; --selling-angle: 180deg; --remaining-angle: 270deg;">
+                            <div class="leave-center">
+                                <div class="text-2xl font-bold" id="total-days">31</div>
+                                <div class="text-sm opacity-75">Total Days</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-center space-x-4 text-xs text-gray-600 dark:text-gray-400 mt-4">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-orange-600 rounded mr-1"></div>
+                                <span>Used</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-amber-500 rounded mr-1"></div>
+                                <span>Selling</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-500 rounded mr-1"></div>
+                                <span>Remaining</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-gray-300 rounded mr-1"></div>
+                                <span>Available</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payout Waterfall -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Payout Breakdown</h3>
+                        <div class="payout-waterfall" id="payout-waterfall">
+                            <!-- Waterfall bars will be generated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Utilization Meter -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Leave Utilization</h3>
+                        <div class="utilization-meter">
+                            <div class="meter-fill" id="utilization-fill"></div>
+                            <div class="meter-needle" id="utilization-needle"></div>
+                            <div class="meter-labels">
+                                <span>0%</span>
+                                <span>25%</span>
+                                <span>50%</span>
+                                <span>75%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                        <div class="text-center mt-6">
+                            <span id="utilization-status" class="text-lg font-semibold text-orange-600 dark:text-orange-400 flex items-center justify-center">
+                                <span class="policy-indicator policy-compliant"></span>
+                                Optimal Usage
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Payout Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Leave Properties -->
+                    <div class="leave-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Policy Details:</h4>
+                        <div id="leave-info" class="text-sm text-gray-700 dark:text-gray-300">
+                            Type: Full-Time • Policy: Standard • Timing: Year-End • Rate: 100%
+                        </div>
+                    </div>
+
+                    <!-- Leave Categories -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Leave Categories</h4>
+                        <div class="leave-categories" id="leave-categories">
+                            <!-- Leave category items will be generated here -->
+                        </div>
+                        <div class="flex justify-center space-x-4 text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-500 rounded mr-1"></div>
+                                <span>Vacation</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-red-500 rounded mr-1"></div>
+                                <span>Sick</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-amber-500 rounded mr-1"></div>
+                                <span>Personal</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-blue-500 rounded mr-1"></div>
+                                <span>Comp</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accrual Timeline -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Annual Leave Timeline</h4>
+                        <div class="accrual-timeline" id="accrual-timeline">
+                            <!-- Timeline months will be generated here -->
+                        </div>
+                        <div class="flex justify-center space-x-4 text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-500 rounded mr-1"></div>
+                                <span>Accrued</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-orange-600 rounded mr-1"></div>
+                                <span>Used</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-amber-500 rounded mr-1"></div>
+                                <span>Selling</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-blue-500 rounded mr-1"></div>
+                                <span>Carryover</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate Payout</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Results</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- Payout Summary -->
+            <div class="leave-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>Leave Sellback Results</span>
+                    <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="gross-payout" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Gross Payout ($)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="total-taxes" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Total Taxes ($)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="net-payout" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Net Payout ($)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="daily-value" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Daily Value ($)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tax Breakdown -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="receipt" class="w-5 h-5"></i>
+                    <span>Tax Breakdown</span>
+                </h3>
+                <div class="leave-breakdown" id="leave-breakdown">
+                    <!-- Breakdown items will be generated here -->
+                </div>
+            </div>
+
+            <!-- Timing Analysis Chart -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-green-800 dark:text-green-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    <span>Timing Analysis</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="timing-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- HR Quote -->
+            <div class="hr-quote mb-6">
+                <p id="hr-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "Strategic leave management maximizes both employee satisfaction and financial benefits."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- HR Best Practices</p>
+            </div>
+
+            <!-- Policy Analysis -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    <span>Policy Analysis</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            <span>Policy Compliance</span>
+                        </h4>
+                        <p id="policy-compliance" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            <span>Timing Optimization</span>
+                        </h4>
+                        <p id="timing-optimization" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                            <span>Tax Efficiency</span>
+                        </h4>
+                        <p id="tax-efficiency" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span>Future Planning</span>
+                        </h4>
+                        <p id="future-planning" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>Leave Sellback Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Leave Sellback?</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    Leave sellback allows employees to convert unused vacation, sick, or personal days into cash payments. This benefit helps employees monetize accrued time off while providing workforce flexibility for employers.
+                </p>
+                <div class="formula-box mt-4">
+                    <div class="katex-formula">Payout = (Daily\ Salary \times Days\ Sold \times Buyback\ Rate) - Taxes</div>
+                </div>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Types of Leave Sellback</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>Vacation Sellback:</strong> Most common, typically 100% of daily rate</li>
+                    <li><strong>Sick Leave Sellback:</strong> Often restricted or at reduced rates</li>
+                    <li><strong>Personal Day Sellback:</strong> Usually included with vacation policies</li>
+                    <li><strong>Comp Time Sellback:</strong> Overtime compensation conversion</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Tax Considerations</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Ordinary Income:</strong> Sellback payments are taxed as regular wages</li>
+                    <li><strong>Withholding:</strong> Subject to federal, state, and FICA taxes</li>
+                    <li><strong>Timing:</strong> Tax year of payment determines tax liability</li>
+                    <li><strong>Supplemental Rate:</strong> May be subject to higher withholding rates</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Optimization Strategies</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Time sellbacks to minimize tax impact</li>
+                    <li>Consider year-end vs. mid-year timing</li>
+                    <li>Balance cash needs with time off benefits</li>
+                    <li>Review company policy limits and restrictions</li>
+                    <li>Plan around blackout periods and busy seasons</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Leave sellback presets
+const presets = {
+    'standard-employee': {
+        employeeType: 'full-time',
+        annualSalary: 65000,
+        workDays: 260,
+        vacationBalance: 18,
+        sickBalance: 10,
+        personalBalance: 3,
+        compBalance: 0,
+        daysToSell: 8,
+        buybackRate: 100,
+        federalTax: 22,
+        stateTax: 5,
+        ficaTax: 7.65,
+        otherDeductions: 2,
+        companyPolicy: 'standard',
+        payoutTiming: 'year-end'
+    },
+    'senior-executive': {
+        employeeType: 'executive',
+        annualSalary: 150000,
+        workDays: 260,
+        vacationBalance: 25,
+        sickBalance: 15,
+        personalBalance: 5,
+        compBalance: 8,
+        daysToSell: 15,
+        buybackRate: 100,
+        federalTax: 32,
+        stateTax: 8,
+        ficaTax: 7.65,
+        otherDeductions: 5,
+        companyPolicy: 'generous',
+        payoutTiming: 'year-end'
+    },
+    'part-time-worker': {
+        employeeType: 'part-time',
+        annualSalary: 35000,
+        workDays: 200,
+        vacationBalance: 10,
+        sickBalance: 5,
+        personalBalance: 2,
+        compBalance: 0,
+        daysToSell: 5,
+        buybackRate: 80,
+        federalTax: 12,
+        stateTax: 3,
+        ficaTax: 7.65,
+        otherDeductions: 1,
+        companyPolicy: 'restrictive',
+        payoutTiming: 'quarterly'
+    },
+    'year-end-sellback': {
+        employeeType: 'full-time',
+        annualSalary: 85000,
+        workDays: 260,
+        vacationBalance: 22,
+        sickBalance: 12,
+        personalBalance: 4,
+        compBalance: 6,
+        daysToSell: 12,
+        buybackRate: 100,
+        federalTax: 24,
+        stateTax: 6,
+        ficaTax: 7.65,
+        otherDeductions: 3,
+        companyPolicy: 'standard',
+        payoutTiming: 'year-end'
+    }
+};
+
+// HR quotes for different scenarios
+const hrQuotes = [
+    { condition: 'optimal-timing', quote: "Strategic leave management maximizes both employee satisfaction and financial benefits.", author: "HR Best Practices" },
+    { condition: 'high-utilization', quote: "Balanced leave usage promotes employee wellbeing and organizational productivity.", author: "Workforce Management" },
+    { condition: 'policy-compliant', quote: "Understanding company policies ensures maximum benefit from leave sellback programs.", author: "Employee Benefits" },
+    { condition: 'tax-efficient', quote: "Timing leave sellbacks can significantly impact your take-home pay.", author: "Payroll Management" }
+];
+
+let timingChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Leave Sellback Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    updateFormula();
+    generatePayoutWaterfall();
+    generateLeaveCategories();
+    generateAccrualTimeline();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const employeeType = document.getElementById('employee-type');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculatePayout);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (employeeType) {
+        employeeType.addEventListener('change', () => {
+            updateFormula();
+            generateLeaveCategories();
+        });
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input')) {
+            updateLeaveBalanceWheel();
+            updateUtilizationMeter();
+            generatePayoutWaterfall();
+            if (hasValidInputs()) {
+                calculatePayout();
+            }
+        }
+    });
+}
+
+// Check if we have valid inputs
+function hasValidInputs() {
+    const annualSalary = parseFloat(document.getElementById('annual-salary').value);
+    const workDays = parseInt(document.getElementById('work-days').value);
+    const daysToSell = parseFloat(document.getElementById('days-to-sell').value);
+    
+    return annualSalary > 0 && workDays > 0 && daysToSell > 0;
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    console.log(`Setting preset: ${presetKey}`);
+    const preset = presets[presetKey];
+    if (!preset) {
+        console.error(`Preset ${presetKey} not found`);
+        return;
+    }
+
+    try {
+        document.getElementById('employee-type').value = preset.employeeType;
+        document.getElementById('annual-salary').value = preset.annualSalary;
+        document.getElementById('work-days').value = preset.workDays;
+        document.getElementById('vacation-balance').value = preset.vacationBalance;
+        document.getElementById('sick-balance').value = preset.sickBalance;
+        document.getElementById('personal-balance').value = preset.personalBalance;
+        document.getElementById('comp-balance').value = preset.compBalance;
+        document.getElementById('days-to-sell').value = preset.daysToSell;
+        document.getElementById('buyback-rate').value = preset.buybackRate;
+        document.getElementById('federal-tax').value = preset.federalTax;
+        document.getElementById('state-tax').value = preset.stateTax;
+        document.getElementById('fica-tax').value = preset.ficaTax;
+        document.getElementById('other-deductions').value = preset.otherDeductions;
+        document.getElementById('company-policy').value = preset.companyPolicy;
+        document.getElementById('payout-timing').value = preset.payoutTiming;
+
+        console.log('Preset values set, updating visualizations...');
+        
+        // Force update all UI elements
+        setTimeout(() => {
+            updateVisualization();
+            updateFormula();
+            generatePayoutWaterfall();
+            generateLeaveCategories();
+            generateAccrualTimeline();
+            calculatePayout();
+        }, 50);
+    } catch (error) {
+        console.error('Error setting preset:', error);
+    }
+}
+
+// Update visualization
+function updateVisualization() {
+    updateLeaveBalanceWheel();
+    updateUtilizationMeter();
+    generatePayoutWaterfall();
+    generateLeaveCategories();
+    generateAccrualTimeline();
+}
+
+// Update leave balance wheel
+function updateLeaveBalanceWheel() {
+    const vacationBalance = parseFloat(document.getElementById('vacation-balance').value) || 0;
+    const sickBalance = parseFloat(document.getElementById('sick-balance').value) || 0;
+    const personalBalance = parseFloat(document.getElementById('personal-balance').value) || 0;
+    const compBalance = parseFloat(document.getElementById('comp-balance').value) || 0;
+    const daysToSell = parseFloat(document.getElementById('days-to-sell').value) || 0;
+
+    const totalDays = vacationBalance + sickBalance + personalBalance + compBalance;
+    const usedDays = Math.max(0, totalDays * 0.3); // Assume 30% used
+    const sellingDays = daysToSell;
+    const remainingDays = totalDays - usedDays - sellingDays;
+
+    // Calculate angles for the wheel
+    const usedAngle = (usedDays / totalDays) * 360;
+    const sellingAngle = usedAngle + (sellingDays / totalDays) * 360;
+    const remainingAngle = sellingAngle + (remainingDays / totalDays) * 360;
+
+    const wheel = document.getElementById('leave-balance-wheel');
+    wheel.style.setProperty('--used-angle', `${usedAngle}deg`);
+    wheel.style.setProperty('--selling-angle', `${sellingAngle}deg`);
+    wheel.style.setProperty('--remaining-angle', `${remainingAngle}deg`);
+
+    document.getElementById('total-days').textContent = totalDays.toFixed(1);
+}
+
+// Update utilization meter
+function updateUtilizationMeter() {
+    const vacationBalance = parseFloat(document.getElementById('vacation-balance').value) || 0;
+    const sickBalance = parseFloat(document.getElementById('sick-balance').value) || 0;
+    const personalBalance = parseFloat(document.getElementById('personal-balance').value) || 0;
+    const compBalance = parseFloat(document.getElementById('comp-balance').value) || 0;
+    const daysToSell = parseFloat(document.getElementById('days-to-sell').value) || 0;
+
+    const totalDays = vacationBalance + sickBalance + personalBalance + compBalance;
+    const utilizationRate = totalDays > 0 ? ((daysToSell / totalDays) * 100) : 0;
+
+    const utilizationFill = document.getElementById('utilization-fill');
+    const utilizationNeedle = document.getElementById('utilization-needle');
+    const utilizationStatus = document.getElementById('utilization-status');
+
+    // Update meter fill (0-100% range)
+    const fillHeight = Math.min(utilizationRate, 100);
+    utilizationFill.style.height = `${fillHeight}%`;
+
+    // Update needle rotation (-90 to +90 degrees)
+    const needleRotation = -90 + (utilizationRate / 100 * 180);
+    utilizationNeedle.style.transform = `translateX(-50%) rotate(${needleRotation}deg)`;
+
+    // Update status
+    let status = '';
+    let indicator = '';
+    if (utilizationRate >= 80) {
+        status = 'High Utilization';
+        indicator = '<span class="policy-indicator policy-warning"></span>';
+        utilizationFill.style.background = 'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)';
+    } else if (utilizationRate >= 60) {
+        status = 'Optimal Usage';
+        indicator = '<span class="policy-indicator policy-compliant"></span>';
+        utilizationFill.style.background = 'linear-gradient(180deg, #10b981 0%, #059669 100%)';
+    } else if (utilizationRate >= 30) {
+        status = 'Moderate Usage';
+        indicator = '<span class="policy-indicator policy-optimal"></span>';
+        utilizationFill.style.background = 'linear-gradient(180deg, #f59e0b 0%, #d97706 100%)';
+    } else {
+        status = 'Low Utilization';
+        indicator = '<span class="policy-indicator policy-violation"></span>';
+        utilizationFill.style.background = 'linear-gradient(180deg, #6b7280 0%, #4b5563 100%)';
+    }
+
+    utilizationStatus.innerHTML = `${indicator}${status}`;
+}
+
+// Generate payout waterfall
+function generatePayoutWaterfall() {
+    const waterfall = document.getElementById('payout-waterfall');
+    waterfall.innerHTML = '';
+
+    const annualSalary = parseFloat(document.getElementById('annual-salary').value) || 75000;
+    const workDays = parseInt(document.getElementById('work-days').value) || 260;
+    const daysToSell = parseFloat(document.getElementById('days-to-sell').value) || 10;
+    const buybackRate = parseFloat(document.getElementById('buyback-rate').value) || 100;
+    const federalTax = parseFloat(document.getElementById('federal-tax').value) || 22;
+    const stateTax = parseFloat(document.getElementById('state-tax').value) || 5;
+    const ficaTax = parseFloat(document.getElementById('fica-tax').value) || 7.65;
+    const otherDeductions = parseFloat(document.getElementById('other-deductions').value) || 3;
+
+    const dailySalary = annualSalary / workDays;
+    const grossPayout = dailySalary * daysToSell * (buybackRate / 100);
+    const federalTaxAmount = grossPayout * (federalTax / 100);
+    const stateTaxAmount = grossPayout * (stateTax / 100);
+    const ficaTaxAmount = grossPayout * (ficaTax / 100);
+    const otherDeductionsAmount = grossPayout * (otherDeductions / 100);
+    const totalTaxes = federalTaxAmount + stateTaxAmount + ficaTaxAmount + otherDeductionsAmount;
+    const netPayout = grossPayout - totalTaxes;
+
+    const maxValue = grossPayout;
+
+    const waterfallData = [
+        { label: 'Gross\nPayout', value: grossPayout, type: 'gross' },
+        { label: 'Federal\nTax', value: -federalTaxAmount, type: 'deduction' },
+        { label: 'State\nTax', value: -stateTaxAmount, type: 'deduction' },
+        { label: 'FICA\nTax', value: -ficaTaxAmount, type: 'deduction' },
+        { label: 'Other\nDeductions', value: -otherDeductionsAmount, type: 'deduction' },
+        { label: 'Net\nPayout', value: netPayout, type: 'net' }
+    ];
+
+    waterfallData.forEach(item => {
+        const barDiv = document.createElement('div');
+        barDiv.className = 'waterfall-bar';
+        
+        const height = Math.abs(item.value) / maxValue * 150;
+        
+        barDiv.innerHTML = `
+            <div class="waterfall-column waterfall-${item.type}" style="height: ${height}px;">
+                <div class="waterfall-value">${item.value >= 0 ? '$' : '-$'}${Math.abs(item.value).toLocaleString()}</div>
+            </div>
+            <div class="waterfall-label">${item.label}</div>
+        `;
+        
+        waterfall.appendChild(barDiv);
+    });
+}
+
+// Generate leave categories
+function generateLeaveCategories() {
+    const categories = document.getElementById('leave-categories');
+    categories.innerHTML = '';
+
+    const vacationBalance = parseFloat(document.getElementById('vacation-balance').value) || 0;
+    const sickBalance = parseFloat(document.getElementById('sick-balance').value) || 0;
+    const personalBalance = parseFloat(document.getElementById('personal-balance').value) || 0;
+    const compBalance = parseFloat(document.getElementById('comp-balance').value) || 0;
+
+    const categoryData = [
+        { label: 'VAC', value: vacationBalance, class: 'category-vacation' },
+        { label: 'SICK', value: sickBalance, class: 'category-sick' },
+        { label: 'PERS', value: personalBalance, class: 'category-personal' },
+        { label: 'COMP', value: compBalance, class: 'category-comp' }
+    ];
+
+    categoryData.forEach(category => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = `category-item ${category.class}`;
+        categoryDiv.innerHTML = `
+            <div class="font-bold text-xs">${category.label}</div>
+            <div class="text-xs">${category.value}</div>
+        `;
+        categories.appendChild(categoryDiv);
+    });
+}
+
+// Generate accrual timeline
+function generateAccrualTimeline() {
+    const timeline = document.getElementById('accrual-timeline');
+    timeline.innerHTML = '';
+
+    const months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+    const daysToSell = parseFloat(document.getElementById('days-to-sell').value) || 0;
+    const payoutTiming = document.getElementById('payout-timing').value;
+
+    months.forEach((month, index) => {
+        const monthDiv = document.createElement('div');
+        monthDiv.className = 'timeline-month';
+        monthDiv.textContent = month;
+        
+        // Simulate accrual pattern
+        if (index < 6) {
+            monthDiv.classList.add('accrued');
+        } else if (index < 9) {
+            monthDiv.classList.add('used');
+        } else if (payoutTiming === 'year-end' && index >= 10) {
+            monthDiv.classList.add('selling');
+        } else {
+            monthDiv.classList.add('carryover');
+        }
+        
+        timeline.appendChild(monthDiv);
+    });
+}
+
+// Update formula display
+function updateFormula() {
+    const employeeType = document.getElementById('employee-type').value;
+    const katexElement = document.getElementById('katex-formula');
+
+    let formula = '';
+    switch (employeeType) {
+        case 'full-time':
+            formula = 'Payout = \\frac{Annual\\ Salary}{Work\\ Days} \\times Days\\ Sold \\times Buyback\\ Rate - Taxes';
+            break;
+        case 'part-time':
+            formula = 'Payout = \\frac{Hourly\\ Rate \\times Hours}{Days} \\times Days\\ Sold \\times Rate - Taxes';
+            break;
+        case 'executive':
+            formula = 'Payout = \\frac{Base + Bonus}{Work\\ Days} \\times Days\\ Sold \\times Rate - Taxes';
+            break;
+        case 'union':
+            formula = 'Payout = Union\\ Rate \\times Days\\ Sold \\times Multiplier - Taxes';
+            break;
+        default:
+            formula = 'Payout = Daily\\ Rate \\times Days\\ Sold \\times Buyback\\ Rate - Taxes';
+    }
+
+    try {
+        katex.render(formula, katexElement, {
+            throwOnError: false,
+            displayMode: false
+        });
+    } catch (error) {
+        katexElement.textContent = formula;
+    }
+}
+
+// Calculate payout
+function calculatePayout() {
+    console.log('Calculating leave payout...');
+    try {
+        const annualSalary = parseFloat(document.getElementById('annual-salary').value) || 0;
+        const workDays = parseInt(document.getElementById('work-days').value) || 260;
+        const daysToSell = parseFloat(document.getElementById('days-to-sell').value) || 0;
+        const buybackRate = parseFloat(document.getElementById('buyback-rate').value) || 100;
+        const federalTax = parseFloat(document.getElementById('federal-tax').value) || 22;
+        const stateTax = parseFloat(document.getElementById('state-tax').value) || 5;
+        const ficaTax = parseFloat(document.getElementById('fica-tax').value) || 7.65;
+        const otherDeductions = parseFloat(document.getElementById('other-deductions').value) || 3;
+        const employeeType = document.getElementById('employee-type').value;
+        const companyPolicy = document.getElementById('company-policy').value;
+        const payoutTiming = document.getElementById('payout-timing').value;
+
+        if (annualSalary <= 0 || workDays <= 0 || daysToSell <= 0) {
+            console.log('Please enter valid payout parameters');
+            return;
+        }
+
+        // Calculate daily salary
+        const dailySalary = annualSalary / workDays;
+        
+        // Calculate gross payout
+        const grossPayout = dailySalary * daysToSell * (buybackRate / 100);
+        
+        // Calculate taxes
+        const federalTaxAmount = grossPayout * (federalTax / 100);
+        const stateTaxAmount = grossPayout * (stateTax / 100);
+        const ficaTaxAmount = grossPayout * (ficaTax / 100);
+        const otherDeductionsAmount = grossPayout * (otherDeductions / 100);
+        const totalTaxes = federalTaxAmount + stateTaxAmount + ficaTaxAmount + otherDeductionsAmount;
+        
+        // Calculate net payout
+        const netPayout = grossPayout - totalTaxes;
+        
+        // Generate breakdown
+        const breakdown = generatePayoutBreakdown(grossPayout, federalTaxAmount, stateTaxAmount, ficaTaxAmount, otherDeductionsAmount, netPayout);
+        
+        // Calculate policy analysis
+        const analysis = calculatePolicyAnalysis(daysToSell, employeeType, companyPolicy, payoutTiming, grossPayout);
+
+        // Update display
+        updateResults({
+            grossPayout,
+            totalTaxes,
+            netPayout,
+            dailyValue: dailySalary,
+            daysToSell,
+            buybackRate
+        }, breakdown, analysis);
+
+        // Create chart
+        createTimingChart(grossPayout, totalTaxes, netPayout, payoutTiming);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('Leave payout calculations completed successfully');
+    } catch (error) {
+        console.error('Error calculating payout:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Generate payout breakdown
+function generatePayoutBreakdown(grossPayout, federalTax, stateTax, ficaTax, otherDeductions, netPayout) {
+    return [
+        {
+            label: 'Gross Payout',
+            value: grossPayout,
+            percentage: 100,
+            description: 'Total before taxes'
+        },
+        {
+            label: 'Federal Tax',
+            value: federalTax,
+            percentage: (federalTax / grossPayout * 100).toFixed(1),
+            description: 'Federal income tax'
+        },
+        {
+            label: 'State Tax',
+            value: stateTax,
+            percentage: (stateTax / grossPayout * 100).toFixed(1),
+            description: 'State income tax'
+        },
+        {
+            label: 'FICA Tax',
+            value: ficaTax,
+            percentage: (ficaTax / grossPayout * 100).toFixed(1),
+            description: 'Social Security & Medicare'
+        },
+        {
+            label: 'Other Deductions',
+            value: otherDeductions,
+            percentage: (otherDeductions / grossPayout * 100).toFixed(1),
+            description: 'Benefits & other deductions'
+        },
+        {
+            label: 'Net Payout',
+            value: netPayout,
+            percentage: (netPayout / grossPayout * 100).toFixed(1),
+            description: 'Take-home amount'
+        }
+    ];
+}
+
+// Calculate policy analysis
+function calculatePolicyAnalysis(daysToSell, employeeType, companyPolicy, payoutTiming, grossPayout) {
+    let policyCompliance = '';
+    const policyData = document.getElementById('company-policy').selectedOptions[0].dataset;
+    const maxDays = parseInt(policyData.max);
+    const minDays = parseInt(policyData.min);
+    
+    if (daysToSell > maxDays) {
+        policyCompliance = 'Exceeds policy limits. Consider reducing sellback amount or check with HR for exceptions.';
+    } else if (daysToSell < minDays) {
+        policyCompliance = 'Below minimum sellback threshold. May need to increase days or wait for next period.';
+    } else {
+        policyCompliance = 'Compliant with company policy. Sellback amount is within acceptable limits.';
+    }
+
+    let timingOptimization = '';
+    switch (payoutTiming) {
+        case 'year-end':
+            timingOptimization = 'Year-end timing may push you into higher tax bracket. Consider spreading across tax years.';
+            break;
+        case 'resignation':
+            timingOptimization = 'Resignation payout timing is optimal for immediate cash needs but may have tax implications.';
+            break;
+        case 'quarterly':
+            timingOptimization = 'Quarterly payouts help spread tax burden and provide regular cash flow.';
+            break;
+        default:
+            timingOptimization = 'Current timing appears reasonable for your situation.';
+    }
+
+    let taxEfficiency = '';
+    const effectiveRate = ((grossPayout - (grossPayout * 0.6)) / grossPayout) * 100;
+    if (effectiveRate > 35) {
+        taxEfficiency = 'High tax burden. Consider timing strategies or consult tax professional.';
+    } else if (effectiveRate > 25) {
+        taxEfficiency = 'Moderate tax impact. Standard withholding rates apply.';
+    } else {
+        taxEfficiency = 'Favorable tax treatment. Good timing for sellback.';
+    }
+
+    let futurePlanning = '';
+    if (employeeType === 'executive') {
+        futurePlanning = 'Consider impact on executive compensation limits and deferred compensation plans.';
+    } else if (companyPolicy === 'use-it-lose-it') {
+        futurePlanning = 'Plan carefully as unused days will be forfeited. Maximize sellback opportunities.';
+    } else {
+        futurePlanning = 'Balance current cash needs with future time off requirements and career planning.';
+    }
+
+    return {
+        policyCompliance,
+        timingOptimization,
+        taxEfficiency,
+        futurePlanning
+    };
+}
+
+// Update results display
+function updateResults(metrics, breakdown, analysis) {
+    // Update summary
+    document.getElementById('gross-payout').textContent = `$${metrics.grossPayout.toLocaleString()}`;
+    document.getElementById('total-taxes').textContent = `$${metrics.totalTaxes.toLocaleString()}`;
+    document.getElementById('net-payout').textContent = `$${metrics.netPayout.toLocaleString()}`;
+    document.getElementById('daily-value').textContent = `$${metrics.dailyValue.toLocaleString()}`;
+
+    // Update breakdown
+    const breakdownContainer = document.getElementById('leave-breakdown');
+    breakdownContainer.innerHTML = '';
+    
+    breakdown.forEach(item => {
+        const breakdownDiv = document.createElement('div');
+        breakdownDiv.className = 'breakdown-item';
+        breakdownDiv.innerHTML = `
+            <h4 class="font-semibold text-gray-900 dark:text-white mb-2">${item.label}</h4>
+            <div class="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-2">
+                $${item.value.toLocaleString()}
+            </div>
+            <div class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                ${item.percentage}% of gross
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">${item.description}</p>
+        `;
+        breakdownContainer.appendChild(breakdownDiv);
+    });
+
+    // Update analysis
+    document.getElementById('policy-compliance').textContent = analysis.policyCompliance;
+    document.getElementById('timing-optimization').textContent = analysis.timingOptimization;
+    document.getElementById('tax-efficiency').textContent = analysis.taxEfficiency;
+    document.getElementById('future-planning').textContent = analysis.futurePlanning;
+
+    // Update HR quote
+    const quote = getHRQuote(metrics.netPayout, metrics.buybackRate);
+    document.getElementById('hr-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.hr-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get HR quote based on metrics
+function getHRQuote(netPayout, buybackRate) {
+    if (buybackRate >= 100 && netPayout > 5000) {
+        return hrQuotes.find(q => q.condition === 'optimal-timing');
+    } else if (netPayout > 3000) {
+        return hrQuotes.find(q => q.condition === 'policy-compliant');
+    } else if (buybackRate < 100) {
+        return hrQuotes.find(q => q.condition === 'tax-efficient');
+    } else {
+        return hrQuotes.find(q => q.condition === 'high-utilization');
+    }
+}
+
+// Create timing chart
+function createTimingChart(grossPayout, totalTaxes, netPayout, currentTiming) {
+    console.log('Creating timing chart...');
+    try {
+        const ctx = document.getElementById('timing-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (timingChart) {
+            timingChart.destroy();
+        }
+
+        // Generate timing scenario data
+        const timingOptions = ['Q1', 'Q2', 'Q3', 'Q4', 'Year-End'];
+        const grossPayouts = timingOptions.map(() => grossPayout);
+        const netPayouts = [
+            netPayout * 1.05,  // Q1 - lower tax bracket
+            netPayout * 1.02,  // Q2 - moderate
+            netPayout,         // Q3 - current
+            netPayout * 0.98,  // Q4 - higher bracket
+            netPayout * 0.95   // Year-end - highest bracket
+        ];
+
+        timingChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: timingOptions,
+                datasets: [
+                    {
+                        label: 'Gross Payout',
+                        data: grossPayouts,
+                        backgroundColor: 'rgba(234, 88, 12, 0.3)',
+                        borderColor: '#ea580c',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Net Payout',
+                        data: netPayouts,
+                        backgroundColor: 'rgba(16, 185, 129, 0.3)',
+                        borderColor: '#10b981',
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Payout Timing Analysis',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Payout Amount ($)',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            callback: function(value) {
+                                return '$' + (value / 1000).toFixed(0) + 'K';
+                            }
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Timing Period',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Timing chart created successfully');
+    } catch (error) {
+        console.error('Error creating timing chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const grossPayout = document.getElementById('gross-payout').textContent;
+        const netPayout = document.getElementById('net-payout').textContent;
+        const annualSalary = document.getElementById('annual-salary').value;
+        const employeeType = document.getElementById('employee-type').value;
+        
+        const results = `
+Leave Sellback Calculator Results
+=================================
+
+Employee Details:
+Employee Type: ${employeeType}
+Annual Salary: $${annualSalary}
+Work Days/Year: ${document.getElementById('work-days').value}
+
+Leave Balances:
+Vacation Days: ${document.getElementById('vacation-balance').value}
+Sick Days: ${document.getElementById('sick-balance').value}
+Personal Days: ${document.getElementById('personal-balance').value}
+Comp Time: ${document.getElementById('comp-balance').value}
+
+Sellback Details:
+Days to Sell: ${document.getElementById('days-to-sell').value}
+Buyback Rate: ${document.getElementById('buyback-rate').value}%
+Company Policy: ${document.getElementById('company-policy').value}
+Payout Timing: ${document.getElementById('payout-timing').value}
+
+Tax Information:
+Federal Tax Rate: ${document.getElementById('federal-tax').value}%
+State Tax Rate: ${document.getElementById('state-tax').value}%
+FICA Rate: ${document.getElementById('fica-tax').value}%
+Other Deductions: ${document.getElementById('other-deductions').value}%
+
+Results:
+Gross Payout: ${grossPayout}
+Total Taxes: ${document.getElementById('total-taxes').textContent}
+Net Payout: ${netPayout}
+Daily Value: ${document.getElementById('daily-value').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Leave Sellback Calculator for more analysis!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `leave-sellback-calculation-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing Leave Sellback calculator...');
+
+    document.getElementById('employee-type').value = 'full-time';
+    document.getElementById('annual-salary').value = '';
+    document.getElementById('work-days').value = '';
+    document.getElementById('vacation-balance').value = '';
+    document.getElementById('sick-balance').value = '';
+    document.getElementById('personal-balance').value = '';
+    document.getElementById('comp-balance').value = '';
+    document.getElementById('days-to-sell').value = '';
+    document.getElementById('buyback-rate').value = '';
+    document.getElementById('federal-tax').value = '';
+    document.getElementById('state-tax').value = '';
+    document.getElementById('fica-tax').value = '';
+    document.getElementById('other-deductions').value = '';
+    document.getElementById('company-policy').value = 'standard';
+    document.getElementById('payout-timing').value = 'year-end';
+
+    updateVisualization();
+    updateFormula();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (timingChart) {
+        timingChart.destroy();
+        timingChart = null;
+    }
+
+    console.log('Leave Sellback calculator cleared successfully');
+}
+
+// Set default values if empty
+function setDefaultValues() {
+    if (!document.getElementById('annual-salary').value) {
+        document.getElementById('annual-salary').value = '75000';
+        document.getElementById('work-days').value = '260';
+        document.getElementById('vacation-balance').value = '15';
+        document.getElementById('sick-balance').value = '8';
+        document.getElementById('personal-balance').value = '3';
+        document.getElementById('comp-balance').value = '0';
+        document.getElementById('days-to-sell').value = '10';
+        document.getElementById('buyback-rate').value = '100';
+        document.getElementById('federal-tax').value = '22';
+        document.getElementById('state-tax').value = '5';
+        document.getElementById('fica-tax').value = '7.65';
+        document.getElementById('other-deductions').value = '3';
+    }
+}
+
+// Ensure DOM is fully loaded before initializing
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing Leave Sellback calculator...');
+        setDefaultValues();
+        initCalculator();
+        lucide.createIcons();
+        
+        // Render KaTeX formulas
+        setTimeout(() => {
+            try {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: "$$", right: "$$", display: true},
+                        {left: "$", right: "$", display: false}
+                    ]
+                });
+            } catch (e) {
+                console.error('Error rendering math:', e);
+            }
+        }, 100);
+    });
+} else {
+    console.log('DOM already loaded, initializing Leave Sellback calculator...');
+    setDefaultValues();
+    initCalculator();
+    lucide.createIcons();
+    
+    // Render KaTeX formulas
+    setTimeout(() => {
+        try {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false}
+                ]
+            });
+        } catch (e) {
+            console.error('Error rendering math:', e);
+        }
+    }, 100);
+}
+</script>
+{% endblock %}

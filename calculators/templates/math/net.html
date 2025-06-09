@@ -1,0 +1,1741 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.nrv-display {
+    background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.accounting-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.1) 0%, rgba(15, 118, 110, 0.1) 100%);
+    border-left: 4px solid #0d9488;
+    border-radius: 0 8px 8px 0;
+}
+.value-waterfall {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 200px;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+.dark .value-waterfall {
+    background: linear-gradient(135deg, #134e4a 0%, #0f766e 100%);
+}
+.waterfall-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+    transition: all 0.5s ease;
+    position: relative;
+}
+.waterfall-column {
+    width: 40px;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.8s ease;
+    position: relative;
+    margin-bottom: 4px;
+}
+.waterfall-positive {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+}
+.waterfall-negative {
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+}
+.waterfall-final {
+    background: linear-gradient(180deg, #0d9488 0%, #0f766e 100%);
+}
+.waterfall-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+    color: #374151;
+    margin-top: 0.5rem;
+    line-height: 1.2;
+}
+.dark .waterfall-label {
+    color: #f9fafb;
+}
+.waterfall-value {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+.recovery-gauge {
+    width: 200px;
+    height: 100px;
+    position: relative;
+    margin: 0 auto;
+    background: linear-gradient(180deg, #0d9488 0%, #0f766e 100%);
+    border-radius: 100px 100px 0 0;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.gauge-fill {
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    border-radius: 100px 100px 0 0;
+    transition: height 0.8s ease;
+    position: absolute;
+    bottom: 0;
+}
+.gauge-needle {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 4px;
+    height: 80px;
+    background: #1f2937;
+    border-radius: 2px;
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(-90deg);
+    transition: transform 0.5s ease;
+    z-index: 20;
+}
+.gauge-labels {
+    position: absolute;
+    bottom: -30px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+.asset-condition {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(13, 148, 136, 0.05);
+    border-radius: 8px;
+}
+.condition-level {
+    aspect-ratio: 1;
+    background: #e5e7eb;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+.condition-excellent {
+    background: linear-gradient(45deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+.condition-good {
+    background: linear-gradient(45deg, #0d9488 0%, #0f766e 100%);
+    color: white;
+}
+.condition-fair {
+    background: linear-gradient(45deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+.condition-poor {
+    background: linear-gradient(45deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+.condition-damaged {
+    background: linear-gradient(45deg, #7c2d12 0%, #991b1b 100%);
+    color: white;
+    animation: warning 2s infinite;
+}
+@keyframes warning {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.nrv-card {
+    background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+    border: 1px solid #5eead4;
+    transition: all 0.3s ease;
+}
+.dark .nrv-card {
+    background: linear-gradient(135deg, #134e4a 0%, #0f766e 100%);
+    border-color: #0d9488;
+}
+.nrv-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15);
+}
+.risk-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.risk-minimal { background: #10b981; }
+.risk-low { background: #0d9488; }
+.risk-moderate { background: #f59e0b; }
+.risk-high { background: #ef4444; }
+.risk-severe { background: #7c2d12; }
+.nrv-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+.breakdown-item {
+    background: rgba(13, 148, 136, 0.1);
+    border: 1px solid rgba(13, 148, 136, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+.breakdown-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+.breakdown-item:hover::before {
+    left: 100%;
+}
+.breakdown-item:hover {
+    background: rgba(13, 148, 136, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
+}
+.market-timing {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    margin: 0.5rem 0;
+}
+.timing-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    position: relative;
+}
+.timing-optimal { background: linear-gradient(90deg, #10b981 0%, #059669 100%); }
+.timing-good { background: linear-gradient(90deg, #0d9488 0%, #0f766e 100%); }
+.timing-fair { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); }
+.timing-poor { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); }
+.cost-structure {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: rgba(13, 148, 136, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid #0d9488;
+    transition: all 0.3s ease;
+}
+.cost-structure:hover {
+    background: rgba(13, 148, 136, 0.1);
+    transform: translateX(4px);
+}
+.asset-category {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fbbf24;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin: 0.25rem 0;
+    transition: all 0.3s ease;
+}
+.dark .asset-category {
+    background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+    border-color: #f59e0b;
+}
+.liquidation-speed {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    background: rgba(13, 148, 136, 0.1);
+    border: 1px solid rgba(13, 148, 136, 0.3);
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin: 0.25rem;
+    transition: all 0.3s ease;
+}
+.liquidation-speed:hover {
+    background: rgba(13, 148, 136, 0.2);
+    transform: scale(1.05);
+}
+.time-decay {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0.25rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(13, 148, 136, 0.05);
+    border-radius: 8px;
+}
+.decay-month {
+    aspect-ratio: 1;
+    background: #e5e7eb;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+.decay-month.fresh {
+    background: linear-gradient(45deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+.decay-month.aging {
+    background: linear-gradient(45deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+.decay-month.stale {
+    background: linear-gradient(45deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+.decay-month.obsolete {
+    background: linear-gradient(45deg, #7c2d12 0%, #991b1b 100%);
+    color: white;
+    animation: blink 1.5s infinite;
+}
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+.scenario-comparison {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: rgba(13, 148, 136, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid #0d9488;
+    transition: all 0.3s ease;
+}
+.scenario-comparison:hover {
+    background: rgba(13, 148, 136, 0.1);
+    transform: translateX(4px);
+}
+.impairment-indicator {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin: 0.25rem 0;
+    transition: all 0.3s ease;
+}
+.dark .impairment-indicator {
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    border-color: #ef4444;
+}
+.market-multiplier {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    background: rgba(13, 148, 136, 0.1);
+    border: 1px solid rgba(13, 148, 136, 0.3);
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin: 0.25rem;
+    transition: all 0.3s ease;
+}
+.market-multiplier:hover {
+    background: rgba(13, 148, 136, 0.2);
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-teal-50 dark:bg-teal-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="trending-down" class="w-8 h-8 text-teal-600 dark:text-teal-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Net Realizable Value Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate the net realizable value of assets considering completion costs, disposal expenses, and market conditions. Essential for accurate financial reporting!
+        </p>
+        <div class="mt-4 bg-teal-50 dark:bg-teal-900/20 p-4 rounded-lg inline-block">
+            <div class="text-teal-800 dark:text-teal-300 font-medium">
+                📊 Asset Valuation • 💰 Cost Analysis • 📈 Market Timing • 🔍 Impairment Testing
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Asset Valuation Parameters</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Asset Type:</label>
+                        <select id="asset-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                            <option value="inventory">Inventory</option>
+                            <option value="receivables">Accounts Receivable</option>
+                            <option value="property">Real Estate</option>
+                            <option value="equipment">Equipment & Machinery</option>
+                            <option value="securities">Securities & Investments</option>
+                            <option value="intellectual-property">Intellectual Property</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gross Asset Value ($):</label>
+                            <input type="number" id="gross-value" step="1000" placeholder="100000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Book or estimated value</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estimated Selling Price ($):</label>
+                            <input type="number" id="selling-price" step="1000" placeholder="85000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Expected market price</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Completion Costs ($):</label>
+                            <input type="number" id="completion-costs" step="100" placeholder="5000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 text-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Disposal Costs ($):</label>
+                            <input type="number" id="disposal-costs" step="100" placeholder="3000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 text-lg">
+                        </div>
+                    </div>
+
+                    <!-- Asset Condition -->
+                    <div id="condition-section">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Asset Condition</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Physical Condition (%):</label>
+                                <input type="range" id="physical-condition" min="0" max="100" value="80" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <span>Damaged</span>
+                                    <span id="condition-display" class="font-medium text-teal-600">80%</span>
+                                    <span>Excellent</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Market Demand (%):</label>
+                                <input type="range" id="market-demand" min="0" max="150" value="100" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <span>Low</span>
+                                    <span id="demand-display" class="font-medium text-teal-600">100%</span>
+                                    <span>High</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Market Timing -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Market Timing:</label>
+                        <select id="market-timing" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <option value="optimal" data-multiplier="1.1">Optimal Market (1.1x)</option>
+                            <option value="good" data-multiplier="1.0">Good Market (1.0x)</option>
+                            <option value="fair" data-multiplier="0.9">Fair Market (0.9x)</option>
+                            <option value="poor" data-multiplier="0.8">Poor Market (0.8x)</option>
+                            <option value="distressed" data-multiplier="0.6">Distressed Sale (0.6x)</option>
+                        </select>
+                    </div>
+
+                    <!-- Liquidation Speed -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Liquidation Timeframe:</label>
+                        <select id="liquidation-speed" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <option value="immediate" data-discount="0.25">Immediate (25% discount)</option>
+                            <option value="30-days" data-discount="0.15">30 Days (15% discount)</option>
+                            <option value="90-days" data-discount="0.10">90 Days (10% discount)</option>
+                            <option value="6-months" data-discount="0.05">6 Months (5% discount)</option>
+                            <option value="normal" data-discount="0.00">Normal Timeline (0% discount)</option>
+                        </select>
+                    </div>
+
+                    <!-- Additional Costs -->
+                    <div class="space-y-3">
+                        <h3 class="font-medium text-gray-900 dark:text-white">Additional Costs</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Storage/Holding ($):</label>
+                                <input type="number" id="storage-costs" step="100" placeholder="1000" 
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Marketing/Advertising ($):</label>
+                                <input type="number" id="marketing-costs" step="100" placeholder="2000" 
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Legal/Professional ($):</label>
+                                <input type="number" id="legal-costs" step="100" placeholder="1500" 
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Transportation ($):</label>
+                                <input type="number" id="transport-costs" step="100" placeholder="800" 
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Scenarios:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('inventory-obsolete')" class="px-3 py-2 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-lg text-sm hover:bg-teal-200 dark:hover:bg-teal-900/50 transition-colors">
+                                Obsolete Inventory
+                            </button>
+                            <button onclick="setPreset('property-distressed')" class="px-3 py-2 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-lg text-sm hover:bg-teal-200 dark:hover:bg-teal-900/50 transition-colors">
+                                Distressed Property
+                            </button>
+                            <button onclick="setPreset('equipment-used')" class="px-3 py-2 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-lg text-sm hover:bg-teal-200 dark:hover:bg-teal-900/50 transition-colors">
+                                Used Equipment
+                            </button>
+                            <button onclick="setPreset('receivables-doubtful')" class="px-3 py-2 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-lg text-sm hover:bg-teal-200 dark:hover:bg-teal-900/50 transition-colors">
+                                Doubtful Receivables
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Value Waterfall</h3>
+                        <div class="value-waterfall" id="value-waterfall">
+                            <!-- Waterfall bars will be generated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Recovery Rate Gauge -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Recovery Rate</h3>
+                        <div class="recovery-gauge">
+                            <div class="gauge-fill" id="recovery-gauge-fill"></div>
+                            <div class="gauge-needle" id="recovery-needle"></div>
+                            <div class="gauge-labels">
+                                <span>0%</span>
+                                <span>25%</span>
+                                <span>50%</span>
+                                <span>75%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                        <div class="text-center mt-6">
+                            <span id="recovery-status" class="text-lg font-semibold text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                                <span class="risk-indicator risk-low"></span>
+                                Good Recovery
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Asset Condition Grid -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Asset Condition Assessment</h3>
+                        <div class="asset-condition" id="asset-condition">
+                            <!-- Condition levels will be generated here -->
+                        </div>
+                        <div class="flex justify-center space-x-4 text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-500 rounded mr-1"></div>
+                                <span>Excellent</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-teal-500 rounded mr-1"></div>
+                                <span>Good</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-amber-500 rounded mr-1"></div>
+                                <span>Fair</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-red-500 rounded mr-1"></div>
+                                <span>Poor</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">NRV Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Asset Properties -->
+                    <div class="nrv-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Asset Details:</h4>
+                        <div id="asset-info" class="text-sm text-gray-700 dark:text-gray-300">
+                            Type: Inventory • Condition: Good • Market: Normal • Timing: Standard
+                        </div>
+                    </div>
+
+                    <!-- Time Decay Visualization -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Value Decay Timeline</h4>
+                        <div class="time-decay" id="time-decay">
+                            <!-- Time decay months will be generated here -->
+                        </div>
+                        <div class="flex justify-center space-x-4 text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-500 rounded mr-1"></div>
+                                <span>Fresh</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-amber-500 rounded mr-1"></div>
+                                <span>Aging</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-red-500 rounded mr-1"></div>
+                                <span>Stale</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-red-900 rounded mr-1"></div>
+                                <span>Obsolete</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate NRV</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Results</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- NRV Summary -->
+            <div class="nrv-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>Net Realizable Value Results</span>
+                    <i data-lucide="trending-down" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="net-realizable-value" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Net Realizable Value ($)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="total-costs" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Total Costs ($)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="recovery-percentage" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Recovery Rate (%)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="impairment-loss" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Impairment Loss ($)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Breakdown -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                    <span>Cost Breakdown</span>
+                </h3>
+                <div class="nrv-breakdown" id="nrv-breakdown">
+                    <!-- Breakdown items will be generated here -->
+                </div>
+            </div>
+
+            <!-- Scenario Analysis Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Scenario Analysis</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="scenario-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Accounting Quote -->
+            <div class="accounting-quote mb-6">
+                <p id="accounting-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "Net realizable value ensures assets are not overstated in financial statements."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Accounting Standards</p>
+            </div>
+
+            <!-- Risk Assessment -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    <span>Risk Assessment</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            <span>Market Timing Risk</span>
+                        </h4>
+                        <p id="timing-risk" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="trending-down" class="w-4 h-4"></i>
+                            <span>Condition Risk</span>
+                        </h4>
+                        <p id="condition-risk" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                            <span>Cost Escalation Risk</span>
+                        </h4>
+                        <p id="cost-risk" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="activity" class="w-4 h-4"></i>
+                            <span>Liquidity Risk</span>
+                        </h4>
+                        <p id="liquidity-risk" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>Net Realizable Value Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Net Realizable Value?</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    Net Realizable Value (NRV) is the estimated selling price of an asset in the ordinary course of business, less the estimated costs of completion and disposal. It's a key concept in asset valuation and impairment testing.
+                </p>
+                <div class="formula-box mt-4">
+                    <div class="katex-formula">NRV = Estimated\ Selling\ Price - Completion\ Costs - Disposal\ Costs</div>
+                </div>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key Applications</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>Inventory Valuation:</strong> Lower of cost or NRV principle</li>
+                    <li><strong>Receivables:</strong> Allowance for doubtful accounts</li>
+                    <li><strong>Asset Impairment:</strong> Testing for impairment losses</li>
+                    <li><strong>Business Combinations:</strong> Fair value measurements</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Cost Components</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Completion Costs:</strong> Additional costs to make the asset saleable</li>
+                    <li><strong>Disposal Costs:</strong> Selling expenses, commissions, legal fees</li>
+                    <li><strong>Storage Costs:</strong> Holding costs until sale</li>
+                    <li><strong>Marketing Costs:</strong> Advertising and promotion expenses</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Accounting Standards</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>IAS 2 - Inventories (Lower of cost or NRV)</li>
+                    <li>IAS 36 - Impairment of Assets</li>
+                    <li>IFRS 9 - Financial Instruments (Expected credit losses)</li>
+                    <li>US GAAP ASC 330 - Inventory</li>
+                    <li>Regular assessment required for material assets</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// NRV presets
+const presets = {
+    'inventory-obsolete': {
+        assetType: 'inventory',
+        grossValue: 50000,
+        sellingPrice: 25000,
+        completionCosts: 2000,
+        disposalCosts: 3000,
+        physicalCondition: 40,
+        marketDemand: 60,
+        marketTiming: 'poor',
+        liquidationSpeed: '30-days',
+        storageCosts: 1500,
+        marketingCosts: 2500,
+        legalCosts: 500,
+        transportCosts: 800
+    },
+    'property-distressed': {
+        assetType: 'property',
+        grossValue: 300000,
+        sellingPrice: 220000,
+        completionCosts: 15000,
+        disposalCosts: 18000,
+        physicalCondition: 60,
+        marketDemand: 70,
+        marketTiming: 'distressed',
+        liquidationSpeed: 'immediate',
+        storageCosts: 2000,
+        marketingCosts: 5000,
+        legalCosts: 8000,
+        transportCosts: 0
+    },
+    'equipment-used': {
+        assetType: 'equipment',
+        grossValue: 80000,
+        sellingPrice: 55000,
+        completionCosts: 3000,
+        disposalCosts: 4000,
+        physicalCondition: 70,
+        marketDemand: 85,
+        marketTiming: 'fair',
+        liquidationSpeed: '90-days',
+        storageCosts: 1000,
+        marketingCosts: 2000,
+        legalCosts: 1000,
+        transportCosts: 1500
+    },
+    'receivables-doubtful': {
+        assetType: 'receivables',
+        grossValue: 25000,
+        sellingPrice: 15000,
+        completionCosts: 0,
+        disposalCosts: 2500,
+        physicalCondition: 50,
+        marketDemand: 40,
+        marketTiming: 'poor',
+        liquidationSpeed: '6-months',
+        storageCosts: 0,
+        marketingCosts: 500,
+        legalCosts: 3000,
+        transportCosts: 0
+    }
+};
+
+// Accounting quotes for different scenarios
+const accountingQuotes = [
+    { condition: 'low-impairment', quote: "Net realizable value ensures assets are not overstated in financial statements.", author: "Accounting Standards" },
+    { condition: 'moderate-impairment', quote: "Conservative asset valuation protects stakeholders from overvalued balance sheets.", author: "Financial Reporting" },
+    { condition: 'high-impairment', quote: "Significant impairment losses require careful disclosure and explanation to users.", author: "Audit Standards" },
+    { condition: 'obsolete-inventory', quote: "Regular NRV assessments prevent obsolete inventory from distorting financial position.", author: "Inventory Management" }
+];
+
+let scenarioChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing NRV Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    updateFormula();
+    generateValueWaterfall();
+    generateAssetCondition();
+    generateTimeDecay();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const assetType = document.getElementById('asset-type');
+    const physicalCondition = document.getElementById('physical-condition');
+    const marketDemand = document.getElementById('market-demand');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateNRV);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (assetType) {
+        assetType.addEventListener('change', () => {
+            updateFormula();
+            generateAssetCondition();
+        });
+    }
+
+    if (physicalCondition) {
+        physicalCondition.addEventListener('input', (e) => {
+            document.getElementById('condition-display').textContent = `${e.target.value}%`;
+            updateRecoveryGauge();
+            generateAssetCondition();
+            if (hasValidInputs()) {
+                calculateNRV();
+            }
+        });
+    }
+
+    if (marketDemand) {
+        marketDemand.addEventListener('input', (e) => {
+            document.getElementById('demand-display').textContent = `${e.target.value}%`;
+            updateRecoveryGauge();
+            if (hasValidInputs()) {
+                calculateNRV();
+            }
+        });
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input')) {
+            generateValueWaterfall();
+            if (hasValidInputs()) {
+                calculateNRV();
+            }
+        }
+    });
+}
+
+// Check if we have valid inputs
+function hasValidInputs() {
+    const grossValue = parseFloat(document.getElementById('gross-value').value);
+    const sellingPrice = parseFloat(document.getElementById('selling-price').value);
+    
+    return grossValue > 0 && sellingPrice > 0;
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    console.log(`Setting preset: ${presetKey}`);
+    const preset = presets[presetKey];
+    if (!preset) {
+        console.error(`Preset ${presetKey} not found`);
+        return;
+    }
+
+    try {
+        document.getElementById('asset-type').value = preset.assetType;
+        document.getElementById('gross-value').value = preset.grossValue;
+        document.getElementById('selling-price').value = preset.sellingPrice;
+        document.getElementById('completion-costs').value = preset.completionCosts;
+        document.getElementById('disposal-costs').value = preset.disposalCosts;
+        document.getElementById('physical-condition').value = preset.physicalCondition;
+        document.getElementById('market-demand').value = preset.marketDemand;
+        document.getElementById('market-timing').value = preset.marketTiming;
+        document.getElementById('liquidation-speed').value = preset.liquidationSpeed;
+        document.getElementById('storage-costs').value = preset.storageCosts;
+        document.getElementById('marketing-costs').value = preset.marketingCosts;
+        document.getElementById('legal-costs').value = preset.legalCosts;
+        document.getElementById('transport-costs').value = preset.transportCosts;
+
+        // Update displays
+        document.getElementById('condition-display').textContent = `${preset.physicalCondition}%`;
+        document.getElementById('demand-display').textContent = `${preset.marketDemand}%`;
+
+        console.log('Preset values set, updating visualizations...');
+        
+        // Force update all UI elements
+        setTimeout(() => {
+            updateVisualization();
+            updateFormula();
+            generateValueWaterfall();
+            generateAssetCondition();
+            generateTimeDecay();
+            calculateNRV();
+        }, 50);
+    } catch (error) {
+        console.error('Error setting preset:', error);
+    }
+}
+
+// Update visualization
+function updateVisualization() {
+    generateValueWaterfall();
+    updateRecoveryGauge();
+    generateAssetCondition();
+    generateTimeDecay();
+}
+
+// Generate value waterfall
+function generateValueWaterfall() {
+    const waterfall = document.getElementById('value-waterfall');
+    waterfall.innerHTML = '';
+
+    const grossValue = parseFloat(document.getElementById('gross-value').value) || 100000;
+    const sellingPrice = parseFloat(document.getElementById('selling-price').value) || 85000;
+    const completionCosts = parseFloat(document.getElementById('completion-costs').value) || 5000;
+    const disposalCosts = parseFloat(document.getElementById('disposal-costs').value) || 3000;
+    const storageCosts = parseFloat(document.getElementById('storage-costs').value) || 1000;
+    const marketingCosts = parseFloat(document.getElementById('marketing-costs').value) || 2000;
+    const legalCosts = parseFloat(document.getElementById('legal-costs').value) || 1500;
+    const transportCosts = parseFloat(document.getElementById('transport-costs').value) || 800;
+
+    const maxValue = Math.max(grossValue, sellingPrice);
+    const totalCosts = completionCosts + disposalCosts + storageCosts + marketingCosts + legalCosts + transportCosts;
+    const nrv = sellingPrice - totalCosts;
+
+    const waterfallData = [
+        { label: 'Gross\nValue', value: grossValue, type: 'positive' },
+        { label: 'Selling\nPrice', value: sellingPrice, type: 'positive' },
+        { label: 'Completion\nCosts', value: -completionCosts, type: 'negative' },
+        { label: 'Disposal\nCosts', value: -disposalCosts, type: 'negative' },
+        { label: 'Other\nCosts', value: -(storageCosts + marketingCosts + legalCosts + transportCosts), type: 'negative' },
+        { label: 'Net\nRealizable\nValue', value: nrv, type: 'final' }
+    ];
+
+    waterfallData.forEach(item => {
+        const barDiv = document.createElement('div');
+        barDiv.className = 'waterfall-bar';
+        
+        const height = Math.abs(item.value) / maxValue * 150;
+        
+        barDiv.innerHTML = `
+            <div class="waterfall-column waterfall-${item.type}" style="height: ${height}px;">
+                <div class="waterfall-value">${item.value >= 0 ? '$' : '-$'}${Math.abs(item.value).toLocaleString()}</div>
+            </div>
+            <div class="waterfall-label">${item.label}</div>
+        `;
+        
+        waterfall.appendChild(barDiv);
+    });
+}
+
+// Update recovery gauge
+function updateRecoveryGauge() {
+    const grossValue = parseFloat(document.getElementById('gross-value').value) || 100000;
+    const sellingPrice = parseFloat(document.getElementById('selling-price').value) || 85000;
+    const physicalCondition = parseInt(document.getElementById('physical-condition').value);
+    const marketDemand = parseInt(document.getElementById('market-demand').value);
+
+    // Calculate recovery rate
+    const baseRecovery = (sellingPrice / grossValue) * 100;
+    const conditionAdjustment = (physicalCondition / 100) * 0.2;
+    const demandAdjustment = (marketDemand / 100) * 0.1;
+    const recoveryRate = baseRecovery * (1 + conditionAdjustment + demandAdjustment);
+
+    const recoveryGauge = document.getElementById('recovery-gauge-fill');
+    const recoveryNeedle = document.getElementById('recovery-needle');
+    const recoveryStatus = document.getElementById('recovery-status');
+
+    // Update gauge fill (0-100% range)
+    const fillHeight = Math.min(recoveryRate, 100);
+    recoveryGauge.style.height = `${fillHeight}%`;
+
+    // Update needle rotation (-90 to +90 degrees)
+    const needleRotation = -90 + (recoveryRate / 100 * 180);
+    recoveryNeedle.style.transform = `translateX(-50%) rotate(${needleRotation}deg)`;
+
+    // Update status
+    let status = '';
+    let indicator = '';
+    if (recoveryRate >= 90) {
+        status = 'Excellent Recovery';
+        indicator = '<span class="risk-indicator risk-minimal"></span>';
+        recoveryGauge.style.background = 'linear-gradient(180deg, #10b981 0%, #059669 100%)';
+    } else if (recoveryRate >= 75) {
+        status = 'Good Recovery';
+        indicator = '<span class="risk-indicator risk-low"></span>';
+        recoveryGauge.style.background = 'linear-gradient(180deg, #0d9488 0%, #0f766e 100%)';
+    } else if (recoveryRate >= 50) {
+        status = 'Fair Recovery';
+        indicator = '<span class="risk-indicator risk-moderate"></span>';
+        recoveryGauge.style.background = 'linear-gradient(180deg, #f59e0b 0%, #d97706 100%)';
+    } else if (recoveryRate >= 25) {
+        status = 'Poor Recovery';
+        indicator = '<span class="risk-indicator risk-high"></span>';
+        recoveryGauge.style.background = 'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)';
+    } else {
+        status = 'Severe Loss';
+        indicator = '<span class="risk-indicator risk-severe"></span>';
+        recoveryGauge.style.background = 'linear-gradient(180deg, #7c2d12 0%, #991b1b 100%)';
+    }
+
+    recoveryStatus.innerHTML = `${indicator}${status}`;
+}
+
+// Generate asset condition visualization
+function generateAssetCondition() {
+    const condition = document.getElementById('asset-condition');
+    condition.innerHTML = '';
+
+    const physicalCondition = parseInt(document.getElementById('physical-condition').value);
+    const assetType = document.getElementById('asset-type').value;
+
+    const conditionLevels = ['Damaged', 'Poor', 'Fair', 'Good', 'Excellent'];
+    
+    conditionLevels.forEach((level, index) => {
+        const levelDiv = document.createElement('div');
+        levelDiv.className = 'condition-level';
+        
+        const threshold = (index + 1) * 20;
+        let className = '';
+        
+        if (physicalCondition >= threshold) {
+            switch (index) {
+                case 0: className = 'condition-damaged'; break;
+                case 1: className = 'condition-poor'; break;
+                case 2: className = 'condition-fair'; break;
+                case 3: className = 'condition-good'; break;
+                case 4: className = 'condition-excellent'; break;
+            }
+            levelDiv.classList.add(className);
+        }
+        
+        levelDiv.innerHTML = `
+            <div class="font-bold text-xs">${level}</div>
+            <div class="text-xs">${threshold}%</div>
+        `;
+        
+        condition.appendChild(levelDiv);
+    });
+}
+
+// Generate time decay visualization
+function generateTimeDecay() {
+    const decay = document.getElementById('time-decay');
+    decay.innerHTML = '';
+
+    const assetType = document.getElementById('asset-type').value;
+    const months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+    
+    // Different decay patterns based on asset type
+    let decayPattern = [];
+    switch (assetType) {
+        case 'inventory':
+            decayPattern = ['fresh', 'fresh', 'fresh', 'aging', 'aging', 'stale', 'stale', 'stale', 'obsolete', 'obsolete', 'obsolete', 'obsolete'];
+            break;
+        case 'receivables':
+            decayPattern = ['fresh', 'fresh', 'aging', 'aging', 'stale', 'stale', 'obsolete', 'obsolete', 'obsolete', 'obsolete', 'obsolete', 'obsolete'];
+            break;
+        case 'property':
+            decayPattern = ['fresh', 'fresh', 'fresh', 'fresh', 'fresh', 'fresh', 'aging', 'aging', 'aging', 'aging', 'stale', 'stale'];
+            break;
+        case 'equipment':
+            decayPattern = ['fresh', 'fresh', 'fresh', 'fresh', 'aging', 'aging', 'aging', 'stale', 'stale', 'stale', 'obsolete', 'obsolete'];
+            break;
+        default:
+            decayPattern = ['fresh', 'fresh', 'fresh', 'aging', 'aging', 'aging', 'stale', 'stale', 'stale', 'obsolete', 'obsolete', 'obsolete'];
+    }
+
+    months.forEach((month, index) => {
+        const monthDiv = document.createElement('div');
+        monthDiv.className = `decay-month ${decayPattern[index]}`;
+        monthDiv.textContent = month;
+        decay.appendChild(monthDiv);
+    });
+}
+
+// Update formula display
+function updateFormula() {
+    const assetType = document.getElementById('asset-type').value;
+    const katexElement = document.getElementById('katex-formula');
+
+    let formula = '';
+    switch (assetType) {
+        case 'inventory':
+            formula = 'NRV = min(Cost, Selling\\ Price - Completion - Disposal)';
+            break;
+        case 'receivables':
+            formula = 'NRV = Face\\ Value - Expected\\ Credit\\ Losses';
+            break;
+        case 'property':
+            formula = 'NRV = Fair\\ Value - Costs\\ to\\ Sell';
+            break;
+        case 'equipment':
+            formula = 'NRV = Disposal\\ Value - Removal\\ Costs';
+            break;
+        case 'securities':
+            formula = 'NRV = Market\\ Price - Transaction\\ Costs';
+            break;
+        default:
+            formula = 'NRV = Selling\\ Price - Completion - Disposal';
+    }
+
+    try {
+        katex.render(formula, katexElement, {
+            throwOnError: false,
+            displayMode: false
+        });
+    } catch (error) {
+        katexElement.textContent = formula;
+    }
+}
+
+// Calculate NRV
+function calculateNRV() {
+    console.log('Calculating NRV...');
+    try {
+        const grossValue = parseFloat(document.getElementById('gross-value').value) || 0;
+        const sellingPrice = parseFloat(document.getElementById('selling-price').value) || 0;
+        const completionCosts = parseFloat(document.getElementById('completion-costs').value) || 0;
+        const disposalCosts = parseFloat(document.getElementById('disposal-costs').value) || 0;
+        const storageCosts = parseFloat(document.getElementById('storage-costs').value) || 0;
+        const marketingCosts = parseFloat(document.getElementById('marketing-costs').value) || 0;
+        const legalCosts = parseFloat(document.getElementById('legal-costs').value) || 0;
+        const transportCosts = parseFloat(document.getElementById('transport-costs').value) || 0;
+        const physicalCondition = parseInt(document.getElementById('physical-condition').value) || 80;
+        const marketDemand = parseInt(document.getElementById('market-demand').value) || 100;
+        const marketTiming = document.getElementById('market-timing').value;
+        const liquidationSpeed = document.getElementById('liquidation-speed').value;
+        const assetType = document.getElementById('asset-type').value;
+
+        if (grossValue <= 0 || sellingPrice <= 0) {
+            console.log('Please enter valid asset values');
+            return;
+        }
+
+        // Calculate market adjustments
+        const timingMultiplier = parseFloat(document.getElementById('market-timing').selectedOptions[0].dataset.multiplier) || 1.0;
+        const liquidationDiscount = parseFloat(document.getElementById('liquidation-speed').selectedOptions[0].dataset.discount) || 0.0;
+        
+        // Adjust selling price for market conditions
+        let adjustedSellingPrice = sellingPrice * timingMultiplier * (1 - liquidationDiscount);
+        
+        // Apply condition and demand adjustments
+        const conditionAdjustment = (physicalCondition / 100);
+        const demandAdjustment = (marketDemand / 100);
+        adjustedSellingPrice = adjustedSellingPrice * conditionAdjustment * demandAdjustment;
+        
+        // Calculate total costs
+        const totalCosts = completionCosts + disposalCosts + storageCosts + marketingCosts + legalCosts + transportCosts;
+        
+        // Calculate NRV
+        const netRealizableValue = Math.max(0, adjustedSellingPrice - totalCosts);
+        
+        // Calculate recovery percentage
+        const recoveryPercentage = (netRealizableValue / grossValue) * 100;
+        
+        // Calculate impairment loss
+        const impairmentLoss = Math.max(0, grossValue - netRealizableValue);
+        
+        // Generate breakdown
+        const breakdown = generateNRVBreakdown(grossValue, adjustedSellingPrice, totalCosts, netRealizableValue);
+        
+        // Calculate risk analysis
+        const analysis = calculateRiskAnalysis(recoveryPercentage, physicalCondition, marketDemand, assetType, liquidationSpeed);
+
+        // Update display
+        updateResults({
+            netRealizableValue,
+            totalCosts,
+            recoveryPercentage,
+            impairmentLoss,
+            adjustedSellingPrice,
+            grossValue
+        }, breakdown, analysis);
+
+        // Create chart
+        createScenarioChart(grossValue, sellingPrice, totalCosts, netRealizableValue);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('NRV calculations completed successfully');
+    } catch (error) {
+        console.error('Error calculating NRV:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Generate NRV breakdown
+function generateNRVBreakdown(grossValue, sellingPrice, totalCosts, nrv) {
+    return [
+        {
+            label: 'Gross Asset Value',
+            value: grossValue,
+            percentage: 100,
+            description: 'Original book value'
+        },
+        {
+            label: 'Adjusted Selling Price',
+            value: sellingPrice,
+            percentage: (sellingPrice / grossValue * 100).toFixed(1),
+            description: 'Market-adjusted price'
+        },
+        {
+            label: 'Total Costs',
+            value: totalCosts,
+            percentage: (totalCosts / grossValue * 100).toFixed(1),
+            description: 'All completion and disposal costs'
+        },
+        {
+            label: 'Net Realizable Value',
+            value: nrv,
+            percentage: (nrv / grossValue * 100).toFixed(1),
+            description: 'Final recoverable amount'
+        }
+    ];
+}
+
+// Calculate risk analysis
+function calculateRiskAnalysis(recoveryPercentage, physicalCondition, marketDemand, assetType, liquidationSpeed) {
+    let timingRisk = '';
+    if (liquidationSpeed === 'immediate') {
+        timingRisk = 'High timing risk due to forced liquidation. Consider extending timeline if possible.';
+    } else if (liquidationSpeed === '30-days') {
+        timingRisk = 'Moderate timing risk. Quick sale may result in lower prices than optimal timing.';
+    } else {
+        timingRisk = 'Low timing risk. Adequate time allows for proper marketing and price optimization.';
+    }
+
+    let conditionRisk = '';
+    if (physicalCondition <= 40) {
+        conditionRisk = 'High condition risk. Poor asset condition significantly impacts marketability and price.';
+    } else if (physicalCondition <= 70) {
+        conditionRisk = 'Moderate condition risk. Some refurbishment may be needed to achieve optimal pricing.';
+    } else {
+        conditionRisk = 'Low condition risk. Good asset condition supports strong market pricing.';
+    }
+
+    let costRisk = '';
+    if (recoveryPercentage <= 50) {
+        costRisk = 'High cost escalation risk. Monitor disposal costs closely to prevent further erosion.';
+    } else if (recoveryPercentage <= 75) {
+        costRisk = 'Moderate cost risk. Standard cost controls should be sufficient.';
+    } else {
+        costRisk = 'Low cost risk. Good cost management maintains strong recovery rates.';
+    }
+
+    let liquidityRisk = '';
+    if (marketDemand <= 50) {
+        liquidityRisk = 'High liquidity risk. Limited market demand may extend sale timeline significantly.';
+    } else if (marketDemand <= 80) {
+        liquidityRisk = 'Moderate liquidity risk. Normal market conditions with some buyer interest.';
+    } else {
+        liquidityRisk = 'Low liquidity risk. Strong market demand supports quick and efficient disposal.';
+    }
+
+    return {
+        timingRisk,
+        conditionRisk,
+        costRisk,
+        liquidityRisk
+    };
+}
+
+// Update results display
+function updateResults(metrics, breakdown, analysis) {
+    // Update summary
+    document.getElementById('net-realizable-value').textContent = `$${metrics.netRealizableValue.toLocaleString()}`;
+    document.getElementById('total-costs').textContent = `$${metrics.totalCosts.toLocaleString()}`;
+    document.getElementById('recovery-percentage').textContent = `${metrics.recoveryPercentage.toFixed(1)}%`;
+    document.getElementById('impairment-loss').textContent = `$${metrics.impairmentLoss.toLocaleString()}`;
+
+    // Update breakdown
+    const breakdownContainer = document.getElementById('nrv-breakdown');
+    breakdownContainer.innerHTML = '';
+    
+    breakdown.forEach(item => {
+        const breakdownDiv = document.createElement('div');
+        breakdownDiv.className = 'breakdown-item';
+        breakdownDiv.innerHTML = `
+            <h4 class="font-semibold text-gray-900 dark:text-white mb-2">${item.label}</h4>
+            <div class="text-2xl font-bold text-teal-600 dark:text-teal-400 mb-2">
+                $${item.value.toLocaleString()}
+            </div>
+            <div class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                ${item.percentage}% of gross value
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">${item.description}</p>
+        `;
+        breakdownContainer.appendChild(breakdownDiv);
+    });
+
+    // Update analysis
+    document.getElementById('timing-risk').textContent = analysis.timingRisk;
+    document.getElementById('condition-risk').textContent = analysis.conditionRisk;
+    document.getElementById('cost-risk').textContent = analysis.costRisk;
+    document.getElementById('liquidity-risk').textContent = analysis.liquidityRisk;
+
+    // Update accounting quote
+    const quote = getAccountingQuote(metrics.recoveryPercentage, metrics.impairmentLoss);
+    document.getElementById('accounting-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.accounting-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get accounting quote based on metrics
+function getAccountingQuote(recoveryPercentage, impairmentLoss) {
+    if (impairmentLoss > 50000) {
+        return accountingQuotes.find(q => q.condition === 'high-impairment');
+    } else if (recoveryPercentage < 50) {
+        return accountingQuotes.find(q => q.condition === 'obsolete-inventory');
+    } else if (recoveryPercentage < 75) {
+        return accountingQuotes.find(q => q.condition === 'moderate-impairment');
+    } else {
+        return accountingQuotes.find(q => q.condition === 'low-impairment');
+    }
+}
+
+// Create scenario chart
+function createScenarioChart(grossValue, sellingPrice, totalCosts, nrv) {
+    console.log('Creating scenario chart...');
+    try {
+        const ctx = document.getElementById('scenario-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (scenarioChart) {
+            scenarioChart.destroy();
+        }
+
+        // Generate scenario data
+        const scenarios = ['Optimistic', 'Base Case', 'Conservative', 'Pessimistic'];
+        const nrvValues = [
+            nrv * 1.2,  // Optimistic
+            nrv,         // Base case
+            nrv * 0.8,   // Conservative
+            nrv * 0.6    // Pessimistic
+        ];
+        const recoveryRates = nrvValues.map(value => (value / grossValue) * 100);
+
+        scenarioChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: scenarios,
+                datasets: [
+                    {
+                        label: 'Net Realizable Value',
+                        data: nrvValues,
+                        backgroundColor: ['#10b981', '#0d9488', '#f59e0b', '#ef4444'],
+                        borderColor: ['#059669', '#0f766e', '#d97706', '#dc2626'],
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'NRV Scenario Analysis',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const recovery = recoveryRates[context.dataIndex];
+                                return [
+                                    `NRV: $${context.parsed.y.toLocaleString()}`,
+                                    `Recovery: ${recovery.toFixed(1)}%`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Net Realizable Value ($)',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            callback: function(value) {
+                                return '$' + (value / 1000).toFixed(0) + 'K';
+                            }
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Scenario',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Scenario chart created successfully');
+    } catch (error) {
+        console.error('Error creating scenario chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const nrv = document.getElementById('net-realizable-value').textContent;
+        const totalCosts = document.getElementById('total-costs').textContent;
+        const grossValue = document.getElementById('gross-value').value;
+        const assetType = document.getElementById('asset-type').value;
+        
+        const results = `
+Net Realizable Value Calculator Results
+=======================================
+
+Asset Details:
+Asset Type: ${assetType}
+Gross Asset Value: $${grossValue}
+Estimated Selling Price: $${document.getElementById('selling-price').value}
+Physical Condition: ${document.getElementById('condition-display').textContent}
+Market Demand: ${document.getElementById('demand-display').textContent}
+
+Cost Breakdown:
+Completion Costs: $${document.getElementById('completion-costs').value}
+Disposal Costs: $${document.getElementById('disposal-costs').value}
+Storage Costs: $${document.getElementById('storage-costs').value}
+Marketing Costs: $${document.getElementById('marketing-costs').value}
+Legal Costs: $${document.getElementById('legal-costs').value}
+Transport Costs: $${document.getElementById('transport-costs').value}
+
+Results:
+Net Realizable Value: ${nrv}
+Total Costs: ${totalCosts}
+Recovery Percentage: ${document.getElementById('recovery-percentage').textContent}
+Impairment Loss: ${document.getElementById('impairment-loss').textContent}
+
+Market Conditions:
+Market Timing: ${document.getElementById('market-timing').value}
+Liquidation Speed: ${document.getElementById('liquidation-speed').value}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our NRV Calculator for more asset valuation analysis!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nrv-calculation-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing NRV calculator...');
+
+    document.getElementById('asset-type').value = 'inventory';
+    document.getElementById('gross-value').value = '';
+    document.getElementById('selling-price').value = '';
+    document.getElementById('completion-costs').value = '';
+    document.getElementById('disposal-costs').value = '';
+    document.getElementById('physical-condition').value = '80';
+    document.getElementById('market-demand').value = '100';
+    document.getElementById('market-timing').value = 'good';
+    document.getElementById('liquidation-speed').value = 'normal';
+    document.getElementById('storage-costs').value = '';
+    document.getElementById('marketing-costs').value = '';
+    document.getElementById('legal-costs').value = '';
+    document.getElementById('transport-costs').value = '';
+
+    // Update displays
+    document.getElementById('condition-display').textContent = '80%';
+    document.getElementById('demand-display').textContent = '100%';
+
+    updateVisualization();
+    updateFormula();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (scenarioChart) {
+        scenarioChart.destroy();
+        scenarioChart = null;
+    }
+
+    console.log('NRV calculator cleared successfully');
+}
+
+// Set default values if empty
+function setDefaultValues() {
+    if (!document.getElementById('gross-value').value) {
+        document.getElementById('gross-value').value = '100000';
+        document.getElementById('selling-price').value = '85000';
+        document.getElementById('completion-costs').value = '5000';
+        document.getElementById('disposal-costs').value = '3000';
+    }
+}
+
+// Ensure DOM is fully loaded before initializing
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing NRV calculator...');
+        setDefaultValues();
+        initCalculator();
+        lucide.createIcons();
+        
+        // Render KaTeX formulas
+        setTimeout(() => {
+            try {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: "$$", right: "$$", display: true},
+                        {left: "$", right: "$", display: false}
+                    ]
+                });
+            } catch (e) {
+                console.error('Error rendering math:', e);
+            }
+        }, 100);
+    });
+} else {
+    console.log('DOM already loaded, initializing NRV calculator...');
+    setDefaultValues();
+    initCalculator();
+    lucide.createIcons();
+    
+    // Render KaTeX formulas
+    setTimeout(() => {
+        try {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false}
+                ]
+            });
+        } catch (e) {
+            console.error('Error rendering math:', e);
+        }
+    }, 100);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,1414 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.bonus-display {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.hr-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+    border-left: 4px solid #f59e0b;
+    border-radius: 0 8px 8px 0;
+}
+.timeline-container {
+    width: 100%;
+    height: 200px;
+    position: relative;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-radius: 12px;
+    padding: 20px;
+    overflow: hidden;
+}
+.timeline-track {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    position: relative;
+    margin: 20px 0;
+}
+.timeline-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+    border-radius: 4px;
+    position: relative;
+    transition: width 0.5s ease;
+}
+.timeline-progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+    animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+.timeline-marker {
+    position: absolute;
+    top: -4px;
+    width: 16px;
+    height: 16px;
+    background: #f59e0b;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.timeline-label {
+    position: absolute;
+    top: 25px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #374151;
+    transform: translateX(-50%);
+}
+.dark .timeline-label {
+    color: #f9fafb;
+}
+.bonus-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+.breakdown-item {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+.breakdown-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+.breakdown-item:hover::before {
+    left: 100%;
+}
+.breakdown-item:hover {
+    background: rgba(245, 158, 11, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+.performance-meter {
+    width: 100%;
+    height: 12px;
+    background: #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    margin: 0.5rem 0;
+}
+.performance-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.5s ease;
+    position: relative;
+}
+.performance-excellent { background: linear-gradient(90deg, #10b981 0%, #059669 100%); }
+.performance-good { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); }
+.performance-average { background: linear-gradient(90deg, #6b7280 0%, #4b5563 100%); }
+.performance-poor { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); }
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.compensation-card {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fbbf24;
+    transition: all 0.3s ease;
+}
+.dark .compensation-card {
+    background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+    border-color: #f59e0b;
+}
+.compensation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+.performance-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.excellent { background: #10b981; }
+.good { background: #f59e0b; }
+.average { background: #6b7280; }
+.poor { background: #ef4444; }
+.bonus-calendar {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0.25rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(245, 158, 11, 0.05);
+    border-radius: 8px;
+}
+.calendar-month {
+    aspect-ratio: 1;
+    background: #e5e7eb;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.calendar-month.active {
+    background: #f59e0b;
+    color: white;
+    transform: scale(1.1);
+}
+.calendar-month.partial {
+    background: linear-gradient(45deg, #f59e0b 50%, #e5e7eb 50%);
+    color: white;
+}
+.salary-comparison {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: rgba(245, 158, 11, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid #f59e0b;
+    transition: all 0.3s ease;
+}
+.salary-comparison:hover {
+    background: rgba(245, 158, 11, 0.1);
+    transform: translateX(4px);
+}
+.tax-bracket {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin: 0.25rem 0;
+    transition: all 0.3s ease;
+}
+.dark .tax-bracket {
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    border-color: #ef4444;
+}
+.department-multiplier {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin: 0.25rem;
+    transition: all 0.3s ease;
+}
+.department-multiplier:hover {
+    background: rgba(245, 158, 11, 0.2);
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="banknote" class="w-8 h-8 text-amber-600 dark:text-amber-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Prorate Bonus Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate prorated bonuses based on employment duration, performance metrics, and company policies. Ensure fair and accurate compensation!
+        </p>
+        <div class="mt-4 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg inline-block">
+            <div class="text-amber-800 dark:text-amber-300 font-medium">
+                💰 Fair Compensation • 📅 Time-based • 🎯 Performance-driven
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Bonus Parameters</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Proration Method:</label>
+                        <select id="proration-method" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                            <option value="daily">Daily Proration</option>
+                            <option value="monthly">Monthly Proration</option>
+                            <option value="quarterly">Quarterly Proration</option>
+                            <option value="performance">Performance-based</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Base Bonus ($):</label>
+                            <input type="number" id="base-bonus" step="100" placeholder="10000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Annual target bonus bonus</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Annual Salary ($):</label>
+                            <input type="number" id="annual-salary" step="1000" placeholder="75000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Base salary</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date:</label>
+                            <input type="date" id="start-date" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date:</label>
+                            <input type="date" id="end-date" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg">
+                        </div>
+                    </div>
+
+                    <!-- Performance Section -->
+                    <div id="performance-section">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Performance Metrics</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Individual Performance (%):</label>
+                                <input type="range" id="individual-performance" min="0" max="200" value="100" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <span>0%</span>
+                                    <span id="individual-display" class="font-medium text-amber-600">100%</span>
+                                    <span>200%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Company Performance (%):</label>
+                                <input type="range" id="company-performance" min="0" max="150" value="100" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <span>0%</span>
+                                    <span id="company-display" class="font-medium text-amber-600">100%</span>
+                                    <span>150%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Department & Role -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department:</label>
+                        <select id="department" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <option value="sales" data-multiplier="1.2">Sales (1.2x)</option>
+                            <option value="engineering" data-multiplier="1.1">Engineering (1.1x)</option>
+                            <option value="marketing" data-multiplier="1.0">Marketing (1.0x)</option>
+                            <option value="operations" data-multiplier="0.9">Operations (0.9x)</option>
+                            <option value="hr" data-multiplier="0.8">HR (0.8x)</option>
+                            <option value="finance" data-multiplier="1.0">Finance (1.0x)</option>
+                        </select>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Scenarios:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('new-hire')" class="px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">
+                                New Hire
+                            </button>
+                            <button onclick="setPreset('mid-year')" class="px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">
+                                Mid-Year Join
+                            </button>
+                            <button onclick="setPreset('high-performer')" class="px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">
+                                High Performer
+                            </button>
+                            <button onclick="setPreset('early-departure')" class="px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">
+                                Early Departure
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Employment Timeline</h3>
+                        <div class="timeline-container">
+                            <div class="text-center mb-4">
+                                <span id="timeline-title" class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                    Employment Period
+                                </span>
+                            </div>
+                            <div class="timeline-track">
+                                <div class="timeline-progress" id="timeline-progress" style="width: 75%">
+                                    <div class="timeline-marker" style="left: 0%"></div>
+                                    <div class="timeline-marker" style="left: 100%"></div>
+                                </div>
+                                <div class="timeline-label" style="left: 0%">Start</div>
+                                <div class="timeline-label" style="left: 100%">End</div>
+                            </div>
+                            <div class="text-center mt-4">
+                                <span id="days-worked" class="text-2xl font-bold text-amber-600">275 days</span>
+                                <span class="text-gray-600 dark:text-gray-400"> of </span> 
+                                <span id="total-days" class="text-lg font-semibold text-gray-800 dark:text-gray-200">365 days</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Performance Meters -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Performance Metrics</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Individual Performance</span>
+                                    <span class="performance-indicator excellent"></span>
+                                </div>
+                                <div class="performance-meter">
+                                    <div class="performance-fill performance-excellent" id="individual-meter" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Company Performance</span>
+                                    <span class="performance-indicator good"></span>
+                                </div>
+                                <div class="performance-meter">
+                                    <div class="performance-fill performance-good" id="company-meter" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Current Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Compensation Properties -->
+                    <div class="compensation-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Compensation Details:</h4>
+                        <div id="compensation-info" class="text-sm text-gray-700 dark:text-gray-300">
+                            Method: Daily Proration • Frequency: Annual • Tax: Pre-tax • Currency: USD
+                        </div>
+                    </div>
+
+                    <!-- Bonus Calendar -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Bonus Period</h4>
+                        <div class="bonus-calendar" id="bonus-calendar">
+                            <!-- Calendar months will be generated here -->
+                        </div>
+                        <div class="flex justify-center space-x-4 text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-amber-500 rounded mr-1"></div>
+                                <span>Full Month</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-gradient-to-r from-amber-500 to-gray-300 rounded mr-1"></div>
+                                <span>Partial Month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate Prorated Bonus</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Results</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- Bonus Summary -->
+            <div class="bonus-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>Prorated Bonus Results</span>
+                    <i data-lucide="banknote" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="prorated-bonus" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Prorated Bonus ($)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="proration-percentage" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Proration (%)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="performance-multiplier" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Performance Factor</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="net-bonus" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Net Bonus (Est.)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bonus Breakdown -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                    <span>Bonus Breakdown</span>
+                </h3>
+                <div class="bonus-breakdown" id="bonus-breakdown">
+                    <!-- Breakdown items will be generated here -->
+                </div>
+            </div>
+
+            <!-- Comparison Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Bonus Comparison</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="comparison-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- HR Quote -->
+            <div class="hr-quote mb-6">
+                <p id="hr-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "Fair compensation is the foundation of employee satisfaction and retention."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- HR Best Practice</p>
+            </div>
+
+            <!-- Compensation Analysis -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span>Compensation Analysis</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span>Time Analysis</span>
+                        </h4>
+                        <p id="time-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span>Performance Impact</span>
+                        </h4>
+                        <p id="performance-impact" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                            <span>Tax Considerations</span>
+                        </h4>
+                        <p id="tax-considerations" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="building" class="w-4 h-4"></i>
+                            <span>Department Impact</span>
+                        </h4>
+                        <p id="department-impact" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>Bonus Proration Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is Bonus Proration?</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    Bonus proration is the practice of adjusting bonus payments based on the actual time worked during the bonus period, ensuring fair compensation for partial employment periods.
+                </p>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Prorated Bonus = <span class="katex-formula">Base\ Bonus \times \frac{Days\ Worked}{Total\ Days} \times Performance\ Factor</span>
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Proration Methods</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>Daily Proration:</strong> <span class="katex-formula">\frac{Actual\ Days\ Worked}{Total\ Days\ in\ Period}</span></li>
+                    <li><strong>Monthly Proration:</strong> <span class="katex-formula">\frac{Full\ Months + Partial\ Month\ Fraction}{12}</span></li>
+                    <li><strong>Quarterly Proration:</strong> <span class="katex-formula">\frac{Quarters\ Worked}{4}</span></li>
+                    <li><strong>Performance-based:</strong> <span class="katex-formula">Base \times Time\ Factor \times Performance\ Rating</span></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key Considerations</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Employment Status:</strong> Full-time vs part-time considerations</li>
+                    <li><strong>Performance Metrics:</strong> Individual and company performance factors</li>
+                    <li><strong>Department Multipliers:</strong> Role-specific bonus adjustments</li>
+                    <li><strong>Tax Implications:</strong> Bonus taxation and withholding requirements</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Best Practices</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Clear communication of proration policies</li>
+                    <li>Consistent application across all employees</li>
+                    <li>Documentation of calculation methods</li>
+                    <li>Regular review of bonus structures</li>
+                    <li>Compliance with labor laws and regulations</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Bonus presets
+const presets = {
+    'new-hire': {
+        method: 'daily',
+        baseBonus: 8000,
+        annualSalary: 65000,
+        startDate: '2024-03-15',
+        endDate: '2024-12-31',
+        individualPerformance: 90,
+        companyPerformance: 105,
+        department: 'engineering'
+    },
+    'mid-year': {
+        method: 'monthly',
+        baseBonus: 12000,
+        annualSalary: 80000,
+        startDate: '2024-07-01',
+        endDate: '2024-12-31',
+        individualPerformance: 110,
+        companyPerformance: 95,
+        department: 'sales'
+    },
+    'high-performer': {
+        method: 'performance',
+        baseBonus: 15000,
+        annualSalary: 95000,
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
+        individualPerformance: 150,
+        companyPerformance: 120,
+        department: 'sales'
+    },
+    'early-departure': {
+        method: 'daily',
+        baseBonus: 10000,
+        annualSalary: 70000,
+        startDate: '2024-01-01',
+        endDate: '2024-08-15',
+        individualPerformance: 85,
+        companyPerformance: 100,
+        department: 'marketing'
+    }
+};
+
+// HR quotes for different scenarios
+const hrQuotes = [
+    { condition: 'high-performance', quote: "Fair compensation is the foundation of employee satisfaction and retention.", author: "HR Best Practice" },
+    { condition: 'new-hire', quote: "Great talent deserves great compensation, regardless of start date.", author: "Talent Management" },
+    { condition: 'partial-year', quote: "Prorated bonuses ensure equity and fairness in compensation.", author: "Compensation Philosophy" },
+    { condition: 'department-bonus', quote: "Different roles, different contributions, different rewards.", author: "Performance Management" }
+];
+
+let comparisonChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Prorate Bonus Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    updateFormula();
+    generateBonusCalendar();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const prorationMethod = document.getElementById('proration-method');
+    const individualPerformance = document.getElementById('individual-performance');
+    const companyPerformance = document.getElementById('company-performance');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateBonus);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (prorationMethod) {
+        prorationMethod.addEventListener('change', () => {
+            updateFormula();
+        });
+    }
+
+    if (individualPerformance) {
+        individualPerformance.addEventListener('input', (e) => {
+            document.getElementById('individual-display').textContent = `${e.target.value}%`;
+            updatePerformanceMeters();
+            if (hasValidInputs()) {
+                calculateBonus();
+            }
+        });
+    }
+
+    if (companyPerformance) {
+        companyPerformance.addEventListener('input', (e) => {
+            document.getElementById('company-display').textContent = `${e.target.value}%`;
+            updatePerformanceMeters();
+            if (hasValidInputs()) {
+                calculateBonus();
+            }
+        });
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input') || e.target.type === 'date') {
+            updateTimeline();
+            if (hasValidInputs()) {
+                calculateBonus();
+            }
+        }
+    });
+}
+
+// Check if we have valid inputs
+function hasValidInputs() {
+    const baseBonus = parseFloat(document.getElementById('base-bonus').value);
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    
+    return baseBonus > 0 && startDate && endDate && new Date(startDate) <= new Date(endDate);
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    console.log(`Setting preset: ${presetKey}`);
+    const preset = presets[presetKey];
+    if (!preset) {
+        console.error(`Preset ${presetKey} not found`);
+        return;
+    }
+
+    try {
+        document.getElementById('proration-method').value = preset.method;
+        document.getElementById('base-bonus').value = preset.baseBonus;
+        document.getElementById('annual-salary').value = preset.annualSalary;
+        document.getElementById('start-date').value = preset.startDate;
+        document.getElementById('end-date').value = preset.endDate;
+        document.getElementById('individual-performance').value = preset.individualPerformance;
+        document.getElementById('company-performance').value = preset.companyPerformance;
+        document.getElementById('department').value = preset.department;
+
+        // Update displays
+        document.getElementById('individual-display').textContent = `${preset.individualPerformance}%`;
+        document.getElementById('company-display').textContent = `${preset.companyPerformance}%`;
+
+        console.log('Preset values set, updating visualizations...');
+        
+        // Force update all UI elements
+        setTimeout(() => {
+            updateVisualization();
+            updateFormula();
+            updateTimeline();
+            updatePerformanceMeters();
+            generateBonusCalendar();
+            calculateBonus();
+        }, 50);
+    } catch (error) {
+        console.error('Error setting preset:', error);
+    }
+}
+
+// Update visualization
+function updateVisualization() {
+    updateTimeline();
+    updatePerformanceMeters();
+    generateBonusCalendar();
+}
+
+// Update timeline
+function updateTimeline() {
+    const startDateInput = document.getElementById('start-date').value;
+    const endDateInput = document.getElementById('end-date').value;
+    
+    if (!startDateInput || !endDateInput) {
+        console.log('Missing date inputs');
+        return;
+    }
+    
+    try {
+        const start = new Date(startDateInput);
+        const end = new Date(endDateInput);
+        
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            console.error('Invalid date format');
+            return;
+        }
+        
+        const yearStart = new Date(start.getFullYear(), 0, 1);
+        const yearEnd = new Date(start.getFullYear(), 11, 31);
+        
+        const totalDays = Math.ceil((yearEnd - yearStart) / (1000 * 60 * 60 * 24)) + 1;
+        const workedDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1);
+        const percentage = (workedDays / totalDays) * 100;
+        
+        document.getElementById('timeline-progress').style.width = `${Math.min(percentage, 100)}%`;
+        document.getElementById('days-worked').textContent = `${workedDays} days`;
+        document.getElementById('total-days').textContent = `${totalDays} days`;
+        document.getElementById('timeline-title').textContent = 
+            `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+            
+        console.log(`Timeline updated: ${workedDays}/${totalDays} days (${percentage.toFixed(1)}%)`);
+    } catch (error) {
+        console.error('Error updating timeline:', error);
+    }
+}
+
+// Update performance meters
+function updatePerformanceMeters() {
+    const individualPerf = parseInt(document.getElementById('individual-performance').value);
+    const companyPerf = parseInt(document.getElementById('company-performance').value);
+    
+    const individualMeter = document.getElementById('individual-meter');
+    const companyMeter = document.getElementById('company-meter');
+    
+    individualMeter.style.width = `${Math.min(individualPerf / 2, 100)}%`;
+    companyMeter.style.width = `${Math.min(companyPerf / 1.5, 100)}%`;
+    
+    // Update performance classes
+    individualMeter.className = 'performance-fill ' + getPerformanceClass(individualPerf);
+    companyMeter.className = 'performance-fill ' + getPerformanceClass(companyPerf);
+}
+
+// Get performance class
+function getPerformanceClass(performance) {
+    if (performance >= 120) return 'performance-excellent';
+    if (performance >= 100) return 'performance-good';
+    if (performance >= 80) return 'performance-average';
+    return 'performance-poor';
+}
+
+// Generate bonus calendar
+function generateBonusCalendar() {
+    const calendar = document.getElementById('bonus-calendar');
+    calendar.innerHTML = '';
+    
+    const months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    
+    let startMonth = 0, endMonth = 11;
+    if (startDate) startMonth = new Date(startDate).getMonth();
+    if (endDate) endMonth = new Date(endDate).getMonth();
+    
+    months.forEach((month, index) => {
+        const monthDiv = document.createElement('div');
+        monthDiv.className = 'calendar-month';
+        monthDiv.textContent = month;
+        
+        if (index >= startMonth && index <= endMonth) {
+            if (index === startMonth || index === endMonth) {
+                monthDiv.classList.add('partial');
+            } else {
+                monthDiv.classList.add('active');
+            }
+        }
+        
+        calendar.appendChild(monthDiv);
+    });
+}
+
+// Update formula display
+function updateFormula() {
+    const method = document.getElementById('proration-method').value;
+    const katexElement = document.getElementById('katex-formula');
+
+    let formula = '';
+    switch (method) {
+        case 'daily':
+            formula = 'Bonus = Base \\times \\frac{Days\ Worked}{Total\ Days} \\times Performance';
+            break;
+        case 'monthly':
+            formula = 'Bonus = Base \\times \\frac{Months\ Worked}{12} \\times Performance';
+            break;
+        case 'quarterly':
+            formula = 'Bonus = Base \\times \\frac{Quarters\ Worked}{4} \\times Performance';
+            break;
+        case 'performance':
+            formula = 'Bonus = Base \\times Time\ Factor \\times \\frac{Individual + Company}{200}';
+            break;
+        default:
+            formula = 'Bonus = Base \\times Proration\ Factor \\times Performance';
+    }
+
+    try {
+        katex.render(formula, katexElement, {
+            throwOnError: false,
+            displayMode: false
+        });
+    } catch (error) {
+        katexElement.textContent = formula;
+    }
+}
+
+// Calculate bonus
+function calculateBonus() {
+    console.log('Calculating prorated bonus...');
+    try {
+        const baseBonus = parseFloat(document.getElementById('base-bonus').value) || 0;
+        const annualSalary = parseFloat(document.getElementById('annual-salary').value) || 0;
+        const startDate = new Date(document.getElementById('start-date').value);
+        const endDate = new Date(document.getElementById('end-date').value);
+        const individualPerf = parseInt(document.getElementById('individual-performance').value) || 100;
+        const companyPerf = parseInt(document.getElementById('company-performance').value) || 100;
+        const method = document.getElementById('proration-method').value;
+        const department = document.getElementById('department').value;
+        const departmentMultiplier = parseFloat(document.getElementById('department').selectedOptions[0].dataset.multiplier) || 1.0;
+
+        if (baseBonus <= 0 || !startDate || !endDate) {
+            console.log('Please enter valid bonus parameters');
+            return;
+        }
+
+        // Calculate time factor
+        const timeFactor = calculateTimeFactor(startDate, endDate, method);
+        
+        // Calculate performance factor
+        const performanceFactor = (individualPerf / 100) * (companyPerf / 100);
+        
+        // Calculate prorated bonus
+        const proratedBonus = baseBonus * timeFactor * performanceFactor * departmentMultiplier;
+        
+        // Calculate tax estimate (simplified)
+        const taxRate = calculateTaxRate(annualSalary + proratedBonus);
+        const netBonus = proratedBonus * (1 - taxRate);
+        
+        // Generate breakdown
+        const breakdown = generateBonusBreakdown(baseBonus, timeFactor, performanceFactor, departmentMultiplier, proratedBonus);
+        
+        // Calculate analysis
+        const analysis = calculateCompensationAnalysis(timeFactor, performanceFactor, department, method);
+
+        // Update display
+        updateResults({
+            proratedBonus,
+            prorationPercentage: timeFactor * 100,
+            performanceMultiplier: performanceFactor,
+            netBonus,
+            timeFactor,
+            departmentMultiplier
+        }, breakdown, analysis);
+
+        // Create chart
+        createComparisonChart(baseBonus, proratedBonus, netBonus);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('Bonus calculations completed successfully');
+    } catch (error) {
+        console.error('Error calculating bonus:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Calculate time factor
+function calculateTimeFactor(startDate, endDate, method) {
+    const yearStart = new Date(startDate.getFullYear(), 0, 1);
+    const yearEnd = new Date(startDate.getFullYear(), 11, 31);
+    
+    switch (method) {
+        case 'daily':
+            const totalDays = Math.ceil((yearEnd - yearStart) / (1000 * 60 * 60 * 24)) + 1;
+            const workedDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            return workedDays / totalDays;
+            
+        case 'monthly':
+            const startMonth = startDate.getMonth();
+            const endMonth = endDate.getMonth();
+            const monthsWorked = endMonth - startMonth + 1;
+            return monthsWorked / 12;
+            
+        case 'quarterly':
+            const startQuarter = Math.floor(startDate.getMonth() / 3);
+            const endQuarter = Math.floor(endDate.getMonth() / 3);
+            const quartersWorked = endQuarter - startQuarter + 1;
+            return quartersWorked / 4;
+            
+        case 'performance':
+            const totalDaysPerf = Math.ceil((yearEnd - yearStart) / (1000 * 60 * 60 * 24)) + 1;
+            const workedDaysPerf = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            return workedDaysPerf / totalDaysPerf;
+            
+        default:
+            return 1;
+    }
+}
+
+// Calculate tax rate (simplified)
+function calculateTaxRate(totalIncome) {
+    if (totalIncome <= 40000) return 0.22;
+    if (totalIncome <= 85000) return 0.24;
+    if (totalIncome <= 160000) return 0.32;
+    return 0.35;
+}
+
+// Generate bonus breakdown
+function generateBonusBreakdown(baseBonus, timeFactor, performanceFactor, departmentMultiplier, finalBonus) {
+    return [
+        {
+            label: 'Base Bonus',
+            value: baseBonus,
+            description: 'Annual target bonus amount'
+        },
+        {
+            label: 'Time Proration',
+            value: baseBonus * timeFactor,
+            description: `${(timeFactor * 100).toFixed(1)}% of year worked`
+        },
+        {
+            label: 'Performance Adjustment',
+            value: baseBonus * timeFactor * performanceFactor,
+            description: `${(performanceFactor * 100).toFixed(1)}% performance factor`
+        },
+        {
+            label: 'Department Multiplier',
+            value: finalBonus,
+            description: `${departmentMultiplier}x department factor`
+        }
+    ];
+}
+
+// Calculate compensation analysis
+function calculateCompensationAnalysis(timeFactor, performanceFactor, department, method) {
+    let timeAnalysis = '';
+    if (timeFactor >= 0.9) {
+        timeAnalysis = 'Full year employment. Employee worked nearly the entire bonus period.';
+    } else if (timeFactor >= 0.5) {
+        timeAnalysis = 'Partial year employment. Significant portion of bonus period worked.';
+    } else {
+        timeAnalysis = 'Limited employment period. Bonus reflects shorter tenure during bonus period.';
+    }
+
+    let performanceImpact = '';
+    if (performanceFactor >= 1.2) {
+        performanceImpact = 'Exceptional performance. Both individual and company metrics exceeded targets.';
+    } else if (performanceFactor >= 1.0) {
+        performanceImpact = 'Strong performance. Met or exceeded performance expectations.';
+    } else if (performanceFactor >= 0.8) {
+        performanceImpact = 'Satisfactory performance. Some areas for improvement identified.';
+    } else {
+        performanceImpact = 'Below expectations. Performance improvement needed for future bonuses.';
+    }
+
+    const taxConsiderations = 'Bonuses are typically taxed at supplemental income rates. Consider timing and tax planning strategies.';
+
+    let departmentImpact = '';
+    const deptMultiplier = parseFloat(document.getElementById('department').selectedOptions[0].dataset.multiplier);
+    if (deptMultiplier > 1.0) {
+        departmentImpact = 'Department receives premium bonus multiplier due to strategic importance or performance.';
+    } else if (deptMultiplier === 1.0) {
+        departmentImpact = 'Standard department bonus structure with no additional multipliers applied.';
+    } else {
+        departmentImpact = 'Department has reduced bonus multiplier, typically for support functions.';
+    }
+
+    return {
+        timeAnalysis,
+        performanceImpact,
+        taxConsiderations,
+        departmentImpact
+    };
+}
+
+// Update results display
+function updateResults(metrics, breakdown, analysis) {
+    // Update summary
+    document.getElementById('prorated-bonus').textContent = `$${metrics.proratedBonus.toLocaleString()}`;
+    document.getElementById('proration-percentage').textContent = `${metrics.prorationPercentage.toFixed(1)}%`;
+    document.getElementById('performance-multiplier').textContent = `${metrics.performanceMultiplier.toFixed(2)}x`;
+    document.getElementById('net-bonus').textContent = `$${metrics.netBonus.toLocaleString()}`;
+
+    // Update breakdown
+    const breakdownContainer = document.getElementById('bonus-breakdown');
+    breakdownContainer.innerHTML = '';
+    
+    breakdown.forEach(item => {
+        const breakdownDiv = document.createElement('div');
+        breakdownDiv.className = 'breakdown-item';
+        breakdownDiv.innerHTML = `
+            <h4 class="font-semibold text-gray-900 dark:text-white mb-2">${item.label}</h4>
+            <div class="text-2xl font-bold text-amber-600 dark:text-amber-400 mb-2">
+                $${item.value.toLocaleString()}
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">${item.description}</p>
+        `;
+        breakdownContainer.appendChild(breakdownDiv);
+    });
+
+    // Update analysis
+    document.getElementById('time-analysis').textContent = analysis.timeAnalysis;
+    document.getElementById('performance-impact').textContent = analysis.performanceImpact;
+    document.getElementById('tax-considerations').textContent = analysis.taxConsiderations;
+    document.getElementById('department-impact').textContent = analysis.departmentImpact;
+
+    // Update HR quote
+    const quote = getHRQuote(metrics.performanceMultiplier, metrics.prorationPercentage);
+    document.getElementById('hr-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.hr-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get HR quote based on metrics
+function getHRQuote(performanceMultiplier, prorationPercentage) {
+    if (performanceMultiplier > 1.2) {
+        return hrQuotes.find(q => q.condition === 'high-performance');
+    } else if (prorationPercentage < 50) {
+        return hrQuotes.find(q => q.condition === 'new-hire');
+    } else if (prorationPercentage < 100) {
+        return hrQuotes.find(q => q.condition === 'partial-year');
+    } else {
+        return hrQuotes.find(q => q.condition === 'department-bonus');
+    }
+}
+
+// Create comparison chart
+function createComparisonChart(baseBonus, proratedBonus, netBonus) {
+    console.log('Creating comparison chart...');
+    try {
+        const ctx = document.getElementById('comparison-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (comparisonChart) {
+            comparisonChart.destroy();
+        }
+
+        comparisonChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Base Bonus', 'Prorated Bonus', 'Net Bonus (Est.)'],
+                datasets: [{
+                    label: 'Bonus Amount',
+                    data: [baseBonus, proratedBonus, netBonus],
+                    backgroundColor: ['#6b7280', '#f59e0b', '#10b981'],
+                    borderColor: ['#4b5563', '#d97706', '#059669'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Bonus Comparison',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: $${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Amount ($)',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Bonus Type',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Comparison chart created successfully');
+    } catch (error) {
+        console.error('Error creating comparison chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const proratedBonus = document.getElementById('prorated-bonus').textContent;
+        const prorationPercentage = document.getElementById('proration-percentage').textContent;
+        const baseBonus = document.getElementById('base-bonus').value;
+        const department = document.getElementById('department').value;
+        
+        const results = `
+Prorate Bonus Calculator Results
+================================
+
+Bonus Parameters:
+Base Bonus: $${baseBonus}
+Department: ${department}
+Start Date: ${document.getElementById('start-date').value}
+End Date: ${document.getElementById('end-date').value}
+
+Results:
+Prorated Bonus: ${proratedBonus}
+Proration Percentage: ${prorationPercentage}
+Performance Multiplier: ${document.getElementById('performance-multiplier').textContent}
+Net Bonus (Est.): ${document.getElementById('net-bonus').textContent}
+
+Performance Metrics:
+Individual Performance: ${document.getElementById('individual-display').textContent}
+Company Performance: ${document.getElementById('company-display').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Prorate Bonus Calculator for more analysis!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `prorate-bonus-calculation-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing Prorate Bonus calculator...');
+
+    document.getElementById('proration-method').value = 'daily';
+    document.getElementById('base-bonus').value = '';
+    document.getElementById('annual-salary').value = '';
+    document.getElementById('start-date').value = '';
+    document.getElementById('end-date').value = '';
+    document.getElementById('individual-performance').value = '100';
+    document.getElementById('company-performance').value = '100';
+    document.getElementById('department').value = 'marketing';
+
+    // Update displays
+    document.getElementById('individual-display').textContent = '100%';
+    document.getElementById('company-display').textContent = '100%';
+
+    updateVisualization();
+    updateFormula();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (comparisonChart) {
+        comparisonChart.destroy();
+        comparisonChart = null;
+    }
+
+    console.log('Prorate Bonus calculator cleared successfully');
+}
+
+// Set default dates if empty
+function setDefaultDates() {
+    if (!document.getElementById('start-date').value) {
+        const today = new Date();
+        const startOfYear = new Date(today.getFullYear(), 0, 1);
+        const endOfYear = new Date(today.getFullYear(), 11, 31);
+        
+        document.getElementById('start-date').value = startOfYear.toISOString().split('T')[0];
+        document.getElementById('end-date').value = endOfYear.toISOString().split('T')[0];
+    }
+}
+
+// Ensure DOM is fully loaded before initializing
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing Prorate Bonus calculator...');
+        setDefaultDates();
+        initCalculator();
+        lucide.createIcons();
+        
+        // Render KaTeX formulas
+        setTimeout(() => {
+            try {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: "$$", right: "$$", display: true},
+                        {left: "$", right: "$", display: false}
+                    ]
+                });
+            } catch (e) {
+                console.error('Error rendering math:', e);
+            }
+        }, 100);
+    });
+} else {
+    console.log('DOM already loaded, initializing Prorate Bonus calculator...');
+    setDefaultDates();
+    initCalculator();
+    lucide.createIcons();
+    
+    // Render KaTeX formulas
+    setTimeout(() => {
+        try {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false}
+                ]
+            });
+        } catch (e) {
+            console.error('Error rendering math:', e);
+        }
+    }, 100);
+}
+</script>
+{% endblock %}

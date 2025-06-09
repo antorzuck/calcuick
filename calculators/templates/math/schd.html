@@ -1,0 +1,1107 @@
+{% extends 'base.html' %}
+
+
+{% block head %}
+    <!-- Chart.js for visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- KaTeX for mathematical expressions -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <style>
+        .calculation-card {
+            transition: all 0.3s ease;
+        }
+        .dividend-display {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+        .insight-card {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        }
+        .dark .insight-card {
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+        }
+        .parameter-input {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+        }
+        .dark .parameter-input {
+            background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .finance-quote {
+            font-style: italic;
+            position: relative;
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(5, 150, 105, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+            border-left: 4px solid #059669;
+            border-radius: 0 8px 8px 0;
+        }
+        .yield-meter {
+            background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #059669 100%);
+            height: 8px;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .yield-indicator {
+            position: absolute;
+            top: -2px;
+            width: 4px;
+            height: 12px;
+            background: white;
+            border-radius: 2px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            transition: left 0.5s ease;
+        }
+        .portfolio-visualization {
+            width: 250px;
+            height: 250px;
+            border: 2px solid #059669;
+            border-radius: 20px;
+            position: relative;
+            margin: 0 auto;
+            background: radial-gradient(circle, rgba(5, 150, 105, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .dividend-particle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: float 3s ease-in-out infinite;
+        }
+        .dividend-payment {
+            background: #22c55e;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+        .capital-growth {
+            background: #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        .reinvestment {
+            background: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            25% { transform: translateY(-10px) translateX(5px); }
+            50% { transform: translateY(0px) translateX(-5px); }
+            75% { transform: translateY(10px) translateX(3px); }
+        }
+        .formula-box {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+        }
+        .dark .formula-box {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-color: #475569;
+        }
+        .investment-card {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 1px solid #a7f3d0;
+            transition: all 0.3s ease;
+        }
+        .dark .investment-card {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+            border-color: #059669;
+        }
+        .investment-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+        }
+        .risk-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        .low-risk { background: #22c55e; }
+        .medium-risk { background: #f59e0b; }
+        .high-risk { background: #ef4444; }
+        .time-scale {
+            background: linear-gradient(90deg, #22c55e 0%, #059669 50%, #047857 100%);
+            height: 6px;
+            border-radius: 3px;
+            position: relative;
+        }
+        .dark {
+            background-color: #1f2937;
+            color: #f9fafb;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Back Button -->
+        <div class="mb-6">
+            <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                <span>Back to Calculators</span>
+            </button>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <div class="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+                <i data-lucide="dollar-sign" class="w-8 h-8 text-green-600 dark:text-green-400"></i>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">SCHD Dividend Yield Calculator</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Calculate dividend yields, total returns, and investment projections for the Schwab US Dividend Equity ETF (SCHD). Plan your dividend income strategy!
+            </p>
+            <div class="mt-4 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg inline-block">
+                <div class="text-green-800 dark:text-green-300 font-medium">
+                    💰 Dividend Income • 📈 Total Return • 🎯 FIRE Planning
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculator -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+            <!-- Input Section -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Investment Parameters</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Input Controls -->
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Calculation Type:</label>
+                            <select id="calculation-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="current-yield">Current Dividend Yield</option>
+                                <option value="future-projections">Future Income Projections</option>
+                                <option value="drip-analysis">DRIP Analysis</option>
+                                <option value="fire-calculator">FIRE Calculator</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SCHD Share Price ($):</label>
+                                <input type="number" id="share-price" step="0.01" placeholder="75.50" 
+                                       class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Current market price</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Annual Dividend ($):</label>
+                                <input type="number" id="annual-dividend" step="0.01" placeholder="2.85" 
+                                       class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Per share annually</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shares Owned:</label>
+                                <input type="number" id="shares-owned" step="1" placeholder="100" 
+                                       class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Investment Amount ($):</label>
+                                <input type="number" id="investment-amount" step="100" placeholder="10000" 
+                                       class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-lg">
+                            </div>
+                        </div>
+
+                        <!-- Advanced Parameters -->
+                        <div id="advanced-section">
+                            <h3 class="font-medium text-gray-900 dark:text-white mb-3">Growth Assumptions</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Dividend Growth Rate (%):</label>
+                                    <input type="number" id="dividend-growth" step="0.1" placeholder="8.5" 
+                                           class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Share Price Growth (%):</label>
+                                    <input type="number" id="price-growth" step="0.1" placeholder="7.2" 
+                                           class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Time Horizon -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Horizon (Years):</label>
+                            <input type="range" id="time-horizon" min="1" max="30" value="10" 
+                                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span>1 year</span>
+                                <span id="time-display" class="font-medium">10 years</span>
+                                <span>30 years</span>
+                            </div>
+                        </div>
+
+                        <!-- Quick Presets -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Scenarios:</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="setPreset('conservative')" class="px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                                    Conservative
+                                </button>
+                                <button onclick="setPreset('moderate')" class="px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                                    Moderate
+                                </button>
+                                <button onclick="setPreset('aggressive')" class="px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                                    Aggressive
+                                </button>
+                                <button onclick="setPreset('fire')" class="px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                                    FIRE Goal
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Visual Representation -->
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Portfolio Visualization</h3>
+                            <div class="portfolio-visualization" id="portfolio-viz">
+                                <!-- Particles will be generated here -->
+                            </div>
+                            <div class="text-center mt-4">
+                                <span id="investment-type" class="text-lg font-semibold text-green-600 dark:text-green-400 flex items-center justify-center">
+                                    <span class="risk-indicator low-risk"></span>
+                                    Dividend Growth ETF
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Formula Display -->
+                        <div class="formula-box">
+                            <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Current Formula:</h4>
+                            <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                                <div id="katex-formula"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- SCHD Properties -->
+                        <div class="investment-card p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-900 dark:text-white mb-2">SCHD Properties:</h4>
+                            <div id="schd-info" class="text-sm text-gray-700 dark:text-gray-300">
+                                Expense Ratio: 0.06% • Dividend Frequency: Quarterly • Holdings: 100+ • Focus: Quality Dividends
+                            </div>
+                        </div>
+
+                        <!-- Yield Meter -->
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Current Yield</h4>
+                            <div class="yield-meter mb-2">
+                                <div class="yield-indicator" id="yield-indicator"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                                <span>0%</span>
+                                <span id="yield-value" class="font-medium text-green-600 dark:text-green-400">3.8%</span>
+                                <span>8%</span>
+                            </div>
+                        </div>
+
+                        <!-- Key Metrics -->
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Key Metrics</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-400">Expense Ratio:</span>
+                                    <span class="font-medium">0.06%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-400">5-Year Div Growth:</span>
+                                    <span class="font-medium">~8.5%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-400">Dividend Frequency:</span>
+                                    <span class="font-medium">Quarterly</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                <button id="calculate-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                    <i data-lucide="calculator" class="w-5 h-5"></i>
+                    <span>Calculate Dividend Yield</span>
+                </button>
+                <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span>Clear</span>
+                </button>
+                <button id="save-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                    <span>Save Results</span>
+                </button>
+            </div>
+
+            <!-- Results -->
+            <div id="result-container" class="hidden">
+                <!-- Dividend Summary -->
+                <div class="dividend-display text-white rounded-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                        <span>Dividend Analysis Results</span>
+                        <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="text-center">
+                            <div id="current-yield" class="text-3xl font-bold mb-2">-</div>
+                            <div class="text-sm opacity-90">Current Yield (%)</div>
+                        </div>
+                        <div class="text-center">
+                            <div id="annual-income" class="text-3xl font-bold mb-2">-</div>
+                            <div class="text-sm opacity-90">Annual Income ($)</div>
+                        </div>
+                        <div class="text-center">
+                            <div id="monthly-income" class="text-3xl font-bold mb-2">-</div>
+                            <div class="text-sm opacity-90">Monthly Income ($)</div>
+                        </div>
+                        <div class="text-center">
+                            <div id="total-return" class="text-3xl font-bold mb-2">-</div>
+                            <div class="text-sm opacity-90">Total Return (%)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Future Projections -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                        <span>Future Projections</span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                                <span class="font-medium text-gray-900 dark:text-white">Future Annual Income:</span>
+                                <span id="future-income" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                                <span class="font-medium text-gray-900 dark:text-white">Portfolio Value:</span>
+                                <span id="future-value" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                                <span class="font-medium text-gray-900 dark:text-white">Yield on Cost:</span>
+                                <span id="yield-on-cost" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-lg">
+                                <span class="font-medium text-gray-900 dark:text-white">Total Dividends Received:</span>
+                                <span id="total-dividends" class="font-semibold text-blue-600 dark:text-blue-400">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Growth Chart -->
+                <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                        <span>Income Growth Projection</span>
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="growth-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Finance Quote -->
+                <div class="finance-quote mb-6">
+                    <p id="finance-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                        "The best time to plant a tree was 20 years ago. The second best time is now."
+                    </p>
+                    <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Chinese Proverb</p>
+                </div>
+
+                <!-- Investment Insights -->
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                        <i data-lucide="lightbulb" class="w-5 h-5"></i>
+                        <span>Investment Insights</span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="insight-card p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                                <span>Risk Assessment</span>
+                            </h4>
+                            <p id="risk-assessment" class="text-gray-800 dark:text-gray-200">-</p>
+                        </div>
+                        <div class="insight-card p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                                <i data-lucide="target" class="w-4 h-4"></i>
+                                <span>Income Strategy</span>
+                            </h4>
+                            <p id="income-strategy" class="text-gray-800 dark:text-gray-200">-</p>
+                        </div>
+                        <div class="insight-card p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                                <i data-lucide="clock" class="w-4 h-4"></i>
+                                <span>Time Horizon</span>
+                            </h4>
+                            <p id="time-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                        </div>
+                        <div class="insight-card p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                                <i data-lucide="repeat" class="w-4 h-4"></i>
+                                <span>DRIP Benefits</span>
+                            </h4>
+                            <p id="drip-benefits" class="text-gray-800 dark:text-gray-200">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Educational Content -->
+        <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+                <i data-lucide="book-open" class="w-6 h-6"></i>
+                <span>SCHD Investment Guide</span>
+            </h2>
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is SCHD?</h3>
+                    <p class="text-gray-600 dark:text-gray-300 mb-2">
+                        The Schwab US Dividend Equity ETF (SCHD) tracks the Dow Jones U.S. Dividend 100 Index, focusing on high-quality dividend-paying stocks with sustainable dividend growth.
+                    </p>
+                    <p class="text-gray-600 dark:text-gray-300">
+                        Dividend Yield = <span class="katex-formula">\frac{Annual\ Dividends\ Per\ Share}{Share\ Price} \times 100</span>
+                    </p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key Investment Formulas</h3>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                        <li><strong>Annual Income:</strong> <span class="katex-formula">Shares \times Annual\ Dividend</span></li>
+                        <li><strong>Yield on Cost:</strong> <span class="katex-formula">\frac{Current\ Annual\ Dividend}{Original\ Purchase\ Price} \times 100</span></li>
+                        <li><strong>Future Value:</strong> <span class="katex-formula">PV \times (1 + growth\ rate)^{years}</span></li>
+                        <li><strong>Total Return:</strong> <span class="katex-formula">\frac{(Ending\ Value + Dividends) - Initial\ Investment}{Initial\ Investment} \times 100</span></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">SCHD Advantages</h3>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                        <li><strong>Low Expense Ratio:</strong> Only 0.06% annual fee</li>
+                        <li><strong>Quality Focus:</strong> Screens for financial strength and dividend sustainability</li>
+                        <li><strong>Diversification:</strong> 100+ holdings across multiple sectors</li>
+                        <li><strong>Growth History:</strong> Strong dividend growth track record</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Investment Strategies</h3>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                        <li>Dollar-cost averaging for consistent investing</li>
+                        <li>Dividend reinvestment (DRIP) for compound growth</li>
+                        <li>Tax-advantaged accounts for tax efficiency</li>
+                        <li>Long-term holding for maximum benefit</li>
+                        <li>Regular rebalancing with other asset classes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // Investment presets
+        const presets = {
+            'conservative': {
+                sharePrice: 75.50,
+                annualDividend: 2.85,
+                sharesOwned: 50,
+                investmentAmount: 5000,
+                dividendGrowth: 6.0,
+                priceGrowth: 5.0,
+                timeHorizon: 15
+            },
+            'moderate': {
+                sharePrice: 75.50,
+                annualDividend: 2.85,
+                sharesOwned: 100,
+                investmentAmount: 10000,
+                dividendGrowth: 8.5,
+                priceGrowth: 7.2,
+                timeHorizon: 10
+            },
+            'aggressive': {
+                sharePrice: 75.50,
+                annualDividend: 2.85,
+                sharesOwned: 200,
+                investmentAmount: 20000,
+                dividendGrowth: 10.0,
+                priceGrowth: 9.0,
+                timeHorizon: 20
+            },
+            'fire': {
+                sharePrice: 75.50,
+                annualDividend: 2.85,
+                sharesOwned: 500,
+                investmentAmount: 50000,
+                dividendGrowth: 8.5,
+                priceGrowth: 7.2,
+                timeHorizon: 25
+            }
+        };
+
+        // Finance quotes for different scenarios
+        const financeQuotes = [
+            { condition: 'high-yield', quote: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+            { condition: 'moderate-yield', quote: "Compound interest is the eighth wonder of the world.", author: "Albert Einstein" },
+            { condition: 'low-yield', quote: "Time in the market beats timing the market.", author: "Investment Wisdom" },
+            { condition: 'long-term', quote: "The stock market is a device for transferring money from the impatient to the patient.", author: "Warren Buffett" }
+        ];
+
+        let growthChart = null;
+
+        // Initialize calculator
+        function initCalculator() {
+            console.log('Initializing SCHD Dividend Calculator...');
+            setupEventListeners();
+            updateVisualization();
+            updateFormula();
+            clearCalculator();
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            console.log('Setting up event listeners...');
+            const calculateBtn = document.getElementById('calculate-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const saveBtn = document.getElementById('save-btn');
+            const calculationType = document.getElementById('calculation-type');
+            const timeHorizon = document.getElementById('time-horizon');
+            const themeToggle = document.getElementById('theme-toggle');
+
+            if (calculateBtn) {
+                calculateBtn.addEventListener('click', calculateDividends);
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', clearCalculator);
+            }
+
+            if (saveBtn) {
+                saveBtn.addEventListener('click', saveResults);
+            }
+
+            if (calculationType) {
+                calculationType.addEventListener('change', () => {
+                    updateFormula();
+                });
+            }
+
+            if (timeHorizon) {
+                timeHorizon.addEventListener('input', (e) => {
+                    document.getElementById('time-display').textContent = `${e.target.value} years`;
+                    if (hasValidInputs()) {
+                        calculateDividends();
+                    }
+                });
+            }
+
+            if (themeToggle) {
+                themeToggle.addEventListener('click', toggleTheme);
+            }
+
+            // Add input listeners for real-time updates
+            document.addEventListener('input', function(e) {
+                if (e.target.classList.contains('parameter-input')) {
+                    updateYieldMeter();
+                    if (hasValidInputs()) {
+                        calculateDividends();
+                    }
+                }
+            });
+        }
+
+        // Toggle dark theme
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const icon = document.querySelector('#theme-toggle i');
+            if (document.body.classList.contains('dark')) {
+                icon.setAttribute('data-lucide', 'sun');
+            } else {
+                icon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+        }
+
+        // Check if we have valid inputs
+        function hasValidInputs() {
+            const sharePrice = parseFloat(document.getElementById('share-price').value);
+            const annualDividend = parseFloat(document.getElementById('annual-dividend').value);
+            const sharesOwned = parseFloat(document.getElementById('shares-owned').value);
+            
+            return sharePrice > 0 && annualDividend > 0 && sharesOwned > 0;
+        }
+
+        // Set preset values
+        function setPreset(presetKey) {
+            const preset = presets[presetKey];
+            if (!preset) return;
+
+            document.getElementById('share-price').value = preset.sharePrice;
+            document.getElementById('annual-dividend').value = preset.annualDividend;
+            document.getElementById('shares-owned').value = preset.sharesOwned;
+            document.getElementById('investment-amount').value = preset.investmentAmount;
+            document.getElementById('dividend-growth').value = preset.dividendGrowth;
+            document.getElementById('price-growth').value = preset.priceGrowth;
+            document.getElementById('time-horizon').value = preset.timeHorizon;
+            document.getElementById('time-display').textContent = `${preset.timeHorizon} years`;
+
+            updateVisualization();
+            updateFormula();
+            updateYieldMeter();
+            calculateDividends();
+        }
+
+        // Update visualization
+        function updateVisualization() {
+            generateParticles();
+        }
+
+        // Generate particles for visualization
+        function generateParticles() {
+            const container = document.getElementById('portfolio-viz');
+            container.innerHTML = '';
+
+            const numParticles = 15;
+            const particleTypes = ['dividend-payment', 'capital-growth', 'reinvestment'];
+
+            for (let i = 0; i < numParticles; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'dividend-particle';
+                
+                // Distribute particle types
+                const typeIndex = i % particleTypes.length;
+                particle.classList.add(particleTypes[typeIndex]);
+                
+                // Random position
+                const x = Math.random() * 220 + 15;
+                const y = Math.random() * 220 + 15;
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                
+                // Random animation delay
+                particle.style.animationDelay = `${Math.random() * 3}s`;
+                
+                container.appendChild(particle);
+            }
+        }
+
+        // Update formula display
+        function updateFormula() {
+            const type = document.getElementById('calculation-type').value;
+            const katexElement = document.getElementById('katex-formula');
+
+            let formula = '';
+            switch (type) {
+                case 'current-yield':
+                    formula = 'Yield = \\frac{Annual\\ Dividends}{Share\\ Price} \\times 100';
+                    break;
+                case 'future-projections':
+                    formula = 'Future\\ Value = PV \\times (1 + growth)^{years}';
+                    break;
+                case 'drip-analysis':
+                    formula = 'DRIP\\ Value = \\sum_{t=1}^{n} Dividend_t \\times (1 + r)^{n-t}';
+                    break;
+                case 'fire-calculator':
+                    formula = 'FIRE\\ Number = \\frac{Annual\\ Expenses}{Safe\\ Withdrawal\\ Rate}';
+                    break;
+                default:
+                    formula = 'Yield = \\frac{Annual\\ Dividends}{Share\\ Price} \\times 100';
+            }
+
+            try {
+                katex.render(formula, katexElement, {
+                    throwOnError: false,
+                    displayMode: false
+                });
+            } catch (error) {
+                katexElement.textContent = formula;
+            }
+        }
+
+        // Update yield meter
+        function updateYieldMeter() {
+            const sharePrice = parseFloat(document.getElementById('share-price').value) || 0;
+            const annualDividend = parseFloat(document.getElementById('annual-dividend').value) || 0;
+            
+            if (sharePrice > 0 && annualDividend > 0) {
+                const yield = (annualDividend / sharePrice) * 100;
+                const position = Math.min(yield / 8 * 100, 100); // Scale to 8% max
+                
+                document.getElementById('yield-indicator').style.left = `${position}%`;
+                document.getElementById('yield-value').textContent = `${yield.toFixed(2)}%`;
+            }
+        }
+
+        // Calculate dividends
+        function calculateDividends() {
+            console.log('Calculating dividend yields...');
+            try {
+                const sharePrice = parseFloat(document.getElementById('share-price').value) || 0;
+                const annualDividend = parseFloat(document.getElementById('annual-dividend').value) || 0;
+                const sharesOwned = parseFloat(document.getElementById('shares-owned').value) || 0;
+                const investmentAmount = parseFloat(document.getElementById('investment-amount').value) || 0;
+                const dividendGrowth = parseFloat(document.getElementById('dividend-growth').value) || 8.5;
+                const priceGrowth = parseFloat(document.getElementById('price-growth').value) || 7.2;
+                const timeHorizon = parseInt(document.getElementById('time-horizon').value) || 10;
+
+                if (sharePrice <= 0 || annualDividend <= 0 || sharesOwned <= 0) {
+                    console.log('Please enter valid investment parameters');
+                    return;
+                }
+
+                // Calculate current metrics
+                const currentYield = (annualDividend / sharePrice) * 100;
+                const annualIncome = sharesOwned * annualDividend;
+                const monthlyIncome = annualIncome / 12;
+                const currentValue = sharesOwned * sharePrice;
+
+                // Calculate future projections
+                const futureAnnualDividend = annualDividend * Math.pow(1 + dividendGrowth / 100, timeHorizon);
+                const futureSharePrice = sharePrice * Math.pow(1 + priceGrowth / 100, timeHorizon);
+                const futureIncome = sharesOwned * futureAnnualDividend;
+                const futureValue = sharesOwned * futureSharePrice;
+                const yieldOnCost = (futureAnnualDividend / sharePrice) * 100;
+
+                // Calculate total dividends received over time
+                let totalDividends = 0;
+                for (let year = 1; year <= timeHorizon; year++) {
+                    const yearlyDividend = annualDividend * Math.pow(1 + dividendGrowth / 100, year);
+                    totalDividends += sharesOwned * yearlyDividend;
+                }
+
+                // Calculate total return
+                const totalReturn = ((futureValue + totalDividends - currentValue) / currentValue) * 100;
+
+                // Calculate insights
+                const insights = calculateInvestmentInsights(currentYield, timeHorizon, dividendGrowth, totalReturn);
+
+                // Update display
+                updateResults({
+                    currentYield,
+                    annualIncome,
+                    monthlyIncome,
+                    totalReturn,
+                    futureIncome,
+                    futureValue,
+                    yieldOnCost,
+                    totalDividends
+                }, insights);
+
+                // Create chart
+                createGrowthChart(annualIncome, futureIncome, timeHorizon, dividendGrowth);
+
+                // Show results
+                const resultContainer = document.getElementById('result-container');
+                resultContainer.classList.remove('hidden');
+
+                setTimeout(() => {
+                    resultContainer.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }, 100);
+
+                console.log('Dividend calculations completed successfully');
+            } catch (error) {
+                console.error('Error calculating dividends:', error);
+                alert('An error occurred while calculating. Please check your inputs.');
+            }
+        }
+
+        // Calculate investment insights
+        function calculateInvestmentInsights(currentYield, timeHorizon, dividendGrowth, totalReturn) {
+            let riskAssessment = '';
+            if (currentYield > 5) {
+                riskAssessment = 'High yield may indicate higher risk. SCHD focuses on quality, reducing this concern.';
+            } else if (currentYield > 3) {
+                riskAssessment = 'Moderate yield with good balance of income and growth potential.';
+            } else {
+                riskAssessment = 'Lower current yield but potentially higher growth prospects.';
+            }
+
+            let incomeStrategy = '';
+            if (dividendGrowth > 9) {
+                incomeStrategy = 'Aggressive growth assumption. Consider more conservative estimates for planning.';
+            } else if (dividendGrowth > 7) {
+                incomeStrategy = 'Solid dividend growth strategy. SCHD has historically delivered similar growth.';
+            } else {
+                incomeStrategy = 'Conservative growth assumption. May underestimate SCHD\'s potential.';
+            }
+
+            let timeAnalysis = '';
+            if (timeHorizon > 20) {
+                timeAnalysis = 'Long-term horizon allows maximum benefit from compound growth and dividend increases.';
+            } else if (timeHorizon > 10) {
+                timeAnalysis = 'Medium-term horizon provides good balance of growth and income generation.';
+            } else {
+                timeAnalysis = 'Shorter horizon limits compound growth benefits. Consider longer investment period.';
+            }
+
+            const dripBenefits = 'DRIP reinvestment can significantly boost returns through compound growth and dollar-cost averaging.';
+
+            return {
+                riskAssessment,
+                incomeStrategy,
+                timeAnalysis,
+                dripBenefits
+            };
+        }
+
+        // Update results display
+        function updateResults(metrics, insights) {
+            // Update summary
+            document.getElementById('current-yield').textContent = `${metrics.currentYield.toFixed(2)}%`;
+            document.getElementById('annual-income').textContent = `$${metrics.annualIncome.toLocaleString()}`;
+            document.getElementById('monthly-income').textContent = `$${metrics.monthlyIncome.toLocaleString()}`;
+            document.getElementById('total-return').textContent = `${metrics.totalReturn.toFixed(1)}%`;
+
+            // Update projections
+            document.getElementById('future-income').textContent = `$${metrics.futureIncome.toLocaleString()}`;
+            document.getElementById('future-value').textContent = `$${metrics.futureValue.toLocaleString()}`;
+            document.getElementById('yield-on-cost').textContent = `${metrics.yieldOnCost.toFixed(2)}%`;
+            document.getElementById('total-dividends').textContent = `$${metrics.totalDividends.toLocaleString()}`;
+
+            // Update insights
+            document.getElementById('risk-assessment').textContent = insights.riskAssessment;
+            document.getElementById('income-strategy').textContent = insights.incomeStrategy;
+            document.getElementById('time-analysis').textContent = insights.timeAnalysis;
+            document.getElementById('drip-benefits').textContent = insights.dripBenefits;
+
+            // Update finance quote
+            const quote = getFinanceQuote(metrics.currentYield, metrics.totalReturn);
+            document.getElementById('finance-quote').textContent = `"${quote.quote}"`;
+            document.querySelector('.finance-quote p:last-child').textContent = `- ${quote.author}`;
+        }
+
+        // Get finance quote based on metrics
+        function getFinanceQuote(yield, totalReturn) {
+            if (yield > 4) {
+                return financeQuotes.find(q => q.condition === 'high-yield');
+            } else if (totalReturn > 100) {
+                return financeQuotes.find(q => q.condition === 'long-term');
+            } else if (yield > 2.5) {
+                return financeQuotes.find(q => q.condition === 'moderate-yield');
+            } else {
+                return financeQuotes.find(q => q.condition === 'low-yield');
+            }
+        }
+
+        // Create growth chart
+        function createGrowthChart(currentIncome, futureIncome, timeHorizon, growthRate) {
+            console.log('Creating growth chart...');
+            try {
+                const ctx = document.getElementById('growth-chart');
+                if (!ctx) {
+                    throw new Error('Chart canvas not found');
+                }
+
+                if (growthChart) {
+                    growthChart.destroy();
+                }
+
+                // Generate data points
+                const labels = [];
+                const incomeData = [];
+                
+                for (let year = 0; year <= timeHorizon; year++) {
+                    labels.push(`Year ${year}`);
+                    const income = currentIncome * Math.pow(1 + growthRate / 100, year);
+                    incomeData.push(income);
+                }
+
+                growthChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Annual Dividend Income',
+                            data: incomeData,
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Projected Dividend Income Growth',
+                                color: '#1f2937',
+                                font: { size: 16, weight: 'bold' }
+                            },
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `Income: $${context.parsed.y.toLocaleString()}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Annual Income ($)',
+                                    color: '#374151',
+                                    font: { size: 12, weight: '500' }
+                                },
+                                ticks: {
+                                    color: '#6b7280',
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString();
+                                    }
+                                },
+                                grid: {
+                                    color: '#e5e7eb'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time Period',
+                                    color: '#374151',
+                                    font: { size: 12, weight: '500' }
+                                },
+                                ticks: {
+                                    color: '#6b7280'
+                                },
+                                grid: {
+                                    color: '#e5e7eb'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                console.log('Growth chart created successfully');
+            } catch (error) {
+                console.error('Error creating growth chart:', error);
+            }
+        }
+
+        // Save results function
+        function saveResults() {
+            try {
+                const currentYield = document.getElementById('current-yield').textContent;
+                const annualIncome = document.getElementById('annual-income').textContent;
+                const sharePrice = document.getElementById('share-price').value;
+                const sharesOwned = document.getElementById('shares-owned').value;
+                
+                const results = `
+SCHD Dividend Yield Calculator Results
+=====================================
+
+Investment Parameters:
+Share Price: $${sharePrice}
+Shares Owned: ${sharesOwned}
+Annual Dividend: $${document.getElementById('annual-dividend').value}
+Time Horizon: ${document.getElementById('time-horizon').value} years
+
+Current Results:
+Current Yield: ${currentYield}
+Annual Income: ${annualIncome}
+Monthly Income: ${document.getElementById('monthly-income').textContent}
+
+Future Projections:
+Future Annual Income: ${document.getElementById('future-income').textContent}
+Future Portfolio Value: ${document.getElementById('future-value').textContent}
+Yield on Cost: ${document.getElementById('yield-on-cost').textContent}
+Total Dividends: ${document.getElementById('total-dividends').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our SCHD Dividend Calculator for more projections!
+                `;
+                
+                const blob = new Blob([results], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `schd-dividend-analysis-${new Date().toISOString().split('T')[0]}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                console.log('Results saved successfully');
+            } catch (error) {
+                console.error('Error saving results:', error);
+                alert('Failed to save results. Please try again.');
+            }
+        }
+
+        // Clear calculator
+        function clearCalculator() {
+            console.log('Clearing SCHD calculator...');
+
+            document.getElementById('calculation-type').value = 'current-yield';
+            document.getElementById('share-price').value = '';
+            document.getElementById('annual-dividend').value = '';
+            document.getElementById('shares-owned').value = '';
+            document.getElementById('investment-amount').value = '';
+            document.getElementById('dividend-growth').value = '8.5';
+            document.getElementById('price-growth').value = '7.2';
+            document.getElementById('time-horizon').value = '10';
+            document.getElementById('time-display').textContent = '10 years';
+
+            updateVisualization();
+            updateFormula();
+            updateYieldMeter();
+
+            // Hide results
+            const resultContainer = document.getElementById('result-container');
+            if (resultContainer) {
+                resultContainer.classList.add('hidden');
+            }
+
+            // Destroy chart
+            if (growthChart) {
+                growthChart.destroy();
+                growthChart = null;
+            }
+
+            console.log('SCHD calculator cleared successfully');
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing SCHD calculator...');
+            initCalculator();
+            lucide.createIcons();
+
+            // Render KaTeX formulas
+            setTimeout(() => {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: "$$", right: "$$", display: true},
+                        {left: "$", right: "$", display: false}
+                    ]
+                });
+            }, 100);
+        });
+    </script>
+{% endblock %}

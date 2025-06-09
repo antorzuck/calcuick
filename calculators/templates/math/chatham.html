@@ -1,0 +1,1210 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- KaTeX for mathematical expressions -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+.calculation-card {
+    transition: all 0.3s ease;
+}
+.cap-display {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+.insight-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.dark .insight-card {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+.parameter-input {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+}
+.dark .parameter-input {
+    background: linear-gradient(135deg, rgba(55,65,81,0.9) 0%, rgba(75,85,99,0.9) 100%);
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.finance-quote {
+    font-style: italic;
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(109, 40, 217, 0.1) 100%);
+    border-left: 4px solid #7c3aed;
+    border-radius: 0 8px 8px 0;
+}
+.rate-gauge {
+    width: 200px;
+    height: 200px;
+    position: relative;
+    margin: 0 auto;
+    background: conic-gradient(from 0deg, #ef4444 0deg 60deg, #f59e0b 60deg 120deg, #22c55e 120deg 180deg, #3b82f6 180deg 240deg, #7c3aed 240deg 300deg, #ef4444 300deg 360deg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.rate-gauge::before {
+    content: '';
+    width: 160px;
+    height: 160px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+}
+.dark .rate-gauge::before {
+    background: #1f2937;
+}
+.gauge-needle {
+    position: absolute;
+    width: 4px;
+    height: 80px;
+    background: #1f2937;
+    border-radius: 2px;
+    transform-origin: bottom center;
+    transition: transform 0.5s ease;
+    z-index: 10;
+}
+.dark .gauge-needle {
+    background: #f9fafb;
+}
+.gauge-center {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: #7c3aed;
+    border-radius: 50%;
+    z-index: 20;
+}
+.gauge-value {
+    position: absolute;
+    z-index: 15;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #1f2937;
+}
+.dark .gauge-value {
+    color: #f9fafb;
+}
+.protection-shield {
+    width: 250px;
+    height: 200px;
+    position: relative;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.shield-base {
+    width: 120px;
+    height: 140px;
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.shield-icon {
+    color: white;
+    font-size: 2rem;
+}
+.rate-bars {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    padding: 20px;
+}
+.rate-bar {
+    width: 8px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    transition: height 0.5s ease;
+}
+.formula-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+}
+.dark .formula-box {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+}
+.cap-card {
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+    border: 1px solid #c4b5fd;
+    transition: all 0.3s ease;
+}
+.dark .cap-card {
+    background: linear-gradient(135deg, #581c87 0%, #6b21a8 100%);
+    border-color: #7c3aed;
+}
+.cap-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+}
+.risk-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+.low-risk { background: #22c55e; }
+.medium-risk { background: #f59e0b; }
+.high-risk { background: #ef4444; }
+.rate-timeline {
+    background: linear-gradient(90deg, #22c55e 0%, #f59e0b 50%, #ef4444 100%);
+    height: 6px;
+    border-radius: 3px;
+    position: relative;
+}
+.payout-scenario {
+    background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+    border: 1px solid #a78bfa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    transition: all 0.3s ease;
+}
+.dark .payout-scenario {
+    background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%);
+    border-color: #7c3aed;
+}
+.payout-scenario:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
+}
+.rate-protection-meter {
+    width: 100%;
+    height: 20px;
+    background: #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+.protection-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7c3aed 0%, #a855f7 100%);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+    position: relative;
+}
+.protection-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+.cap-structure {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+.structure-item {
+    background: rgba(124, 58, 237, 0.1);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+.structure-item:hover {
+    background: rgba(124, 58, 237, 0.2);
+    transform: translateY(-2px);
+}
+.rate-comparison {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+    background: rgba(124, 58, 237, 0.05);
+    border-radius: 6px;
+    border-left: 3px solid #7c3aed;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <button onclick="window.history.back()" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            <span>Back to Calculators</span>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mx-auto mb-6 pulse-animation">
+            <i data-lucide="shield-check" class="w-8 h-8 text-purple-600 dark:text-purple-400"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Chatham Cap Calculator</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Calculate interest rate cap premiums, payouts, and protection scenarios. Hedge against rising interest rates with precision!
+        </p>
+        <div class="mt-4 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg inline-block">
+            <div class="text-purple-800 dark:text-purple-300 font-medium">
+                <span class="katex-formula">Payout = max(0, Rate - Cap) \times Notional \times Period</span> • 🛡️ Rate Protection • 📊 Risk Management • 💼 Derivatives
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg">
+        <!-- Input Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Cap Parameters</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cap Type:</label>
+                        <select id="cap-type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <option value="interest-rate">Interest Rate Cap</option>
+                            <option value="libor-cap">LIBOR Cap</option>
+                            <option value="sofr-cap">SOFR Cap</option>
+                            <option value="prime-cap">Prime Rate Cap</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notional Amount ($):</label>
+                            <input type="number" id="notional-amount" step="1000" placeholder="10000000" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Principal amount</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cap Rate (%):</label>
+                            <input type="number" id="cap-rate" step="0.01" placeholder="5.00" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Strike rate</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Rate (%):</label>
+                            <input type="number" id="current-rate" step="0.01" placeholder="3.50" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Term (Years):</label>
+                            <input type="number" id="term-years" step="0.5" placeholder="3" 
+                                   class="parameter-input w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
+                        </div>
+                    </div>
+
+                    <!-- Advanced Parameters -->
+                    <div id="advanced-section">
+                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Market Assumptions</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Volatility (%):</label>
+                                <input type="number" id="volatility" step="0.1" placeholder="25.0" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Premium (bps):</label>
+                                <input type="number" id="premium-bps" step="1" placeholder="150" 
+                                       class="parameter-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Frequency -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Frequency:</label>
+                        <select id="payment-frequency" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="quarterly">Quarterly</option>
+                            <option value="semi-annual">Semi-Annual</option>
+                            <option value="annual">Annual</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Scenarios:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('conservative')" class="px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                                Conservative
+                            </button>
+                            <button onclick="setPreset('moderate')" class="px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                                Moderate
+                            </button>
+                            <button onclick="setPreset('aggressive')" class="px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                                Aggressive
+                            </button>
+                            <button onclick="setPreset('stress-test')" class="px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                                Stress Test
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Representation -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Rate Protection Gauge</h3>
+                        <div class="rate-gauge" id="rate-gauge">
+                            <div class="gauge-needle" id="gauge-needle"></div>
+                            <div class="gauge-center"></div>
+                            <div class="gauge-value" id="gauge-value">3.5%</div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <span id="protection-status" class="text-lg font-semibold text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                                <span class="risk-indicator low-risk"></span>
+                                Protected Below Cap
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Protection Shield -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Protection Shield</h3>
+                        <div class="protection-shield">
+                            <div class="shield-base">
+                                <i data-lucide="shield" class="shield-icon"></i>
+                                <div class="rate-bars">
+                                    <div class="rate-bar" style="height: 30%"></div>
+                                    <div class="rate-bar" style="height: 50%"></div>
+                                    <div class="rate-bar" style="height: 70%"></div>
+                                    <div class="rate-bar" style="height: 40%"></div>
+                                    <div class="rate-bar" style="height: 60%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Display -->
+                    <div class="formula-box">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Current Formula:</h4>
+                        <div id="formula-display" class="text-sm text-gray-700 dark:text-gray-300">
+                            <div id="katex-formula"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cap Properties -->
+                    <div class="cap-card p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Cap Properties:</h4>
+                        <div id="cap-info" class="text-sm text-gray-700 dark:text-gray-300">
+                            Type: Interest Rate Cap • Settlement: Cash • Exercise: European Style • Currency: USD
+                        </div>
+                    </div>
+
+                    <!-- Protection Meter -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center">Protection Level</h4>
+                        <div class="rate-protection-meter">
+                            <div class="protection-fill" id="protection-fill" style="width: 70%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <span>No Protection</span>
+                            <span id="protection-level" class="font-medium text-purple-600 dark:text-purple-400">70% Protected</span>
+                            <span>Full Protection</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="calculate-btn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+                <span>Calculate Cap Value</span>
+            </button>
+            <button id="clear-btn" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Clear</span>
+            </button>
+            <button id="save-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Save Results</span>
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="result-container" class="hidden">
+            <!-- Cap Summary -->
+            <div class="cap-display text-white rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <span>Cap Analysis Results</span>
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div id="cap-premium" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Premium ($)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="protection-cost" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Cost (bps)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="breakeven-rate" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Breakeven (%)</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="max-payout" class="text-3xl font-bold mb-2">-</div>
+                        <div class="text-sm opacity-90">Max Annual Payout</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payout Scenarios -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    <span>Payout Scenarios</span>
+                </h3>
+                <div class="space-y-3" id="payout-scenarios">
+                    <!-- Scenarios will be generated here -->
+                </div>
+            </div>
+
+            <!-- Rate Sensitivity Chart -->
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-orange-800 dark:text-orange-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Rate Sensitivity Analysis</span>
+                </h3>
+                <div class="h-64">
+                    <canvas id="sensitivity-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Finance Quote -->
+            <div class="finance-quote mb-6">
+                <p id="finance-quote" class="text-gray-800 dark:text-gray-200 text-center">
+                    "Risk comes from not knowing what you're doing."
+                </p>
+                <p class="text-right text-sm text-gray-600 dark:text-gray-400 mt-2">- Warren Buffett</p>
+            </div>
+
+            <!-- Risk Analysis -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-300 mb-4 flex items-center space-x-2">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    <span>Risk Analysis</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="shield" class="w-4 h-4"></i>
+                            <span>Protection Analysis</span>
+                        </h4>
+                        <p id="protection-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                            <span>Cost Efficiency</span>
+                        </h4>
+                        <p id="cost-efficiency" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            <span>Timing Considerations</span>
+                        </h4>
+                        <p id="timing-analysis" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                    <div class="insight-card p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="target" class="w-4 h-4"></i>
+                            <span>Strategy Fit</span>
+                        </h4>
+                        <p id="strategy-fit" class="text-gray-800 dark:text-gray-200">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Content -->
+    <div class="mt-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+            <span>Interest Rate Cap Guide</span>
+        </h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">What is an Interest Rate Cap?</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-2">
+                    An interest rate cap is a derivative contract that provides protection against rising interest rates. The buyer pays a premium upfront and receives payments when rates exceed the cap level.
+                </p>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Payout = <span class="katex-formula">max(0, Current\ Rate - Cap\ Rate) \times Notional \times Period</span>
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Key Cap Formulas</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300 text-sm">
+                    <li><strong>Premium Cost:</strong> <span class="katex-formula">Notional \times Premium\ (bps) \times Term</span></li>
+                    <li><strong>Breakeven Rate:</strong> <span class="katex-formula">Cap\ Rate + \frac{Premium}{Notional \times Term}</span></li>
+                    <li><strong>Intrinsic Value:</strong> <span class="katex-formula">max(0, Current\ Rate - Cap\ Rate)</span></li>
+                    <li><strong>Time Value:</strong> <span class="katex-formula">Premium - Intrinsic\ Value</span></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Cap Advantages</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li><strong>Rate Protection:</strong> Limits exposure to rising interest rates</li>
+                    <li><strong>Flexibility:</strong> Maintains ability to benefit from falling rates</li>
+                    <li><strong>Customizable:</strong> Terms can be tailored to specific needs</li>
+                    <li><strong>No Margin:</strong> Premium paid upfront, no ongoing margin requirements</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Risk Considerations</h3>
+                <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                    <li>Premium cost if rates don't rise above cap level</li>
+                    <li>Counterparty credit risk</li>
+                    <li>Basis risk between reference rate and actual borrowing rate</li>
+                    <li>Early termination costs</li>
+                    <li>Accounting and tax implications</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- JavaScript -->
+<script>
+// Cap presets
+const presets = {
+    'conservative': {
+        capType: 'interest-rate',
+        notionalAmount: 5000000,
+        capRate: 6.0,
+        currentRate: 3.5,
+        termYears: 2,
+        volatility: 20.0,
+        premiumBps: 100,
+        paymentFrequency: 'quarterly'
+    },
+    'moderate': {
+        capType: 'sofr-cap',
+        notionalAmount: 10000000,
+        capRate: 5.5,
+        currentRate: 4.0,
+        termYears: 3,
+        volatility: 25.0,
+        premiumBps: 150,
+        paymentFrequency: 'quarterly'
+    },
+    'aggressive': {
+        capType: 'libor-cap',
+        notionalAmount: 25000000,
+        capRate: 5.0,
+        currentRate: 4.5,
+        termYears: 5,
+        volatility: 30.0,
+        premiumBps: 200,
+        paymentFrequency: 'quarterly'
+    },
+    'stress-test': {
+        capType: 'interest-rate',
+        notionalAmount: 50000000,
+        capRate: 4.5,
+        currentRate: 5.5,
+        termYears: 3,
+        volatility: 35.0,
+        premiumBps: 300,
+        paymentFrequency: 'quarterly'
+    }
+};
+
+// Finance quotes for different scenarios
+const financeQuotes = [
+    { condition: 'high-protection', quote: "Risk comes from not knowing what you're doing.", author: "Warren Buffett" },
+    { condition: 'moderate-protection', quote: "The time to repair the roof is when the sun is shining.", author: "John F. Kennedy" },
+    { condition: 'low-protection', quote: "It's far better to buy a wonderful company at a fair price than a fair company at a wonderful price.", author: "Warren Buffett" },
+    { condition: 'expensive', quote: "Price is what you pay. Value is what you get.", author: "Warren Buffett" }
+];
+
+let sensitivityChart = null;
+
+// Initialize calculator
+function initCalculator() {
+    console.log('Initializing Chatham Cap Calculator...');
+    setupEventListeners();
+    updateVisualization();
+    updateFormula();
+    clearCalculator();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const capType = document.getElementById('cap-type');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateCap);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCalculator);
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveResults);
+    }
+
+    if (capType) {
+        capType.addEventListener('change', () => {
+            updateFormula();
+        });
+    }
+
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input')) {
+            updateGauge();
+            if (hasValidInputs()) {
+                calculateCap();
+            }
+        }
+    });
+}
+
+// Check if we have valid inputs
+function hasValidInputs() {
+    const notionalAmount = parseFloat(document.getElementById('notional-amount').value);
+    const capRate = parseFloat(document.getElementById('cap-rate').value);
+    const currentRate = parseFloat(document.getElementById('current-rate').value);
+    const termYears = parseFloat(document.getElementById('term-years').value);
+    
+    return notionalAmount > 0 && capRate > 0 && currentRate >= 0 && termYears > 0;
+}
+
+// Set preset values
+function setPreset(presetKey) {
+    const preset = presets[presetKey];
+    if (!preset) return;
+
+    document.getElementById('cap-type').value = preset.capType;
+    document.getElementById('notional-amount').value = preset.notionalAmount;
+    document.getElementById('cap-rate').value = preset.capRate;
+    document.getElementById('current-rate').value = preset.currentRate;
+    document.getElementById('term-years').value = preset.termYears;
+    document.getElementById('volatility').value = preset.volatility;
+    document.getElementById('premium-bps').value = preset.premiumBps;
+    document.getElementById('payment-frequency').value = preset.paymentFrequency;
+
+    updateVisualization();
+    updateFormula();
+    updateGauge();
+    calculateCap();
+}
+
+// Update visualization
+function updateVisualization() {
+    updateGauge();
+    updateProtectionShield();
+}
+
+// Update gauge
+function updateGauge() {
+    const currentRate = parseFloat(document.getElementById('current-rate').value) || 0;
+    const capRate = parseFloat(document.getElementById('cap-rate').value) || 5;
+    
+    // Update gauge needle (0-10% range, 0-300 degrees)
+    const maxRate = 10;
+    const angle = Math.min(currentRate / maxRate * 300, 300);
+    
+    const needle = document.getElementById('gauge-needle');
+    const gaugeValue = document.getElementById('gauge-value');
+    const protectionStatus = document.getElementById('protection-status');
+    
+    needle.style.transform = `rotate(${angle}deg)`;
+    gaugeValue.textContent = `${currentRate.toFixed(2)}%`;
+    
+    // Update protection status
+    if (currentRate < capRate) {
+        protectionStatus.innerHTML = `
+            <span class="risk-indicator low-risk"></span>
+            Protected Below Cap
+        `;
+    } else {
+        protectionStatus.innerHTML = `
+            <span class="risk-indicator high-risk"></span>
+            Above Cap - Receiving Payouts
+        `;
+    }
+    
+    // Update protection meter
+    const protectionLevel = Math.max(0, Math.min(100, (capRate - currentRate + 2) / 4 * 100));
+    document.getElementById('protection-fill').style.width = `${protectionLevel}%`;
+    document.getElementById('protection-level').textContent = `${Math.round(protectionLevel)}% Protected`;
+}
+
+// Update protection shield
+function updateProtectionShield() {
+    const rateBars = document.querySelectorAll('.rate-bar');
+    const currentRate = parseFloat(document.getElementById('current-rate').value) || 0;
+    const capRate = parseFloat(document.getElementById('cap-rate').value) || 5;
+    
+    rateBars.forEach((bar, index) => {
+        const height = Math.random() * 60 + 20; // Random heights between 20-80%
+        const isProtected = (height / 100 * 10) < capRate; // Scale to 0-10% range
+        
+        bar.style.height = `${height}%`;
+        bar.style.background = isProtected ? 
+            'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)';
+    });
+}
+
+// Update formula display
+function updateFormula() {
+    const type = document.getElementById('cap-type').value;
+    const katexElement = document.getElementById('katex-formula');
+
+    let formula = '';
+    switch (type) {
+        case 'interest-rate':
+            formula = 'Payout = max(0, Rate - Cap) \\times Notional \\times Period';
+            break;
+        case 'libor-cap':
+            formula = 'Payout = max(0, LIBOR - Cap) \\times Notional \\times \\frac{Days}{360}';
+            break;
+        case 'sofr-cap':
+            formula = 'Payout = max(0, SOFR - Cap) \\times Notional \\times \\frac{Days}{360}';
+            break;
+        case 'prime-cap':
+            formula = 'Payout = max(0, Prime - Cap) \\times Notional \\times Period';
+            break;
+        default:
+            formula = 'Payout = max(0, Rate - Cap) \\times Notional \\times Period';
+    }
+
+    try {
+        katex.render(formula, katexElement, {
+            throwOnError: false,
+            displayMode: false
+        });
+    } catch (error) {
+        katexElement.textContent = formula;
+    }
+}
+
+// Calculate cap
+function calculateCap() {
+    console.log('Calculating cap value...');
+    try {
+        const notionalAmount = parseFloat(document.getElementById('notional-amount').value) || 0;
+        const capRate = parseFloat(document.getElementById('cap-rate').value) || 0;
+        const currentRate = parseFloat(document.getElementById('current-rate').value) || 0;
+        const termYears = parseFloat(document.getElementById('term-years').value) || 0;
+        const volatility = parseFloat(document.getElementById('volatility').value) || 25;
+        const premiumBps = parseFloat(document.getElementById('premium-bps').value) || 150;
+        const frequency = document.getElementById('payment-frequency').value;
+
+        if (notionalAmount <= 0 || capRate <= 0 || termYears <= 0) {
+            console.log('Please enter valid cap parameters');
+            return;
+        }
+
+        // Calculate premium
+        const premium = notionalAmount * (premiumBps / 10000) * termYears;
+        
+        // Calculate breakeven rate
+        const breakevenRate = capRate + (premiumBps / 10000) / termYears;
+        
+        // Calculate max annual payout (if rates go to 10%)
+        const maxRate = 10;
+        const maxPayout = Math.max(0, maxRate - capRate) * notionalAmount;
+        
+        // Calculate current intrinsic value
+        const intrinsicValue = Math.max(0, currentRate - capRate) * notionalAmount;
+        
+        // Generate payout scenarios
+        const scenarios = generatePayoutScenarios(notionalAmount, capRate, termYears, frequency);
+        
+        // Calculate risk analysis
+        const riskAnalysis = calculateRiskAnalysis(currentRate, capRate, premiumBps, termYears, volatility);
+
+        // Update display
+        updateResults({
+            premium,
+            protectionCost: premiumBps,
+            breakevenRate,
+            maxPayout,
+            intrinsicValue
+        }, scenarios, riskAnalysis);
+
+        // Create chart
+        createSensitivityChart(notionalAmount, capRate, termYears);
+
+        // Show results
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        setTimeout(() => {
+            resultContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+        console.log('Cap calculations completed successfully');
+    } catch (error) {
+        console.error('Error calculating cap:', error);
+        alert('An error occurred while calculating. Please check your inputs.');
+    }
+}
+
+// Generate payout scenarios
+function generatePayoutScenarios(notional, capRate, term, frequency) {
+    const scenarios = [
+        { rate: capRate - 1, label: 'Rates Fall 1%' },
+        { rate: capRate, label: 'At Cap Level' },
+        { rate: capRate + 0.5, label: 'Cap + 0.5%' },
+        { rate: capRate + 1, label: 'Cap + 1%' },
+        { rate: capRate + 2, label: 'Cap + 2%' }
+    ];
+
+    return scenarios.map(scenario => {
+        const payout = Math.max(0, scenario.rate - capRate) * notional;
+        const annualPayout = payout;
+        
+        return {
+            ...scenario,
+            payout: annualPayout,
+            status: payout > 0 ? 'Receiving Payout' : 'No Payout'
+        };
+    });
+}
+
+// Calculate risk analysis
+function calculateRiskAnalysis(currentRate, capRate, premiumBps, term, volatility) {
+    let protectionAnalysis = '';
+    const rateGap = capRate - currentRate;
+    
+    if (rateGap > 2) {
+        protectionAnalysis = 'High protection buffer. Cap is well above current rates, providing substantial upside protection.';
+    } else if (rateGap > 1) {
+        protectionAnalysis = 'Moderate protection buffer. Cap provides reasonable protection against rate increases.';
+    } else if (rateGap > 0) {
+        protectionAnalysis = 'Limited protection buffer. Cap is close to current rates, may trigger soon.';
+    } else {
+        protectionAnalysis = 'Cap is in-the-money. Currently receiving payouts as rates exceed cap level.';
+    }
+
+    let costEfficiency = '';
+    if (premiumBps < 100) {
+        costEfficiency = 'Low cost protection. Premium is relatively inexpensive for the coverage provided.';
+    } else if (premiumBps < 200) {
+        costEfficiency = 'Moderate cost protection. Premium is reasonably priced for current market conditions.';
+    } else {
+        costEfficiency = 'High cost protection. Premium is expensive, consider if protection justifies cost.';
+    }
+
+    let timingAnalysis = '';
+    if (term > 3) {
+        timingAnalysis = 'Long-term protection. Extended coverage provides stability but higher premium cost.';
+    } else if (term > 1) {
+        timingAnalysis = 'Medium-term protection. Balanced approach between cost and coverage duration.';
+    } else {
+        timingAnalysis = 'Short-term protection. Lower cost but limited duration of coverage.';
+    }
+
+    const strategyFit = 'Interest rate caps are ideal for borrowers with floating rate debt seeking upside protection while maintaining downside participation.';
+
+    return {
+        protectionAnalysis,
+        costEfficiency,
+        timingAnalysis,
+        strategyFit
+    };
+}
+
+// Update results display
+function updateResults(metrics, scenarios, riskAnalysis) {
+    // Update summary
+    document.getElementById('cap-premium').textContent = `$${metrics.premium.toLocaleString()}`;
+    document.getElementById('protection-cost').textContent = `${metrics.protectionCost} bps`;
+    document.getElementById('breakeven-rate').textContent = `${metrics.breakevenRate.toFixed(2)}%`;
+    document.getElementById('max-payout').textContent = `$${metrics.maxPayout.toLocaleString()}`;
+
+    // Update payout scenarios
+    const scenariosContainer = document.getElementById('payout-scenarios');
+    scenariosContainer.innerHTML = '';
+    
+    scenarios.forEach(scenario => {
+        const scenarioDiv = document.createElement('div');
+        scenarioDiv.className = 'payout-scenario';
+        scenarioDiv.innerHTML = `
+            <div class="flex justify-between items-center">
+                <div>
+                    <span class="font-medium">${scenario.label}</span>
+                    <span class="text-sm text-gray-600 dark:text-gray-400 ml-2">(${scenario.rate.toFixed(2)}%)</span>
+                </div>
+                <div class="text-right">
+                    <div class="font-semibold text-purple-600 dark:text-purple-400">
+                        $${scenario.payout.toLocaleString()}
+                    </div>
+                    <div class="text-xs ${scenario.payout > 0 ? 'text-green-600' : 'text-gray-500'}">
+                        ${scenario.status}
+                    </div>
+                </div>
+            </div>
+        `;
+        scenariosContainer.appendChild(scenarioDiv);
+    });
+
+    // Update risk analysis
+    document.getElementById('protection-analysis').textContent = riskAnalysis.protectionAnalysis;
+    document.getElementById('cost-efficiency').textContent = riskAnalysis.costEfficiency;
+    document.getElementById('timing-analysis').textContent = riskAnalysis.timingAnalysis;
+    document.getElementById('strategy-fit').textContent = riskAnalysis.strategyFit;
+
+    // Update finance quote
+    const quote = getFinanceQuote(metrics.protectionCost, metrics.breakevenRate);
+    document.getElementById('finance-quote').textContent = `"${quote.quote}"`;
+    document.querySelector('.finance-quote p:last-child').textContent = `- ${quote.author}`;
+}
+
+// Get finance quote based on metrics
+function getFinanceQuote(premiumBps, breakevenRate) {
+    if (premiumBps > 250) {
+        return financeQuotes.find(q => q.condition === 'expensive');
+    } else if (breakevenRate > 6) {
+        return financeQuotes.find(q => q.condition === 'high-protection');
+    } else if (premiumBps > 150) {
+        return financeQuotes.find(q => q.condition === 'moderate-protection');
+    } else {
+        return financeQuotes.find(q => q.condition === 'low-protection');
+    }
+}
+
+// Create sensitivity chart
+function createSensitivityChart(notional, capRate, term) {
+    console.log('Creating sensitivity chart...');
+    try {
+        const ctx = document.getElementById('sensitivity-chart');
+        if (!ctx) {
+            throw new Error('Chart canvas not found');
+        }
+
+        if (sensitivityChart) {
+            sensitivityChart.destroy();
+        }
+
+        // Generate data points
+        const rates = [];
+        const payouts = [];
+        
+        for (let rate = 0; rate <= 10; rate += 0.5) {
+            rates.push(`${rate.toFixed(1)}%`);
+            const payout = Math.max(0, rate - capRate) * notional;
+            payouts.push(payout);
+        }
+
+        sensitivityChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: rates,
+                datasets: [{
+                    label: 'Annual Payout',
+                    data: payouts,
+                    borderColor: '#7c3aed',
+                    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Cap Payout vs Interest Rate',
+                        color: '#1f2937',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Payout: $${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Annual Payout ($)',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Interest Rate',
+                            color: '#374151',
+                            font: { size: 12, weight: '500' }
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Sensitivity chart created successfully');
+    } catch (error) {
+        console.error('Error creating sensitivity chart:', error);
+    }
+}
+
+// Save results function
+function saveResults() {
+    try {
+        const premium = document.getElementById('cap-premium').textContent;
+        const protectionCost = document.getElementById('protection-cost').textContent;
+        const notionalAmount = document.getElementById('notional-amount').value;
+        const capRate = document.getElementById('cap-rate').value;
+        
+        const results = `
+Chatham Cap Calculator Results
+==============================
+
+Cap Parameters:
+Notional Amount: $${notionalAmount}
+Cap Rate: ${capRate}%
+Current Rate: ${document.getElementById('current-rate').value}%
+Term: ${document.getElementById('term-years').value} years
+
+Results:
+Premium: ${premium}
+Protection Cost: ${protectionCost}
+Breakeven Rate: ${document.getElementById('breakeven-rate').textContent}
+Max Annual Payout: ${document.getElementById('max-payout').textContent}
+
+Generated on: ${new Date().toLocaleDateString()}
+
+Visit our Chatham Cap Calculator for more analysis!
+        `;
+        
+        const blob = new Blob([results], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chatham-cap-analysis-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('Results saved successfully');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Failed to save results. Please try again.');
+    }
+}
+
+// Clear calculator
+function clearCalculator() {
+    console.log('Clearing Chatham Cap calculator...');
+
+    document.getElementById('cap-type').value = 'interest-rate';
+    document.getElementById('notional-amount').value = '';
+    document.getElementById('cap-rate').value = '';
+    document.getElementById('current-rate').value = '';
+    document.getElementById('term-years').value = '';
+    document.getElementById('volatility').value = '25.0';
+    document.getElementById('premium-bps').value = '150';
+    document.getElementById('payment-frequency').value = 'quarterly';
+
+    updateVisualization();
+    updateFormula();
+
+    // Hide results
+    const resultContainer = document.getElementById('result-container');
+    if (resultContainer) {
+        resultContainer.classList.add('hidden');
+    }
+
+    // Destroy chart
+    if (sensitivityChart) {
+        sensitivityChart.destroy();
+        sensitivityChart = null;
+    }
+
+    console.log('Chatham Cap calculator cleared successfully');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing Chatham Cap calculator...');
+    initCalculator();
+    lucide.createIcons();
+
+    // Render KaTeX formulas
+    setTimeout(() => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ]
+        });
+    }, 100);
+});
+</script>
+{% endblock %}
