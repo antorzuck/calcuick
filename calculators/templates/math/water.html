@@ -274,7 +274,7 @@
                         </label>
                         <div class="slider-container">
                             <input type="range" id="solute-potential" min="-3.0" max="0" step="0.1" value="-0.5" 
-                                   class="range-slider">
+                                   class="range-slider parameter-input">
                             <div class="flex justify-between text-xs text-gray-500 mt-1">
                                 <span>-3.0 MPa</span>
                                 <span id="solute-value" class="font-medium">-0.5 MPa</span>
@@ -307,7 +307,7 @@
                         </label>
                         <div class="slider-container">
                             <input type="range" id="pressure-potential" min="0" max="2.0" step="0.1" value="0.3" 
-                                   class="range-slider">
+                                   class="range-slider parameter-input">
                             <div class="flex justify-between text-xs text-gray-500 mt-1">
                                 <span>0 MPa</span>
                                 <span id="pressure-value" class="font-medium">0.3 MPa</span>
@@ -324,7 +324,7 @@
                         </label>
                         <div class="slider-container">
                             <input type="range" id="matric-potential" min="-0.5" max="0" step="0.01" value="-0.1" 
-                                   class="range-slider">
+                                   class="range-slider parameter-input">
                             <div class="flex justify-between text-xs text-gray-500 mt-1">
                                 <span>-0.5 MPa</span>
                                 <span id="matric-value" class="font-medium">-0.1 MPa</span>
@@ -341,7 +341,7 @@
                         </label>
                         <div class="slider-container">
                             <input type="range" id="gravity-potential" min="-0.1" max="0.1" step="0.001" value="0" 
-                                   class="range-slider">
+                                   class="range-slider parameter-input">
                             <div class="flex justify-between text-xs text-gray-500 mt-1">
                                 <span>-0.1 MPa</span>
                                 <span id="gravity-value" class="font-medium">0.000 MPa</span>
@@ -773,7 +773,11 @@ function initCalculator() {
     updateVisualization();
     updateFormula();
     updateSliderValues();
-    calculateWaterPotential();
+    
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 }
 
 // Setup event listeners
@@ -785,7 +789,9 @@ function setupEventListeners() {
     const cellTypeSelect = document.getElementById('cell-type');
 
     if (calculateBtn) {
-        calculateBtn.addEventListener('click', () => calculateWaterPotential(true));
+        calculateBtn.addEventListener('click', function() {
+            calculateWaterPotential(true); // true = scroll to results
+        });
     }
 
     if (clearBtn) {
@@ -803,37 +809,35 @@ function setupEventListeners() {
         });
     }
 
-    // Add slider listeners
-    const sliders = ['solute-potential', 'pressure-potential', 'matric-potential', 'gravity-potential'];
-    sliders.forEach(sliderId => {
-        const slider = document.getElementById(sliderId);
-        if (slider) {
-            slider.addEventListener('input', () => {
-                updateSliderValues();
-                calculateWaterPotential();
-            });
-        }
-    });
-
-    // Add concentration input listeners
-    const concentrationInputs = ['molarity', 'ionization', 'temperature'];
-    concentrationInputs.forEach(inputId => {
-        const input = document.getElementById(inputId);
-        if (input) {
-            input.addEventListener('input', () => {
+    // Add input listeners for real-time updates
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('parameter-input') || e.target.type === 'range') {
+            if (e.target.id === 'molarity' || e.target.id === 'ionization' || e.target.id === 'temperature') {
                 calculateSolutePotential();
-                calculateWaterPotential();
-            });
+            } else if (e.target.id === 'height') {
+                calculateGravitationalPotential();
+            }
+            
+            updateSliderValues();
+            updateVisualization();
+            calculateWaterPotential();
         }
     });
+}
 
-    // Add height input listener
-    const heightInput = document.getElementById('height');
-    if (heightInput) {
-        heightInput.addEventListener('input', () => {
-            calculateGravitationalPotential();
-            calculateWaterPotential();
-        });
+// Update cell inputs based on cell type
+function updateCellInputs() {
+    const cellType = document.getElementById('cell-type').value;
+    
+    if (cellType !== 'custom' && cellPresets[cellType]) {
+        const preset = cellPresets[cellType];
+        
+        document.getElementById('solute-potential').value = preset.solute;
+        document.getElementById('pressure-potential').value = preset.pressure;
+        document.getElementById('matric-potential').value = preset.matric;
+        document.getElementById('gravity-potential').value = preset.gravity;
+        
+        updateSliderValues();
     }
 }
 
@@ -850,6 +854,176 @@ function setPreset(presetKey) {
     updateSliderValues();
     updateVisualization();
     calculateWaterPotential();
+}
+
+// Update slider value displays
+function updateSliderValues() {
+    const soluteValue = parseFloat(document.getElementById('solute-potential').value) || 0;
+    const pressureValue = parseFloat(document.getElementById('pressure-potential').value) || 0;
+    const matricValue = parseFloat(document.getElementById('matric-potential').value) || 0;
+    const gravityValue = parseFloat(document.getElementById('gravity-potential').value) || 0;
+
+    // Update display values
+    const soluteDisplay = document.getElementById('solute-value');
+    const pressureDisplay = document.getElementById('pressure-value');
+    const matricDisplay = document.getElementById('matric-value');
+    const gravityDisplay = document.getElementById('gravity-value');
+
+    if (soluteDisplay) soluteDisplay.textContent = `${soluteValue.toFixed(1)} MPa`;
+    if (pressureDisplay) pressureDisplay.textContent = `${pressureValue.toFixed(1)} MPa`;
+    if (matricDisplay) matricDisplay.textContent = `${matricValue.toFixed(2)} MPa`;
+    if (gravityDisplay) gravityDisplay.textContent = `${gravityValue.toFixed(3)} MPa`;
+
+    // Update component contributions
+    const soluteContrib = document.getElementById('solute-contribution');
+    const pressureContrib = document.getElementById('pressure-contribution');
+    const matricContrib = document.getElementById('matric-contribution');
+    const gravityContrib = document.getElementById('gravity-contribution');
+
+    if (soluteContrib) soluteContrib.textContent = `${soluteValue.toFixed(1)} MPa`;
+    if (pressureContrib) pressureContrib.textContent = `${pressureValue >= 0 ? '+' : ''}${pressureValue.toFixed(1)} MPa`;
+    if (matricContrib) matricContrib.textContent = `${matricValue.toFixed(2)} MPa`;
+    if (gravityContrib) gravityContrib.textContent = `${gravityValue >= 0 ? '+' : ''}${gravityValue.toFixed(3)} MPa`;
+
+    // Update component bars
+    updateComponentBars(soluteValue, pressureValue, matricValue, gravityValue);
+}
+
+// Update component contribution bars
+function updateComponentBars(solute, pressure, matric, gravity) {
+    const maxValue = Math.max(Math.abs(solute), Math.abs(pressure), Math.abs(matric), Math.abs(gravity));
+    
+    if (maxValue > 0) {
+        const soluteBar = document.querySelector('.solute-bar');
+        const pressureBar = document.querySelector('.pressure-bar');
+        const matricBar = document.querySelector('.matric-bar');
+        const gravityBar = document.querySelector('.gravity-bar');
+
+        if (soluteBar) soluteBar.style.width = `${(Math.abs(solute) / maxValue) * 100}%`;
+        if (pressureBar) pressureBar.style.width = `${(Math.abs(pressure) / maxValue) * 100}%`;
+        if (matricBar) matricBar.style.width = `${(Math.abs(matric) / maxValue) * 100}%`;
+        if (gravityBar) gravityBar.style.width = `${(Math.abs(gravity) / maxValue) * 100}%`;
+    }
+}
+
+// Calculate solute potential from concentration
+function calculateSolutePotential() {
+    const molarity = parseFloat(document.getElementById('molarity').value) || 0;
+    const ionization = parseFloat(document.getElementById('ionization').value) || 1;
+    const temperature = parseFloat(document.getElementById('temperature').value) || 25;
+    
+    if (molarity > 0) {
+        const tempKelvin = temperature + 273.15;
+        const R = 0.00831; // L·MPa/mol·K
+        const solutePotential = -ionization * molarity * R * tempKelvin;
+        
+        document.getElementById('solute-potential').value = solutePotential.toFixed(3);
+        updateSliderValues();
+    }
+}
+
+// Calculate gravitational potential from height
+function calculateGravitationalPotential() {
+    const height = parseFloat(document.getElementById('height').value) || 0;
+    const density = 1000; // kg/m³ for water
+    const gravity = 9.8; // m/s²
+    
+    // Ψg = ρgh (converted to MPa)
+    const gravitationalPotential = (density * gravity * height) / 1000000; // Convert Pa to MPa
+    
+    document.getElementById('gravity-potential').value = gravitationalPotential.toFixed(6);
+    updateSliderValues();
+}
+
+// Update visualization
+function updateVisualization() {
+    generateWaterMolecules();
+    updateCellStatus();
+    
+    // Update meters
+    const totalPotential = calculateTotalPotential();
+    const pressure = parseFloat(document.getElementById('pressure-potential').value) || 0;
+    updatePotentialMeter(totalPotential);
+    updatePressureGauge(pressure);
+    updateWaterMovement(totalPotential);
+}
+
+// Generate water molecules for visualization
+function generateWaterMolecules() {
+    const container = document.getElementById('cell-viz');
+    if (!container) return;
+    
+    // Remove existing water molecules
+    const existingMolecules = container.querySelectorAll('.water-molecule');
+    existingMolecules.forEach(molecule => molecule.remove());
+
+    // Generate new water molecules based on water potential
+    const totalPotential = calculateTotalPotential();
+    const moleculeCount = Math.max(5, Math.min(15, Math.abs(totalPotential * 10) + 5));
+    
+    for (let i = 0; i < moleculeCount; i++) {
+        const molecule = document.createElement('div');
+        molecule.className = `water-molecule ${totalPotential > 0 ? 'high-potential' : 'low-potential'}`;
+        
+        const x = Math.random() * 200 + 40;
+        const y = Math.random() * 120 + 40;
+        molecule.style.left = `${x}px`;
+        molecule.style.top = `${y}px`;
+        molecule.style.animationDelay = `${i * 0.2}s`;
+        
+        container.appendChild(molecule);
+    }
+}
+
+// Update cell status display
+function updateCellStatus() {
+    const totalPotential = calculateTotalPotential();
+    const pressurePotential = parseFloat(document.getElementById('pressure-potential').value) || 0;
+    
+    let status = '';
+    if (pressurePotential > 0.5) {
+        status = 'Turgid Cell';
+    } else if (pressurePotential < 0.1) {
+        status = 'Plasmolyzed Cell';
+    } else if (totalPotential < -2.0) {
+        status = 'Water Stressed';
+    } else {
+        status = 'Normal Turgor';
+    }
+    
+    const statusElement = document.getElementById('cell-status');
+    if (statusElement) statusElement.textContent = status;
+}
+
+// Calculate total water potential
+function calculateTotalPotential() {
+    const solute = parseFloat(document.getElementById('solute-potential').value) || 0;
+    const pressure = parseFloat(document.getElementById('pressure-potential').value) || 0;
+    const matric = parseFloat(document.getElementById('matric-potential').value) || 0;
+    const gravity = parseFloat(document.getElementById('gravity-potential').value) || 0;
+    
+    return solute + pressure + matric + gravity;
+}
+
+// Update formula display
+function updateFormula() {
+    const katexElement = document.getElementById('katex-formula');
+    if (!katexElement) return;
+    
+    const formula = '\\Psi = \\Psi_s + \\Psi_p + \\Psi_m + \\Psi_g';
+
+    try {
+        if (typeof katex !== 'undefined') {
+            katex.render(formula, katexElement, {
+                throwOnError: false,
+                displayMode: false
+            });
+        } else {
+            katexElement.textContent = 'Ψ = Ψs + Ψp + Ψm + Ψg';
+        }
+    } catch (error) {
+        katexElement.textContent = 'Ψ = Ψs + Ψp + Ψm + Ψg';
+    }
 }
 
 // Calculate water potential
@@ -882,16 +1056,18 @@ function calculateWaterPotential(shouldScroll = false) {
 
         // Show results
         const resultContainer = document.getElementById('result-container');
-        resultContainer.classList.remove('hidden');
+        if (resultContainer) {
+            resultContainer.classList.remove('hidden');
 
-        // Only scroll if this was called from the calculate button
-        if (shouldScroll) {
-            setTimeout(() => {
-                resultContainer.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }, 200);
+            // Only scroll if this was called from the calculate button
+            if (shouldScroll) {
+                setTimeout(() => {
+                    resultContainer.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }, 100);
+            }
         }
 
         console.log('Water potential calculated successfully:', totalPotential);
@@ -968,6 +1144,7 @@ function generatePhysiologicalInsights(total, solute, pressure, matric, gravity)
 // Update potential meter
 function updatePotentialMeter(potential) {
     const indicator = document.getElementById('potential-indicator');
+    if (!indicator) return;
     
     // Scale: -3.0 to +3.0 MPa
     const position = ((potential + 3.0) / 6.0) * 100;
@@ -981,12 +1158,16 @@ function updatePressureGauge(pressure) {
     const needle = document.getElementById('pressure-needle');
     const reading = document.getElementById('pressure-reading');
     
-    // Rotate needle based on pressure (0-2.0 MPa = 0-180 degrees)
-    const angle = (pressure / 2.0) * 180;
-    const clampedAngle = Math.max(0, Math.min(180, angle));
+    if (needle) {
+        // Rotate needle based on pressure (0-2.0 MPa = 0-180 degrees)
+        const angle = (pressure / 2.0) * 180;
+        const clampedAngle = Math.max(0, Math.min(180, angle));
+        needle.style.transform = `rotate(${clampedAngle}deg)`;
+    }
     
-    needle.style.transform = `rotate(${clampedAngle}deg)`;
-    reading.textContent = `${pressure.toFixed(1)} MPa`;
+    if (reading) {
+        reading.textContent = `${pressure.toFixed(1)} MPa`;
+    }
 }
 
 // Update water movement display
@@ -994,42 +1175,55 @@ function updateWaterMovement(potential) {
     const directionElement = document.getElementById('water-direction');
     const descriptionElement = document.getElementById('movement-description');
     
-    if (potential > 0.1) {
-        directionElement.textContent = '→';
-        descriptionElement.textContent = 'Water moves out';
-    } else if (potential < -0.1) {
-        directionElement.textContent = '←';
-        descriptionElement.textContent = 'Water moves in';
-    } else {
-        directionElement.textContent = '⇌';
-        descriptionElement.textContent = 'Equilibrium';
+    if (directionElement && descriptionElement) {
+        if (potential > 0.1) {
+            directionElement.textContent = '→';
+            descriptionElement.textContent = 'Water moves out';
+        } else if (potential < -0.1) {
+            directionElement.textContent = '←';
+            descriptionElement.textContent = 'Water moves in';
+        } else {
+            directionElement.textContent = '⇌';
+            descriptionElement.textContent = 'Equilibrium';
+        }
     }
 }
 
 // Update results display
 function updateResults(total, osmotic, turgor, water, solute, pressure, matric, gravity, insights) {
     // Update summary
-    document.getElementById('total-potential').textContent = `${total.toFixed(2)} MPa`;
-    document.getElementById('osmotic-pressure').textContent = `${osmotic.toFixed(2)} MPa`;
-    document.getElementById('turgor-status').textContent = turgor;
-    document.getElementById('water-status').textContent = water;
+    const elements = {
+        'total-potential': `${total.toFixed(2)} MPa`,
+        'osmotic-pressure': `${osmotic.toFixed(2)} MPa`,
+        'turgor-status': turgor,
+        'water-status': water,
+        'display-solute': `${solute.toFixed(2)} MPa`,
+        'display-pressure': `${pressure.toFixed(2)} MPa`,
+        'display-matric': `${matric.toFixed(3)} MPa`,
+        'display-gravity': `${gravity.toFixed(3)} MPa`,
+        'water-movement-analysis': insights.waterMovement,
+        'turgor-analysis': insights.turgorAnalysis,
+        'osmotic-analysis': insights.osmoticAnalysis,
+        'plant-response': insights.plantResponse
+    };
 
-    // Update detailed analysis
-    document.getElementById('display-solute').textContent = `${solute.toFixed(2)} MPa`;
-    document.getElementById('display-pressure').textContent = `${pressure.toFixed(2)} MPa`;
-    document.getElementById('display-matric').textContent = `${matric.toFixed(3)} MPa`;
-    document.getElementById('display-gravity').textContent = `${gravity.toFixed(3)} MPa`;
-
-    // Update insights
-    document.getElementById('water-movement-analysis').textContent = insights.waterMovement;
-    document.getElementById('turgor-analysis').textContent = insights.turgorAnalysis;
-    document.getElementById('osmotic-analysis').textContent = insights.osmoticAnalysis;
-    document.getElementById('plant-response').textContent = insights.plantResponse;
+    // Update all elements
+    Object.entries(elements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    });
 
     // Update chemistry quote
     const quote = getChemistryQuote(total);
-    document.getElementById('chemistry-quote').textContent = `"${quote.quote}"`;
-    document.querySelector('.chemistry-quote p:last-child').textContent = `- ${quote.author}`;
+    const quoteElement = document.getElementById('chemistry-quote');
+    if (quoteElement) {
+        quoteElement.textContent = `"${quote.quote}"`;
+    }
+    
+    const authorElement = document.querySelector('.chemistry-quote p:last-child');
+    if (authorElement) {
+        authorElement.textContent = `- ${quote.author}`;
+    }
 }
 
 // Get chemistry quote based on water potential
@@ -1048,7 +1242,14 @@ function createPotentialChart(solute, pressure, matric, gravity) {
     try {
         const ctx = document.getElementById('potential-chart');
         if (!ctx) {
-            throw new Error('Chart canvas not found');
+            console.warn('Chart canvas not found');
+            return;
+        }
+
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js not available');
+            return;
         }
 
         if (potentialChart) {
@@ -1073,133 +1274,73 @@ function createPotentialChart(solute, pressure, matric, gravity) {
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Water Potential Component Analysis',
-                        color: '#1f2937',
-                        font: { size: 16, weight: 'bold' }
+                        text: 'Water Potential Components',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
                     },
                     legend: {
                         display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.label}: ${context.parsed.y.toFixed(3)} MPa`;
-                            }
-                        }
                     }
                 },
                 scales: {
                     y: {
+                        beginAtZero: false,
                         title: {
                             display: true,
-                            text: 'Water Potential (MPa)',
-                            color: '#374151',
-                            font: { size: 12, weight: '500' }
-                        },
-                        ticks: {
-                            color: '#6b7280'
+                            text: 'Potential (MPa)'
                         },
                         grid: {
-                            color: '#e5e7eb'
+                            color: 'rgba(0, 0, 0, 0.1)'
                         }
                     },
                     x: {
                         title: {
                             display: true,
-                            text: 'Components',
-                            color: '#374151',
-                            font: { size: 12, weight: '500' }
-                        },
-                        ticks: {
-                            color: '#6b7280'
+                            text: 'Components'
                         },
                         grid: {
-                            color: '#e5e7eb'
+                            display: false
                         }
+                    }
+                },
+                elements: {
+                    bar: {
+                        borderRadius: 4
                     }
                 }
             }
         });
 
-        console.log('Water potential chart created successfully');
+        console.log('Chart created successfully');
     } catch (error) {
-        console.error('Error creating water potential chart:', error);
-    }
-}
-
-// Save results function
-function saveResults() {
-    try {
-        const totalPotential = document.getElementById('total-potential').textContent;
-        const turgorStatus = document.getElementById('turgor-status').textContent;
-        const waterStatus = document.getElementById('water-status').textContent;
-        const cellType = document.getElementById('cell-type').selectedOptions[0].text;
-        
-        const results = `
-Water Potential Calculator Results
-=================================
-
-Cell Information:
-Cell Type: ${cellType}
-Temperature: ${document.getElementById('temperature').value || 'Not specified'}°C
-Humidity: ${document.getElementById('humidity').value || 'Not specified'}%
-
-Water Potential Components:
-Solute Potential (Ψs): ${document.getElementById('display-solute').textContent}
-Pressure Potential (Ψp): ${document.getElementById('display-pressure').textContent}
-Matric Potential (Ψm): ${document.getElementById('display-matric').textContent}
-Gravitational Potential (Ψg): ${document.getElementById('display-gravity').textContent}
-
-Results:
-Total Water Potential: ${totalPotential}
-Turgor Status: ${turgorStatus}
-Water Status: ${waterStatus}
-Osmotic Pressure: ${document.getElementById('osmotic-pressure').textContent}
-
-Analysis:
-${document.getElementById('water-movement-analysis').textContent}
-
-Generated on: ${new Date().toLocaleDateString()}
-
-Visit our Water Potential Calculator for more analyses!
-        `;
-        
-        const blob = new Blob([results], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `water-potential-analysis-${new Date().toISOString().split('T')[0]}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        console.log('Results saved successfully');
-    } catch (error) {
-        console.error('Error saving results:', error);
-        alert('Failed to save results. Please try again.');
+        console.error('Error creating chart:', error);
     }
 }
 
 // Clear calculator
 function clearCalculator() {
-    console.log('Clearing water potential calculator...');
+    console.log('Clearing calculator...');
 
+    // Reset all inputs to default values
     document.getElementById('cell-type').value = 'custom';
-    document.getElementById('solute-potential').value = '-0.5';
-    document.getElementById('pressure-potential').value = '0.3';
-    document.getElementById('matric-potential').value = '-0.1';
-    document.getElementById('gravity-potential').value = '0';
+    document.getElementById('solute-potential').value = -0.5;
+    document.getElementById('pressure-potential').value = 0.3;
+    document.getElementById('matric-potential').value = -0.1;
+    document.getElementById('gravity-potential').value = 0;
+
+    // Clear concentration inputs
     document.getElementById('molarity').value = '';
     document.getElementById('ionization').value = '';
-    document.getElementById('temperature').value = '25';
+    document.getElementById('temperature').value = '';
     document.getElementById('height').value = '';
     document.getElementById('humidity').value = '';
     document.getElementById('light-intensity').value = '';
 
+    // Update displays
     updateSliderValues();
     updateVisualization();
-    updateFormula();
 
     // Hide results
     const resultContainer = document.getElementById('result-container');
@@ -1213,28 +1354,74 @@ function clearCalculator() {
         potentialChart = null;
     }
 
-    // Reset meters
-    updatePotentialMeter(-0.3);
-    updatePressureGauge(0.3);
-
-    console.log('Water potential calculator cleared successfully');
+    console.log('Calculator cleared');
 }
 
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing water potential calculator...');
-    initCalculator();
-    lucide.createIcons();
+// Save results
+function saveResults() {
+    console.log('Saving results...');
+    try {
+        const totalPotential = calculateTotalPotential();
+        const solute = parseFloat(document.getElementById('solute-potential').value) || 0;
+        const pressure = parseFloat(document.getElementById('pressure-potential').value) || 0;
+        const matric = parseFloat(document.getElementById('matric-potential').value) || 0;
+        const gravity = parseFloat(document.getElementById('gravity-potential').value) || 0;
 
-    // Render KaTeX formulas
-    setTimeout(() => {
-        renderMathInElement(document.body, {
-            delimiters: [
-                {left: "$$", right: "$$", display: true},
-                {left: "$", right: "$", display: false}
-            ]
-        });
-    }, 100);
+        const results = {
+            timestamp: new Date().toISOString(),
+            cellType: document.getElementById('cell-type').value,
+            components: {
+                solute: solute,
+                pressure: pressure,
+                matric: matric,
+                gravity: gravity
+            },
+            totalPotential: totalPotential,
+            turgorStatus: getTurgorStatus(pressure),
+            waterStatus: getWaterStatus(totalPotential)
+        };
+
+        // Create downloadable file
+        const dataStr = JSON.stringify(results, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+
+        // Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `water-potential-analysis-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Clean up
+        URL.revokeObjectURL(url);
+
+        console.log('Results saved successfully');
+        alert('Analysis saved successfully!');
+    } catch (error) {
+        console.error('Error saving results:', error);
+        alert('Error saving results. Please try again.');
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing calculator...');
+    initCalculator();
 });
+
+// Also initialize if the script is loaded after DOM
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCalculator);
+} else {
+    initCalculator();
+}
+
+// Export functions for global access
+window.setPreset = setPreset;
+window.calculateWaterPotential = calculateWaterPotential;
+window.clearCalculator = clearCalculator;
+window.saveResults = saveResults;
 </script>
 {% endblock %}
