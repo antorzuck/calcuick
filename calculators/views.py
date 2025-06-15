@@ -16,4 +16,4 @@ def calculator_list(request, slug):
 
 def calculator_detail(request, slug):
     calculator = get_object_or_404(Calculator, slug=slug)
-    return render(request, f'math/{calculator.template}')
+    return render(request, f'math/{calculator.template}', context={'c':calculator})

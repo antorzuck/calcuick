@@ -1,4 +1,12 @@
 {% extends 'base.html' %}
+{% block title %}{{category.name}}{% endblock %}
+{% block description %}{{category.description}}{% endblock %}
+
+{% block og_title %}{{category.name}}{% endblock %}
+{% block og_description %}{{category.description}}{% endblock %}
+
+{% block twitter_title %}{{category.name}}{% endblock %}
+{% block twitter_description %}{{category.description}}{% endblock %}
 
 {% block body %}
     <main class="max-w-6xl mx-auto px-4 py-8">

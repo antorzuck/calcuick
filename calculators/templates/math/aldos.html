@@ -1,5 +1,15 @@
 {% extends 'base.html' %}
 
+{% block title %}{{c.name}}{% endblock %}
+{% block description %}{{c.description}}{% endblock %}
+
+{% block og_title %}{{c.title}}{% endblock %}
+{% block og_description %}{{c.description}}{% endblock %}
+
+{% block twitter_title %}{{c.title}}{% endblock %}
+{% block twitter_description %}{{c.description}}{% endblock %}
+
+
 {% block head %}
 <!-- Chart.js for visualization -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
