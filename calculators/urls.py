@@ -17,5 +17,5 @@ urlpatterns = [
 
     path("sitemap.xml/", index, {'sitemaps': sitemaps}, name='sitemap-index'),
     path("sitemap-<section>.xml", sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
-
+    path("robots.txt/", robots_txt),
 ]

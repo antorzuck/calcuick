@@ -5,6 +5,9 @@ SECRET_KEY = 'dummy-key'
 
 DEBUG = True
 ALLOWED_HOSTS = []
+SITE_ID = 1
+
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -14,6 +17,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'calculators',
+    'django.contrib.sites',
+    'django.contrib.sitemaps',
 ]
 
 MIDDLEWARE = [
@@ -61,3 +66,20 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",  # Use Memcached or Redis in production
+        "LOCATION": "unique-snowflake",
+    }
+}
+
+
+
+
+
