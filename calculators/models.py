@@ -2,7 +2,19 @@ from django.db import models
 from django.db import models
 from django.utils.text import slugify
 
-class Category(models.Model):
+
+
+class BaseModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+
+
+class Category(BaseModel):
     name = models.CharField(max_length=100)
     icon = models.CharField(max_length=50, blank=True)
     slug = models.SlugField(unique=True, null=True, blank=True)
@@ -18,7 +30,7 @@ class Category(models.Model):
         return self.name
 
 
-class Calculator(models.Model):
+class Calculator(BaseModel):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='calculators')
     name = models.CharField(max_length=150)
     slug = models.SlugField(unique=True, blank=True)
@@ -34,7 +46,7 @@ class Calculator(models.Model):
     def __str__(self):
         return self.name
 
-class CalculatorField(models.Model):
+class CalculatorField(BaseModel):
     calculator = models.ForeignKey(Calculator, on_delete=models.CASCADE, related_name='fields')
     name = models.CharField(max_length=100)
     label = models.CharField(max_length=150)
